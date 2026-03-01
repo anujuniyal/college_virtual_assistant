@@ -151,8 +151,8 @@ def register_cli_commands(app):
 def initialize_database(app):
     """Initialize database tables and default data"""
     try:
-        # Create all tables
-        db.create_all()
+        # Create all tables (checkfirst=True prevents errors if tables exist)
+        db.create_all(checkfirst=True)
         app.logger.info("Database tables created successfully")
         
         # Create default admin if not exists
@@ -175,10 +175,13 @@ def initialize_database(app):
                 app.logger.info("Default admin user created")
             else:
                 app.logger.info("Admin email already exists, skipping admin creation")
+        else:
+            app.logger.info("Admin user already exists, skipping admin creation")
         
     except Exception as e:
         app.logger.error(f"Error initializing database: {str(e)}")
-        raise
+        # Don't raise exception to allow app to continue
+        pass
 
 
 def initialize_services(app):
