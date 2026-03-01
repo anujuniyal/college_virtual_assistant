@@ -1,0 +1,20 @@
+services:
+  # Web Service
+  - type: web
+    name: edubot-college-assistant
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 wsgi:app"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.10.0
+    healthCheckPath: /login
+    
+databases:
+  # PostgreSQL Database (Render provides free PostgreSQL)
+  - name: edubot-db
+    databaseName: edubot
+    user: edubot_user

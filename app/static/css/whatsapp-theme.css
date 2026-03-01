@@ -1,0 +1,632 @@
+/* EduBot for Management - WhatsApp Theme */
+
+:root {
+    /* WhatsApp Color Palette */
+    --whatsapp-green: #25D366;
+    --whatsapp-green-dark: #128C7E;
+    --whatsapp-green-light: #DCF8C6;
+    --whatsapp-teal: #075E54;
+    --whatsapp-teal-dark: #054A44;
+    --whatsapp-blue: #34B7F1;
+    --whatsapp-gray: #E5DDD5;
+    --whatsapp-gray-dark: #111B21;
+    --whatsapp-gray-light: #F7F7F7;
+    --whatsapp-white: #FFFFFF;
+    --whatsapp-black: #000000;
+    
+    /* EduBot Theme Colors */
+    --rd-primary: var(--whatsapp-green);
+    --rd-primary-dark: var(--whatsapp-green-dark);
+    --rd-primary-light: var(--whatsapp-green-light);
+    --rd-secondary: var(--whatsapp-teal);
+    --rd-secondary-dark: var(--whatsapp-teal-dark);
+    --rd-accent: var(--whatsapp-blue);
+    --rd-background: var(--whatsapp-gray-light);
+    --rd-surface: var(--whatsapp-white);
+    --rd-text: var(--whatsapp-gray-dark);
+    --rd-text-light: var(--whatsapp-gray);
+}
+
+body {
+    background-color: var(--rd-background);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: var(--rd-text);
+}
+
+/* Login Page Styling */
+.login-container {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-secondary) 100%) !important;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--rd-surface) !important;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid var(--rd-primary-light) !important;
+    overflow: hidden;
+}
+
+.login-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    color: var(--rd-surface) !important;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    border: none !important;
+    color: var(--rd-surface) !important;
+}
+
+.btn-login:hover {
+    background: linear-gradient(135deg, var(--rd-primary-dark) 0%, var(--rd-secondary) 100%) !important;
+}
+
+.form-control:focus {
+    border-color: var(--rd-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25) !important;
+}
+
+.input-group-text {
+    background: var(--rd-primary-light) !important;
+    border-color: var(--rd-primary) !important;
+}
+
+.login-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    color: var(--rd-surface) !important;
+    padding: 2rem;
+    text-align: center;
+}
+
+.login-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: var(--rd-surface);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-form {
+    padding: 2rem;
+}
+
+.login-btn {
+    border: none !important;
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+    padding: 12px 30px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background: linear-gradient(135deg, var(--rd-primary-dark) 0%, var(--rd-secondary) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+}
+
+/* Sidebar Styling */
+.sidebar {
+    background: linear-gradient(180deg, var(--rd-secondary) 0%, var(--rd-secondary-dark) 100%) !important;
+    color: var(--rd-surface) !important;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
+.sidebar a {
+    color: var(--rd-surface) !important;
+    text-decoration: none;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.sidebar a:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: var(--rd-surface) !important;
+}
+
+.sidebar a.active {
+    background: var(--rd-primary) !important;
+    color: var(--rd-surface) !important;
+}
+
+/* Dashboard Cards */
+.stat-card {
+    background: var(--rd-surface) !important;
+    border-left: 5px solid var(--rd-primary) !important;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    border: none !important;
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--rd-primary-dark) 0%, var(--rd-secondary) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    border: none !important;
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, var(--rd-primary-dark) 0%, var(--rd-secondary) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%) !important;
+    border: none !important;
+    color: #000 !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+}
+
+.btn-info {
+    background: linear-gradient(135deg, var(--rd-accent) 0%, #2196F3 100%) !important;
+    border: none !important;
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 183, 241, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+    border: none !important;
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+}
+
+.btn-dark {
+    background: linear-gradient(135deg, #343a40 0%, #212529 100%) !important;
+    border: none !important;
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-dark:hover {
+    background: linear-gradient(135deg, #212529 0%, #000000 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 58, 64, 0.4);
+}
+
+/* Badges */
+.badge.bg-primary {
+    background: var(--rd-primary) !important;
+}
+
+.badge.bg-success {
+    background: var(--rd-primary) !important;
+}
+
+.badge.bg-purple {
+    background: var(--rd-primary) !important;
+}
+
+.badge.bg-warning {
+    background: #FFC107 !important;
+}
+
+.badge.bg-info {
+    background: var(--rd-accent) !important;
+}
+
+/* Clickable Cards */
+.clickable-card {
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.clickable-card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 15px 30px rgba(37, 211, 102, 0.3) !important;
+    border-left-color: var(--rd-primary-dark) !important;
+}
+
+/* Make anchor tags properly clickable */
+.stat-card-wrapper {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.stat-card-wrapper:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.stat-card-wrapper .stat-card {
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.stat-card-wrapper:hover .stat-card {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 15px 30px rgba(37, 211, 102, 0.3) !important;
+    border-left-color: var(--rd-primary-dark) !important;
+}
+
+.sidebar h5, .sidebar h4 {
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+}
+
+.sidebar a {
+    text-decoration: none;
+    display: block;
+    padding: 12px 20px;
+    margin: 5px 0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: translateX(5px);
+}
+
+.sidebar a.active {
+    background: var(--rd-primary) !important;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+/* Dashboard Cards */
+.stat-card {
+    background: var(--rd-surface) !important;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1) !important;
+    border-left: 5px solid var(--rd-primary);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-card h3 {
+    color: var(--rd-primary);
+    font-weight: 700;
+    font-size: 2.5rem;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    border: none !important;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--rd-primary-dark) 0%, var(--rd-secondary) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4) !important;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%) !important;
+    border: none !important;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, var(--rd-primary-dark) 0%, var(--rd-secondary) 100%) !important;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%) !important;
+    border: none !important;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, var(--rd-accent) 0%, #2196F3 100%) !important;
+    border: none !important;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6C757D 0%, #495057 100%) !important;
+    border: none !important;
+}
+
+/* Badges */
+.badge.bg-primary {
+    background: var(--rd-primary) !important;
+}
+
+.badge.bg-success {
+    background: var(--rd-primary) !important;
+}
+
+.badge.bg-purple {
+    background: var(--rd-primary) !important;
+}
+
+.badge.bg-warning {
+    background: #FFC107 !important;
+}
+
+.badge.bg-info {
+    background: var(--rd-accent) !important;
+}
+
+/* Forms */
+.form-control {
+    border: 2px solid var(--rd-gray);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--rd-primary);
+    box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--rd-primary);
+    box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+}
+
+/* Tables */
+.table {
+    background: var(--rd-surface);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background: var(--rd-primary);
+    color: var(--rd-surface);
+    border: none;
+}
+
+.table tbody tr:hover {
+    background: var(--rd-primary-light);
+}
+
+/* Cards */
+.card {
+    background: var(--rd-surface);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%);
+    color: var(--rd-surface);
+    border-radius: 15px 15px 0 0 !important;
+    border: none;
+}
+
+/* Notifications */
+.notification-card {
+    background: var(--rd-surface);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid var(--rd-primary);
+    transition: all 0.3s ease;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.notification-card.expired {
+    border-left-color: #6C757D;
+    opacity: 0.7;
+}
+
+.notification-card.expiring-soon {
+    border-left-color: #FFC107;
+}
+
+/* Alerts */
+.alert {
+    border: none;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, var(--rd-primary-light) 0%, #D4EDDA 100%);
+    color: var(--rd-secondary-dark);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #F8D7DA 0%, #F5C6CB 100%);
+    color: #721C24;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #FFF3CD 0%, #FFEAA7 100%);
+    color: #856404;
+}
+
+/* Modal */
+.modal-content {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-primary-dark) 100%);
+    color: var(--rd-surface);
+    border-radius: 15px 15px 0 0;
+    border: none;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    background: var(--rd-surface);
+}
+
+.dropdown-item:hover {
+    background: var(--rd-primary-light);
+    color: var(--rd-secondary-dark);
+}
+
+/* Footer */
+footer {
+    background: var(--rd-secondary);
+    color: var(--rd-surface);
+    padding: 20px 0;
+    margin-top: 50px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        min-height: auto;
+    }
+    
+    .stat-card {
+        margin-bottom: 20px;
+    }
+    
+    .login-card {
+        margin: 20px;
+    }
+}
+
+/* Loading Spinner */
+.spinner-border {
+    border-color: var(--rd-surface);
+    border-right-color: transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--rd-gray);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--rd-primary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--rd-primary-dark);
+}
+
+/* College Branding */
+.college-brand {
+    font-weight: 700;
+    color: var(--rd-primary);
+    text-decoration: none;
+}
+
+.college-brand:hover {
+    color: var(--rd-primary-dark);
+}
+
+/* WhatsApp-style Chat Elements */
+.chat-bubble {
+    background: var(--rd-primary-light);
+    border-radius: 18px;
+    padding: 10px 15px;
+    margin: 5px 0;
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+.chat-bubble.sent {
+    background: var(--rd-primary);
+    color: var(--rd-surface);
+    margin-left: auto;
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
