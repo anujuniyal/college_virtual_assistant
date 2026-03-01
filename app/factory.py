@@ -161,15 +161,20 @@ def initialize_database(app):
         
         admin = Admin.query.filter_by(username='admin').first()
         if not admin:
-            admin = Admin(
-                username='admin',
-                email='admin@edubot.com',
-                password_hash=generate_password_hash('admin123'),
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            app.logger.info("Default admin user created")
+            # Also check if email already exists
+            existing_email = Admin.query.filter_by(email='admin@edubot.com').first()
+            if not existing_email:
+                admin = Admin(
+                    username='admin',
+                    email='admin@edubot.com',
+                    password_hash=generate_password_hash('admin123'),
+                    role='admin'
+                )
+                db.session.add(admin)
+                db.session.commit()
+                app.logger.info("Default admin user created")
+            else:
+                app.logger.info("Admin email already exists, skipping admin creation")
         
     except Exception as e:
         app.logger.error(f"Error initializing database: {str(e)}")
