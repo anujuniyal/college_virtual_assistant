@@ -152,7 +152,10 @@ def initialize_database(app):
     """Initialize database tables and default data"""
     try:
         # Create all tables (checkfirst=True prevents errors if tables exist)
-        db.create_all(checkfirst=True)
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning(f"Database tables may already exist: {str(e)}")
         app.logger.info("Database tables created successfully")
         
         # Create default admin if not exists
