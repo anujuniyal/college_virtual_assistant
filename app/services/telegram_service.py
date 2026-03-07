@@ -56,6 +56,7 @@ class TelegramBotService:
             # This maps Telegram user IDs to the actual phone numbers in the student database
             phone_mapping = {
                 '7229077719': '9760387360',  # Your Telegram ID -> Anuj Uniyal's phone
+                '123456789': '9760387360',  # Test user for bot testing
                 # Add more mappings as needed for actual users
                 # Format: 'telegram_user_id': 'student_phone_number_from_database'
             }
@@ -172,7 +173,12 @@ class TelegramBotService:
                 'parse_mode': 'HTML'  # Enable HTML formatting
             }
             
+            logger.info(f"Sending message to chat_id {chat_id}: {text[:100]}...")
             response = requests.post(url, json=data, timeout=10)
+            
+            # Log full response for debugging
+            logger.info(f"Telegram API response status: {response.status_code}")
+            logger.info(f"Telegram API response body: {response.text[:500]}")
             
             if response.status_code == 200:
                 result = response.json()
@@ -180,10 +186,13 @@ class TelegramBotService:
                     logger.info(f"Message sent successfully to chat_id: {chat_id}")
                     return True
                 else:
-                    logger.error(f"Telegram API error: {result.get('description', 'Unknown error')}")
+                    error_desc = result.get('description', 'Unknown error')
+                    error_code = result.get('error_code', 'Unknown')
+                    logger.error(f"Telegram API error {error_code}: {error_desc}")
                     return False
             else:
                 logger.error(f"HTTP error sending message: {response.status_code}")
+                logger.error(f"Response body: {response.text}")
                 return False
                 
         except requests.exceptions.Timeout:

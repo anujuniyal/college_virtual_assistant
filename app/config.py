@@ -11,6 +11,9 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///edubot_management.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Telegram Bot Configuration
+    TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN') or ''
+    
     # Twilio WhatsApp Configuration
     TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID') or ''
     TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN') or ''

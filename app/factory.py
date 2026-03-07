@@ -69,9 +69,17 @@ def initialize_extensions(app):
 
 def register_blueprints(app):
     """Register application blueprints"""
-    # Keep existing working routes structure
-    from app.routes import register_routes
-    register_routes(app)
+    # Import and register blueprints
+    from app.blueprints import admin, auth, faculty, accounts, telegram
+    
+    # Register auth first
+    app.register_blueprint(auth.auth_bp)
+    
+    # Register other blueprints
+    app.register_blueprint(admin.admin_bp)
+    app.register_blueprint(faculty.faculty_bp)
+    app.register_blueprint(accounts.accounts_bp)
+    app.register_blueprint(telegram.telegram_bp)
 
 
 def register_error_handlers(app):
@@ -151,8 +159,8 @@ def register_cli_commands(app):
 def initialize_database(app):
     """Initialize database tables and default data"""
     try:
-        # Create all tables (checkfirst=True prevents errors if tables exist)
-        db.create_all(checkfirst=True)
+        # Create all tables
+        db.create_all()
         app.logger.info("Database tables created successfully")
         
         # Create default admin if not exists

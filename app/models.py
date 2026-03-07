@@ -31,7 +31,7 @@ class Admin(UserMixin, db.Model):
         return f'<Admin {self.username}>'
 
 
-class Student(db.Model):
+class Student(db.Model, UserMixin):
     """Student model"""
     __tablename__ = 'students'
     
@@ -42,6 +42,7 @@ class Student(db.Model):
     email = db.Column(db.String(120))
     department = db.Column(db.String(50))
     semester = db.Column(db.Integer)
+    password_hash = db.Column(db.String(255))  # Add password field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -49,6 +50,21 @@ class Student(db.Model):
     fee_records = db.relationship('FeeRecord', backref='student', lazy=True, cascade='all, delete-orphan')
     complaints = db.relationship('Complaint', backref='student', lazy=True)
     query_logs = db.relationship('QueryLog', backref='student', lazy=True)
+    
+    def set_password(self, password):
+        """Set password hash"""
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Check password"""
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+    
+    @property
+    def role(self):
+        """Return user role"""
+        return 'student'
     
     def __repr__(self):
         return f'<Student {self.roll_number}>'
@@ -122,7 +138,7 @@ class FeeRecord(db.Model):
         return f'<FeeRecord {self.student_id} - Sem {self.semester}>'
 
 
-class Faculty(db.Model):
+class Faculty(db.Model, UserMixin):
     """Faculty Information"""
     __tablename__ = 'faculty'
     
@@ -132,7 +148,28 @@ class Faculty(db.Model):
     department = db.Column(db.String(50), nullable=False)
     consultation_time = db.Column(db.String(100))
     phone = db.Column(db.String(15))
+    password_hash = db.Column(db.String(255))  # Add password field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def set_password(self, password):
+        """Set password hash"""
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Check password"""
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+    
+    @property
+    def role(self):
+        """Return user role"""
+        return 'faculty'
+    
+    @property
+    def username(self):
+        """Return username (email for compatibility)"""
+        return self.email
     
     def __repr__(self):
         return f'<Faculty {self.name}>'
