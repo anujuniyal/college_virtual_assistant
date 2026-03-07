@@ -25,7 +25,6 @@ from app.models import (
 from app.chatbot.service import ChatbotService
 
 from app.services.otp_service import OTPService
-from app.config import Config
 
 
 # Decorators

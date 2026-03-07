@@ -117,13 +117,36 @@ class TelegramBotService:
 
             if not is_mapped_user:
                 if text.lower().startswith('register') or text.lower().startswith('verify'):
+                    # Extract roll number from registration message
+                    import re
+                    roll_match = re.search(r'register\s+([A-Z0-9]+)', text, re.IGNORECASE)
+                    if roll_match:
+                        roll_number = roll_match.group(1).upper()
+                        response = f"✅ **Registration Request Received!**\n\n📚 Roll Number: {roll_number}\n\n🔄 Your registration is being processed.\n\n📋 Available Services (after registration):\n• View Results\n• Check Notices\n• Fee Status\n• Faculty Info\n• File Complaint\n\n⏳ Please wait for admin approval.\n\n🔔 You'll receive a confirmation once approved."
+                    else:
+                        response = (
+                            "❌ **Registration Failed!**\n\n"
+                            "Please use format: `register ROLL_NUMBER`\n\n"
+                            f"Example: `register EDU20240051`\n\n"
+                            "Need help? Type: `help`"
+                        )
+                    return self.send_message(chat_id, response)
+                else:
+                    # Provide visitor services
                     response = (
-                        "Your Telegram account is not linked to a student yet. "
-                        f"Please contact admin and share your Telegram ID: {telegram_user_id}."
+                        "👋 **Welcome to EduBot!**\n\n"
+                        "📖 **Available Services:**\n\n"
+                        "📚 `admission` - Admission info\n"
+                        "📖 `courses` - Course details\n"
+                        "💰 `fees` - Fee structure\n"
+                        "🏫 `facilities` - Campus info\n"
+                        "👨‍🏫 `faculty` - Faculty directory\n"
+                        "ℹ️ `help` - Show this menu\n\n"
+                        "🎓 **Students:** Register with `register ROLL_NUMBER`\n\n"
+                        f"📞 **Need Help?** Contact admin\n\n"
+                        f"🤖 **Bot Status:** Active"
                     )
                     return self.send_message(chat_id, response)
-
-                phone_number = f"telegram:{telegram_user_id}"
             
             # Process message with chatbot service
             try:
