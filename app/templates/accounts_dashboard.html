@@ -21,20 +21,20 @@
                     <small>for Management</small>
                 </div>
                 <hr style="border-color: rgba(255,255,255,0.3);">
-                <a href="{{ url_for('accounts_dashboard') }}" class="active">
+                <a href="{{ url_for('accounts.accounts_dashboard') }}" class="active">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
-                <a href="{{ url_for('students_dashboard') }}">
+                <a href="{{ url_for('accounts.accounts_dashboard') }}">
                     <i class="bi bi-people"></i> Students
                 </a>
-                <a href="{{ url_for('notifications_dashboard') }}">
+                <a href="{{ url_for('accounts.accounts_dashboard') }}">
                     <i class="bi bi-bell"></i> Notifications
                 </a>
-                <a href="{{ url_for('export_fee_records') }}">
+                <a href="{{ url_for('accounts.accounts_dashboard') }}">
                     <i class="bi bi-download"></i> Export Fees
                 </a>
                 <hr style="border-color: rgba(255,255,255,0.3);">
-                <a href="{{ url_for('logout') }}">
+                <a href="{{ url_for('auth.logout') }}">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </a>
             </div>
@@ -66,7 +66,7 @@
                 <!-- Statistics Cards -->
                 <div class="row">
                     <div class="col-md-3">
-                        <a href="{{ url_for('students_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('accounts.accounts_dashboard') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ total_students }}</h3>
                                 <p><i class="bi bi-people"></i> Total Students</p>
@@ -77,7 +77,7 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="{{ url_for('students_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('accounts.accounts_dashboard') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ total_fee_records }}</h3>
                                 <p><i class="bi bi-cash-coin"></i> Fee Records</p>
@@ -88,7 +88,7 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="{{ url_for('students_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('accounts.accounts_dashboard') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ total_pending }}</h3>
                                 <p><i class="bi bi-exclamation-triangle"></i> Pending Fees</p>
@@ -99,9 +99,9 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="{{ url_for('students_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('accounts.accounts_dashboard') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
-                                <h3>₹{{ "{:,.0f}".format(pending_amount) }}</h3>
+                                <h3>₹{{ "{:,.0f}".format(pending_amount or 0) }}</h3>
                                 <p><i class="bi bi-currency-rupee"></i> Pending Amount</p>
                                 <small class="text-muted d-block mt-2">
                                     <i class="bi bi-arrow-right"></i> Click to view details
@@ -118,22 +118,22 @@
                             <h5><i class="bi bi-lightning-fill"></i> Quick Actions</h5>
                             <div class="row">
                                 <div class="col-md-3">
-                                    <a href="{{ url_for('students_dashboard') }}" class="btn btn-primary btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-primary btn-sm w-100 mb-2">
                                         <i class="bi bi-people"></i> View Students
                                     </a>
                                 </div>
                                 <div class="col-md-3">
-                                    <a href="{{ url_for('notifications_dashboard') }}" class="btn btn-success btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-success btn-sm w-100 mb-2">
                                         <i class="bi bi-bell"></i> View Notices
                                     </a>
                                 </div>
                                 <div class="col-md-3">
-                                    <a href="{{ url_for('export_fee_records') }}" class="btn btn-info btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-info btn-sm w-100 mb-2">
                                         <i class="bi bi-download"></i> Export Fees
                                     </a>
                                 </div>
                                 <div class="col-md-3">
-                                    <a href="{{ url_for('accounts_dashboard') }}" class="btn btn-secondary btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-secondary btn-sm w-100 mb-2">
                                         <i class="bi bi-arrow-clockwise"></i> Refresh
                                     </a>
                                 </div>
@@ -161,7 +161,7 @@
                                     <div class="alert alert-warning mb-2">
                                         <h6>Pending Follow-up</h6>
                                         <p class="mb-1"><strong>{{ total_pending }}</strong> students with pending fees</p>
-                                        <small class="text-muted">Total pending: ₹{{ "{:,.0f}".format(pending_amount) }}</small>
+                                        <small class="text-muted">Total pending: ₹{{ "{:,.0f}".format(pending_amount or 0) }}</small>
                                     </div>
                                 </div>
                             </div>

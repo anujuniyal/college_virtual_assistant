@@ -31,7 +31,7 @@
     <div class="container-fluid p-4" id="analytics-container" data-analytics='{{ analytics|tojson|safe }}'>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>📊 Analytics Dashboard</h2>
-            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+            <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-secondary">Back to Dashboard</a>
         </div>
         
         <!-- Statistics -->

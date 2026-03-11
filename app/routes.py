@@ -647,7 +647,7 @@ def register_routes(app):
             Notification.expires_at > datetime.utcnow()
         ).order_by(Notification.created_at.desc()).limit(5).all()
         
-        return render_template('admin_dashboard.html',
+        return render_template('admin_dashboard_simple.html',
                              total_students=total_students,
                              total_notifications=total_notifications,
                              active_notifications=active_notifications,
