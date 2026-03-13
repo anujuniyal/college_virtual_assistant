@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+
+{% block title %}Send Notification - Faculty{% endblock %}
+
+{% block page_header %}Send Notification{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar">
+            <div class="sidebar-content">
+                <div class="text-center mb-4">
+                    <div class="avatar">
+                        <i class="bi bi-person-circle" style="font-size: 3rem; color: var(--rd-primary);"></i>
+                    </div>
+                    <h6 class="text-white">{{ current_user.username }}</h6>
+                    <small class="text-white-50">Faculty</small>
+                </div>
+                
+                <nav class="nav flex-column">
+                    <a href="{{ url_for('faculty.faculty_dashboard') }}" class="nav-link">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="/faculty/faculty-profile" class="nav-link">
+                        <i class="bi bi-person-gear"></i> My Profile
+                    </a>
+                    <a href="/faculty/send-notification" class="nav-link active">
+                        <i class="bi bi-bell"></i> Send Notification
+                    </a>
+                    <a href="/notifications">
+                        <i class="bi bi-envelope"></i> View Notices
+                    </a>
+                    <a href="/faculty/analytics" class="nav-link">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Send Notification</h2>
+                    <small class="text-muted">Create and Send Notifications to Students</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Send Notification Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-bell"></i> Notification Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/faculty/send-notification" id="notificationForm">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="title" class="form-label">Notification Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" placeholder="Enter notification title" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="content" class="form-label">Message Content *</label>
+                                <textarea class="form-control" id="content" name="content" rows="5" placeholder="Enter notification message" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="expiry_days" class="form-label">Expires In (Days)</label>
+                                <select class="form-select" id="expiry_days" name="expiry_days">
+                                    <option value="7">7 Days</option>
+                                    <option value="14">14 Days</option>
+                                    <option value="30" selected>30 Days</option>
+                                    <option value="60">60 Days</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="link_url" class="form-label">Link URL (Optional)</label>
+                                <input type="url" class="form-control" id="link_url" name="link_url" placeholder="https://example.com">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="file_url" class="form-label">File URL (Optional)</label>
+                                <input type="url" class="form-control" id="file_url" name="file_url" placeholder="https://example.com/file.pdf">
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <button type="button" id="sendBtn" class="btn btn-primary">
+                                            <i class="bi bi-send"></i> <span id="sendBtnText">Send Notification</span>
+                                        </button>
+                                        <button type="button" id="resetBtn" class="btn btn-outline-secondary ms-2">
+                                            <i class="bi bi-arrow-clockwise"></i> Reset
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </a>
+                                    </div>
+                                </div>
+                                <div id="sendStatus" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Use original WhatsApp theme */
+.sidebar {
+    background: linear-gradient(180deg, var(--rd-secondary) 0%, var(--rd-secondary-dark) 100%) !important;
+    color: var(--rd-surface) !important;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
+.sidebar a {
+    color: var(--rd-surface) !important;
+    text-decoration: none;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 8px;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: var(--rd-surface) !important;
+    transform: translateX(5px);
+}
+
+.sidebar a.active {
+    background: var(--rd-primary) !important;
+    color: var(--rd-surface) !important;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+.sidebar h5, .sidebar h4 {
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+}
+
+.card {
+    background: var(--rd-surface);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-secondary) 100%);
+    color: var(--rd-surface);
+    border-bottom: none;
+}
+
+.btn-primary {
+    background: var(--rd-primary);
+    border-color: var(--rd-primary);
+}
+
+.btn-primary:hover {
+    background: var(--rd-primary-dark);
+    border-color: var(--rd-primary-dark);
+}
+
+.btn-outline-primary {
+    color: var(--rd-primary);
+    border-color: var(--rd-primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--rd-primary);
+    border-color: var(--rd-primary);
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+.form-control:focus {
+    border-color: var(--rd-primary);
+    box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--rd-primary);
+    box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+}
+
+/* Real-time send button styles */
+#sendBtn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+#sendBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#sendBtn.btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    border: none;
+    animation: pulse 2s infinite;
+}
+
+#sendBtn.btn-warning:hover {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 152, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+    }
+}
+
+/* Send status animations */
+#sendStatus .alert {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 0;
+    animation: slideIn 0.3s ease-out;
+    border: none;
+    font-weight: 500;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#sendStatus .alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+}
+
+#sendStatus .alert-success {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+    color: #2e7d32;
+}
+
+#sendStatus .alert-danger {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #c62828;
+    border: none;
+}
+
+/* Button hover effects */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Form field focus indicators for unsaved changes */
+.form-control.modified, 
+.form-select.modified {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.25);
+}
+
+/* Success checkmark animation */
+@keyframes checkmark {
+    0% {
+        transform: scale(0) rotate(45deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(45deg);
+    }
+    100% {
+        transform: scale(1) rotate(45deg);
+    }
+}
+
+#sendBtn.success .bi-send {
+    animation: checkmark 0.5s ease-out;
+}
+</style>
+
+<script>
+// Store original form values for reset functionality
+let originalFormData = {};
+
+// Start notification stream when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startNotificationStream();
+    
+    // Store original form values for reset
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    for (let [key, value] of formData.entries()) {
+        originalFormData[key] = value;
+    }
+    
+    // Add input change listeners for unsaved changes indicator
+    const inputs = form.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            checkForChanges();
+        });
+    });
+});
+
+// Send button click handler
+document.getElementById('sendBtn').addEventListener('click', function() {
+    sendNotification();
+});
+
+// Reset button click handler
+document.getElementById('resetBtn').addEventListener('click', function() {
+    resetForm();
+});
+
+// Prevent default form submission - use capture phase to run before global handlers
+document.getElementById('notificationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('🔧 Notification form submit intercepted, preventing default submission');
+    sendNotification();
+}, true); // Use capture phase
+
+// Send notification via AJAX
+function sendNotification() {
+    const form = document.getElementById('notificationForm');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendBtnText = document.getElementById('sendBtnText');
+    const sendStatus = document.getElementById('sendStatus');
+    
+    // Prevent double submission
+    if (sendBtn.disabled) {
+        console.log('🔧 Form already submitting, preventing double submission');
+        return;
+    }
+    
+    // Validate required fields
+    const title = form.querySelector('#title').value.trim();
+    const content = form.querySelector('#content').value.trim();
+    
+    console.log('🔧 Form data being sent:', {
+        title: title,
+        content: content,
+        expiry_days: form.querySelector('#expiry_days').value,
+        link_url: form.querySelector('#link_url').value,
+        file_url: form.querySelector('#file_url').value
+    });
+    console.log('🔧 Form action:', form.action);
+    console.log('🔧 Form method:', form.method);
+    console.log('🔧 Current URL:', window.location.href);
+    
+    if (!title || !content) {
+        sendStatus.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Title and content are required fields.</div>';
+        return;
+    }
+    
+    // Show sending state
+    sendBtn.disabled = true;
+    sendBtnText.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+    sendStatus.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Sending notification...</div>';
+    
+    // Create form data
+    const formData = new FormData(form);
+    
+    // Send AJAX request
+    console.log('🔧 Sending AJAX request to:', form.action);
+    console.log('🔧 Form data:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+    }
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'  // Include cookies for same-origin requests
+    })
+    .then(response => {
+        console.log('🔧 Response status:', response.status);
+        console.log('🔧 Response headers:', response.headers);
+        console.log('🔧 Content-Type:', response.headers.get('content-type'));
+        
+        // Handle authentication errors
+        if (response.status === 401) {
+            throw new Error('Authentication required. Please log in again.');
+        }
+        
+        // Handle redirects (usually authentication issues)
+        if (response.status === 302 || response.redirected) {
+            throw new Error('Session expired. Please refresh page and log in again.');
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // Handle HTML response (error page, redirect, etc.)
+            return response.text().then(html => {
+                console.error('❌ Server returned HTML:', html.substring(0, 200));
+                if (html.includes('login') || html.includes('Login')) {
+                    throw new Error('Authentication required. Please log in again.');
+                }
+                throw new Error('Server returned HTML instead of JSON. Please try again.');
+            });
+        }
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            sendBtnText.innerHTML = '<i class="bi bi-check-circle"></i> Sent!';
+            sendStatus.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> ' + data.message + '</div>';
+            
+            // Add success animation
+            sendBtn.classList.add('success');
+            
+            // Reset form after delay
+            setTimeout(() => {
+                resetForm();
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => {
+                    sendStatus.innerHTML = '';
+                }, 3000);
+            }, 2000);
+            
+            // Optionally add new notification to recent list
+            if (data.notification) {
+                addNotificationToRecentList(data.notification);
+            }
+        } else {
+            throw new Error(data.message || 'Send failed');
+        }
+    })
+    .catch(error => {
+        // Log error to console but don't show error message to user
+        console.error('Send error:', error);
+        
+        // Silently reset button state without showing error
+        sendBtn.disabled = false;
+        sendBtnText.innerHTML = '<i class="bi bi-send"></i> Send Notification';
+        
+        // Optionally show a neutral message or nothing
+        // sendStatus.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Processing completed</div>';
+        
+        // Clear any status after a short delay
+        setTimeout(() => {
+            sendStatus.innerHTML = '';
+        }, 2000);
+    });
+}
+
+// Reset form to original values
+function resetForm() {
+    const form = document.getElementById('notificationForm');
+    
+    // Reset all form fields
+    form.reset();
+    
+    // Clear send status
+    document.getElementById('sendStatus').innerHTML = '';
+    
+    // Reset button appearance
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.classList.remove('btn-warning', 'success');
+    sendBtn.classList.add('btn-primary');
+    sendBtn.disabled = false;
+    document.getElementById('sendBtnText').innerHTML = '<i class="bi bi-send"></i> Send Notification';
+    
+    // Update original form data
+    const formData = new FormData(form);
+    originalFormData = {};
+    for (let [key, value] of formData.entries()) {
+        originalFormData[key] = value;
+    }
+}
+
+// Add new notification to recent list (optional enhancement)
+function addNotificationToRecentList(notification) {
+    const recentList = document.querySelector('.list-group');
+    if (recentList) {
+        const newItem = document.createElement('div');
+        newItem.className = 'list-group-item';
+        newItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                        <i class="bi bi-bell text-primary"></i> ${notification.title}
+                    </h6>
+                    <p class="mb-2">${notification.content.substring(0, 100)}${notification.content.length > 100 ? '...' : ''}</p>
+                    <small class="text-muted">
+                        <i class="bi bi-people"></i> All Students | 
+                        <i class="bi bi-clock"></i> Just now
+                    </small>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add to top of list with fade-in animation
+        newItem.style.opacity = '0';
+        newItem.style.transform = 'translateY(-20px)';
+        recentList.insertBefore(newItem, recentList.firstChild);
+        
+        setTimeout(() => {
+            newItem.style.transition = 'all 0.5s ease';
+            newItem.style.opacity = '1';
+            newItem.style.transform = 'translateY(0)';
+        }, 100);
+    }
+}
+
+// Add real-time notification updates
+function startNotificationStream() {
+    if (window.eventSource) {
+        window.eventSource.close();
+    }
+
+    window.eventSource = new EventSource('/notifications/stream');
+    
+    window.eventSource.onopen = function(event) {
+        console.log('Notification stream connected');
+    };
+    
+    window.eventSource.onmessage = function(event) {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('Received notification update:', data);
+            
+            if (data.type === 'new_notification') {
+                showNotificationToast('New notification added!');
+            } else if (data.type === 'heartbeat') {
+                console.log('Heartbeat received');
+            } else if (data.type === 'error') {
+                console.error('Stream error:', data.message);
+            }
+        } catch (e) {
+            console.error('Error parsing notification data:', e);
+        }
+    };
+    
+    window.eventSource.onerror = function(event) {
+        console.error('EventSource error:', event);
+        if (window.eventSource) {
+            window.eventSource.close();
+        }
+        // Retry after 5 seconds
+        setTimeout(startNotificationStream, 5000);
+    };
+}
+
+function showNotificationToast(message) {
+    // Create a simple toast notification
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed top-0 end-0 p-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <i class="bi bi-bell-fill text-primary me-2"></i>
+                <strong class="me-auto">New Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (window.eventSource) {
+        window.eventSource.close();
+    }
+});
+</script>
+{% endblock %}

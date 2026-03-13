@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Delete Test</title>
+    <script>
+        function testDelete(notificationId) {
+            if (confirm('Delete notification ' + notificationId + '?')) {
+                alert('Would delete notification ' + notificationId);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Delete Test Page</h1>
+    <button onclick="testDelete(123)">Delete Notification 123</button>
+    <button onclick="testDelete(456)">Delete Notification 456</button>
+</body>
+</html>

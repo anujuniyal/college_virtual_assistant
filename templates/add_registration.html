@@ -1,0 +1,229 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Add Student Registration - EduBot{% endblock %}
+
+{% block sidebar_nav %}
+<!-- Admin Navigation -->
+<div class="nav-item">
+    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="nav-link {% if request.endpoint == 'admin.admin_dashboard_main' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
+        <i class="fas fa-users"></i>
+        <span>Students</span>
+        <i class="fas fa-chevron-down ms-auto"></i>
+    </a>
+    <div class="submenu">
+        <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if request.endpoint and 'manage_students' in request.endpoint %}active{% endif %}">
+            <i class="fas fa-list"></i>
+            <span class="submenu-text">Manage Students</span>
+        </a>
+        <a href="{{ url_for('admin.add_student') }}" class="nav-link {% if request.endpoint == 'admin.add_student' %}active{% endif %}">
+            <i class="fas fa-plus"></i>
+            <span class="submenu-text">Add Student</span>
+        </a>
+        <a href="{{ url_for('admin.student_registrations') }}" class="nav-link {% if request.endpoint == 'admin.student_registrations' %}active{% endif %}">
+            <i class="fas fa-user-clock"></i>
+            <span class="submenu-text">Registrations</span>
+        </a>
+    </div>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block page_title %}Add Student Registration{% endblock %}
+
+{% block content %}
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title">Add Student Registration</h3>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin.student_registrations') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-list"></i> View Registrations
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="registrationForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="roll_number" class="form-label">Roll Number *</label>
+                                    <input type="text" class="form-control" id="roll_number" name="roll_number" required>
+                                    <div class="form-text">Unique roll number for the student</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                                    <div class="form-text">10-digit mobile number</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                    <div class="form-text">Optional email address</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select" id="department" name="department">
+                                        <option value="">Select Department</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Information Technology">Information Technology</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Electrical">Electrical</option>
+                                        <option value="Mechanical">Mechanical</option>
+                                        <option value="Civil">Civil</option>
+                                        <option value="Chemical">Chemical</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="semester" class="form-label">Semester</label>
+                                    <select class="form-select" id="semester" name="semester">
+                                        <option value="">Select Semester</option>
+                                        <option value="1">1st Semester</option>
+                                        <option value="2">2nd Semester</option>
+                                        <option value="3">3rd Semester</option>
+                                        <option value="4">4th Semester</option>
+                                        <option value="5">5th Semester</option>
+                                        <option value="6">6th Semester</option>
+                                        <option value="7">7th Semester</option>
+                                        <option value="8">8th Semester</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> After submission, this registration will need to be approved by an administrator before the student is added to the system.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Registration
+                            </button>
+                            <a href="{{ url_for('admin.student_registrations') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Registration Process</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column align-items-center text-center">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-user-plus fa-2x"></i>
+                            </div>
+                        </div>
+                        <h6>Step 1: Registration</h6>
+                        <p class="text-muted small">Fill in the student details and submit the registration form.</p>
+                        
+                        <div class="my-3">
+                            <i class="fas fa-arrow-down fa-2x text-muted"></i>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                        </div>
+                        <h6>Step 2: Approval</h6>
+                        <p class="text-muted small">Administrator reviews and approves the registration.</p>
+                        
+                        <div class="my-3">
+                            <i class="fas fa-arrow-down fa-2x text-muted"></i>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-check fa-2x"></i>
+                            </div>
+                        </div>
+                        <h6>Step 3: Activation</h6>
+                        <p class="text-muted small">Student account is created and can access the system.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('registrationForm').addEventListener('submit', function(e) {
+    const rollNumber = document.getElementById('roll_number').value;
+    const phone = document.getElementById('phone').value;
+    
+    // Basic validation
+    if (!rollNumber || !phone) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    // Phone number validation
+    if (!/^\d{10}$/.test(phone.replace(/\s/g, ''))) {
+        e.preventDefault();
+        alert('Please enter a valid 10-digit phone number.');
+        return;
+    }
+});
+</script>
+{% endblock %}

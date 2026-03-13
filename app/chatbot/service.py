@@ -82,19 +82,22 @@ class ChatbotService:
     
     def _handle_visitor_mode(self, message: str, phone_number: str) -> str:
         """Handle visitor mode messages"""
+        normalized = message.strip()
+        message_lower = normalized.lower()
+
         # Check for registration (case-insensitive)
-        if message.startswith('register') or message.startswith('verify'):
-            return self._handle_registration(message, phone_number)
+        if message_lower.startswith('register') or message_lower.startswith('verify'):
+            return self._handle_registration(normalized, phone_number)
         
         # Check for roll number verification
-        roll_match = re.search(r'roll[:\s]*([A-Z0-9]+)', message, re.IGNORECASE)
+        roll_match = re.search(r'roll[:\s]*([A-Z0-9]+)', normalized, re.IGNORECASE)
         if roll_match:
             roll_number = roll_match.group(1).upper()
             return self._verify_student(roll_number, phone_number)
         
         # Handle commands
         for cmd, handler in self.visitor_mode_commands.items():
-            if message.startswith(cmd):
+            if message_lower.startswith(cmd):
                 return handler(phone_number)
         
         # Try Q&A lookup
@@ -166,12 +169,15 @@ class ChatbotService:
         result_count = self._get_or_create_view_count(student_id, 'result')
         fee_count = self._get_or_create_view_count(student_id, 'fee')
         
-        result_remaining = result_count.get_remaining_views()
-        fee_remaining = fee_count.get_remaining_views()
+        max_result = int(getattr(Config, 'RATE_LIMIT_RESULT_QUERIES', 1) or 1)
+        max_fee = int(getattr(Config, 'RATE_LIMIT_FEE_QUERIES', 1) or 1)
+
+        result_remaining = result_count.get_remaining_views(max_daily_views=max_result)
+        fee_remaining = fee_count.get_remaining_views(max_daily_views=max_fee)
         
         status = f"\n📊 **Daily View Limits:**\n"
-        status += f"📋 Results: {result_remaining}/5 views left\n"
-        status += f"💰 Fee Status: {fee_remaining}/5 views left"
+        status += f"📋 Results: {result_remaining}/{max_result} left today\n"
+        status += f"💰 Fee Status: {fee_remaining}/{max_fee} left today"
         
         return status
     
@@ -360,11 +366,11 @@ Simply type the number (1-6) to choose any service!"""
         """Show help for visitors"""
         return """📋 **Available Services (Visitor Mode):**
 
-� **General Information:**
+📌 **General Information:**
 1️⃣ Admission - Admission FAQs
 2️⃣ Courses - Course details
 
-� **Fees:**
+💰 **Fees:**
 3️⃣ Fee Structure - Course fee structure
 
 🏫 **Campus:**
@@ -383,7 +389,7 @@ Type: register EDU20240051"""
         """Show help for students"""
         view_status = self._get_view_counts_status(student_id)
 
-        return f"""� **Available Services (Student Mode):**
+        return f"""📋 **Available Services (Student Mode):**
 
 📋 **Academic:**
 1️⃣ Results - View your academic results
@@ -496,7 +502,7 @@ Issued by: College Admin"""
         """Get active notices"""
         notices = Notification.query.filter(
             Notification.expires_at > datetime.utcnow()
-        ).order_by(Notification.created_at.desc()).limit(5).all()
+        ).order_by(Notification.created_at.desc()).limit(8).all()
         
         if not notices:
             return "No active notices at the moment."
@@ -516,9 +522,10 @@ Issued by: College Admin"""
         # Check daily view limit
         view_count = self._get_or_create_view_count(student_id, 'result')
         
-        if not view_count.can_view():
-            remaining = view_count.get_remaining_views()
-            return f"⏰ You have reached your daily limit for viewing results.\n\n📊 **Daily View Status:**\n📋 Results: {remaining}/5 views left\n\nYou can check results again tomorrow!"
+        max_daily = int(getattr(Config, 'RATE_LIMIT_RESULT_QUERIES', 1) or 1)
+        if not view_count.can_view(max_daily_views=max_daily):
+            remaining = view_count.get_remaining_views(max_daily_views=max_daily)
+            return f"⏰ You have reached your daily limit for viewing results.\n\n📊 **Daily View Status:**\n📋 Results: {remaining}/{max_daily} left today\n\nYou can check results again tomorrow!"
         
         # Get student
         student = Student.query.get(student_id)
@@ -544,38 +551,20 @@ Issued by: College Admin"""
         for result in results:
             response += f"📋 {result.subject}: {result.marks}/100 ({result.grade})\n"
         
-        remaining_views = view_count.get_remaining_views()
-        response += f"\n📊 **Daily View Status:**\n📋 Results: {remaining_views}/5 views left"
+        remaining_views = view_count.get_remaining_views(max_daily_views=max_daily)
+        response += f"\n📊 **Daily View Status:**\n📋 Results: {remaining_views}/{max_daily} left today"
+
+        # Tag issuer if available
+        try:
+            issuer_id = results[0].created_by
+            if issuer_id:
+                from app.models import Admin
+                issuer = Admin.query.get(int(issuer_id))
+                if issuer:
+                    response += f"\n\nIssued by: {issuer.username}"
+        except Exception:
+            pass
         
-        return response
-        
-        # Log query
-        log_entry = QueryLog(
-            student_id=student_id,
-            query_type='result',
-            query_date=today
-        )
-        db.session.add(log_entry)
-        db.session.commit()
-        
-        # Format response
-        response = f"📊 RESULTS - {student.roll_number}\n\n"
-        
-        # Group by semester
-        semesters = {}
-        for result in results:
-            if result.semester not in semesters:
-                semesters[result.semester] = []
-            semesters[result.semester].append(result)
-        
-        for sem, sem_results in sorted(semesters.items()):
-            response += f"Semester {sem}:\n"
-            for result in sem_results:
-                response += f"  {result.subject}: {result.marks} ({result.grade})\n"
-            response += "\n"
-        
-        response += f"Declared: {results[0].declared_at.strftime('%d-%m-%Y')}\n"
-        response += "Issued by: College Admin"
         return response
     
     def _get_fee_status(self, phone_number: str, student_id: int) -> str:
@@ -583,9 +572,10 @@ Issued by: College Admin"""
         # Check daily view limit
         view_count = self._get_or_create_view_count(student_id, 'fee')
         
-        if not view_count.can_view():
-            remaining = view_count.get_remaining_views()
-            return f"⏰ You have reached your daily limit for viewing fee status.\n\n📊 **Daily View Status:**\n💰 Fee Status: {remaining}/5 views left\n\nYou can check fee status again tomorrow!"
+        max_daily = int(getattr(Config, 'RATE_LIMIT_FEE_QUERIES', 1) or 1)
+        if not view_count.can_view(max_daily_views=max_daily):
+            remaining = view_count.get_remaining_views(max_daily_views=max_daily)
+            return f"⏰ You have reached your daily limit for viewing fee status.\n\n📊 **Daily View Status:**\n💰 Fee Status: {remaining}/{max_daily} left today\n\nYou can check fee status again tomorrow!"
         
         # Get latest fee record
         fee_record = FeeRecord.query.filter_by(student_id=student_id).order_by(
@@ -607,8 +597,9 @@ Issued by: College Admin"""
         response += f"Balance: ₹{fee_record.balance:,.2f}\n\n"
         response += f"Last Updated: {fee_record.last_updated.strftime('%d-%m-%Y')}\n"
         
-        remaining_views = view_count.get_remaining_views()
-        response += f"\n📊 **Daily View Status:**\n💰 Fee Status: {remaining_views}/5 views left"
+        remaining_views = view_count.get_remaining_views(max_daily_views=max_daily)
+        response += f"\n📊 **Daily View Status:**\n💰 Fee Status: {remaining_views}/{max_daily} left today"
+        response += "\n\nGenerated by: Accounts Section"
         
         return response
     

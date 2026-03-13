@@ -1,0 +1,570 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Admin Dashboard - EduBot{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script>
+// Define toggleBot function immediately in head
+function toggleBot() {
+    console.log('toggleBot called from head');
+    
+    const toggleBtn = document.getElementById('botToggleBtn');
+    const toggleText = document.getElementById('toggleText');
+    
+    if (!toggleBtn || !toggleText) {
+        console.error('Button elements not found!');
+        alert('Toggle button not found');
+        return;
+    }
+    
+    const isActive = toggleBtn.classList.contains('active');
+    const action = isActive ? 'deactivate' : 'activate';
+    
+    console.log('Action:', action);
+    
+    // Show loading
+    toggleBtn.disabled = true;
+    toggleText.textContent = isActive ? 'Stopping...' : 'Starting...';
+    
+    // Make API call
+    fetch('/admin/toggle-bot', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: action})
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Server response:', data);
+        
+        if (data.success) {
+            alert(data.message);
+            setTimeout(() => {
+                checkBotStatus();
+            }, 2000);
+        } else {
+            alert(data.message);
+        }
+        
+        toggleBtn.disabled = false;
+        toggleText.textContent = isActive ? 'ON' : 'OFF';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error communicating with server');
+        toggleBtn.disabled = false;
+        toggleText.textContent = isActive ? 'ON' : 'OFF';
+    });
+}
+
+// Also make it global
+window.toggleBot = toggleBot;
+
+// Define checkBotStatus function
+function checkBotStatus() {
+    fetch('/admin/bot-status')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Bot status:', data);
+            updateBotStatusDisplay(data);
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+        });
+}
+
+// Define updateBotStatusDisplay function
+function updateBotStatusDisplay(data) {
+    const statusText = document.getElementById('botStatusText');
+    const statusTime = document.getElementById('botStatusTime');
+    const toggleBtn = document.getElementById('botToggleBtn');
+    const toggleText = document.getElementById('toggleText');
+    const statusIcon = document.getElementById('botStatusIcon');
+    
+    if (!statusText || !toggleBtn || !toggleText) {
+        console.error('Status elements not found');
+        return;
+    }
+    
+    // Update status text and color
+    if (data.status === 'active') {
+        statusText.textContent = 'Active';
+        statusText.style.color = '#28a745';
+        toggleBtn.classList.add('active');
+        toggleText.textContent = 'ON';
+        if (statusIcon) {
+            statusIcon.style.backgroundColor = '#28a745';
+        }
+    } else if (data.status === 'inactive') {
+        statusText.textContent = 'Inactive';
+        statusText.style.color = '#6c757d';
+        toggleBtn.classList.remove('active');
+        toggleText.textContent = 'OFF';
+        if (statusIcon) {
+            statusIcon.style.backgroundColor = '#6c757d';
+        }
+    } else if (data.status === 'error') {
+        statusText.textContent = 'Error';
+        statusText.style.color = '#dc3545';
+        toggleBtn.classList.remove('active');
+        toggleText.textContent = 'OFF';
+        if (statusIcon) {
+            statusIcon.style.backgroundColor = '#dc3545';
+        }
+    } else {
+        statusText.textContent = 'Unknown';
+        statusText.style.color = '#ffc107';
+        toggleBtn.classList.remove('active');
+        toggleText.textContent = 'OFF';
+        if (statusIcon) {
+            statusIcon.style.backgroundColor = '#ffc107';
+        }
+    }
+    
+    // Update last checked time
+    if (statusTime) {
+        const now = new Date();
+        statusTime.textContent = 'Last checked: ' + now.toLocaleTimeString();
+    }
+}
+
+// Make them global
+window.checkBotStatus = checkBotStatus;
+window.updateBotStatusDisplay = updateBotStatusDisplay;
+
+console.log('toggleBot function defined in head');
+</script>
+{% endblock %}
+
+{% block sidebar_nav %}
+<!-- Admin Navigation -->
+<div class="nav-item">
+    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="nav-link {% if request.endpoint == 'admin.admin_dashboard_main' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if 'student' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Students</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link {% if 'faculty' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Faculty</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
+        <i class="fas fa-bell"></i>
+        <span>Notifications</span>
+        <i class="fas fa-chevron-down ms-auto"></i>
+    </a>
+    <div class="submenu">
+        <a href="{{ url_for('admin.add_notification') }}" class="nav-link">
+            <i class="fas fa-plus"></i>
+            <span class="submenu-text">Add Notification</span>
+        </a>
+        <a href="{{ url_for('admin.view_notifications') }}" class="nav-link">
+            <i class="fas fa-list"></i>
+            <span class="submenu-text">View All</span>
+        </a>
+    </div>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.admin_upload') }}" class="nav-link {% if 'upload' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-upload"></i>
+        <span>Upload Data</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link {% if 'accounts' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-users-cog"></i>
+        <span>Accounts</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.student_registrations') }}" class="nav-link {% if 'registration' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-user-plus"></i>
+        <span>Registrations</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.analytics') }}" class="nav-link {% if 'analytics' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-chart-line"></i>
+        <span>Analytics</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </a>
+</div>
+
+{% endblock %}
+
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="summary-cards">
+    <div class="summary-card students">
+        <div class="card-icon students">
+            <i class="fas fa-user-graduate"></i>
+        </div>
+        <div class="card-title">Total Students</div>
+        <div class="card-count">{{ total_students }}</div>
+    </div>
+    
+    <div class="summary-card faculty">
+        <div class="card-icon faculty">
+            <i class="fas fa-chalkboard-teacher"></i>
+        </div>
+        <div class="card-title">Total Faculty</div>
+        <div class="card-count">{{ total_faculty }}</div>
+    </div>
+    
+    <div class="summary-card notifications">
+        <div class="card-icon notifications">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div class="card-title">Notifications</div>
+        <div class="card-count">{{ total_notifications }}</div>
+    </div>
+    
+    <div class="summary-card bot-status" id="botStatusCard">
+        <div class="card-icon bot-status-icon" id="botStatusIcon">
+            <i class="fas fa-robot"></i>
+        </div>
+        <div class="card-title">Bot Status</div>
+        <div class="card-count" id="botStatusText">Checking...</div>
+        <div class="bot-status-time" id="botStatusTime">Just now</div>
+        <div class="bot-toggle-container">
+            <button class="bot-toggle-btn" id="botToggleBtn" onclick="
+                console.log('Button clicked');
+                var btn = document.getElementById('botToggleBtn');
+                var txt = document.getElementById('toggleText');
+                if (!btn || !txt) {
+                    alert('Button not found');
+                    return;
+                }
+                var isActive = btn.classList.contains('active');
+                var action = isActive ? 'deactivate' : 'activate';
+                console.log('Action:', action);
+                btn.disabled = true;
+                txt.textContent = isActive ? 'Stopping...' : 'Starting...';
+                fetch('/admin/toggle-bot', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action: action})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response:', data);
+                    alert(data.message || 'Done');
+                    btn.disabled = false;
+                    // Check status after action with multiple attempts
+                    setTimeout(function() {
+                        checkStatusAndUpdate();
+                    }, 2000);
+                    
+                    // Second check after more time
+                    setTimeout(function() {
+                        checkStatusAndUpdate();
+                    }, 5000);
+                    
+                    function checkStatusAndUpdate() {
+                        fetch('/admin/bot-status')
+                            .then(r => r.json())
+                            .then(d => {
+                                console.log('Status after action:', d);
+                                var statusText = document.getElementById('botStatusText');
+                                var statusTime = document.getElementById('botStatusTime');
+                                var statusIcon = document.getElementById('botStatusIcon');
+                                
+                                // Force update based on actual process status
+                                if (d.status === 'active' || d.status === 'online') {
+                                    if (statusText) statusText.textContent = 'Active';
+                                    if (statusText) statusText.style.color = '#28a745';
+                                    btn.classList.add('active');
+                                    txt.textContent = 'ON';
+                                    if (statusIcon) statusIcon.style.backgroundColor = '#28a745';
+                                    console.log('Updated to ACTIVE state');
+                                } else {
+                                    if (statusText) statusText.textContent = 'Inactive';
+                                    if (statusText) statusText.style.color = '#6c757d';
+                                    btn.classList.remove('active');
+                                    txt.textContent = 'OFF';
+                                    if (statusIcon) statusIcon.style.backgroundColor = '#6c757d';
+                                    console.log('Updated to INACTIVE state');
+                                }
+                                
+                                if (statusTime) {
+                                    var now = new Date();
+                                    statusTime.textContent = 'Last checked: ' + now.toLocaleTimeString();
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error checking status:', error);
+                            });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: ' + error.message);
+                    btn.disabled = false;
+                    txt.textContent = isActive ? 'ON' : 'OFF';
+                });
+            ">
+                <span class="toggle-slider" id="toggleSlider"></span>
+                <span class="toggle-text" id="toggleText">Activate</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="summary-card issues">
+        <div class="card-icon issues">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="card-title">Pending Issues</div>
+        <div class="card-count">{{ pending_complaints }}</div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Activity -->
+    <div class="col-lg-8">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h3 class="section-title">Recent Activity</h3>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshActivity()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            
+            <ul class="activity-list">
+                {% for activity in recent_activities %}
+                <li class="activity-item">
+                    <div class="activity-icon {{ activity.color }}">
+                        <i class="fas fa-{{ activity.icon }}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">{{ activity.text }}</div>
+                        <div class="activity-time">{{ activity.time }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+                
+                {% for notification in recent_notifications %}
+                <li class="activity-item">
+                    <div class="activity-icon info">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">{{ notification.title }}</div>
+                        <div class="activity-time">{{ notification.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+                
+                {% if not recent_activities and not recent_notifications %}
+                <li class="activity-item">
+                    <div class="activity-icon muted">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">No recent activity</div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h3 class="section-title">Quick Actions</h3>
+            </div>
+            
+            <div class="quick-actions">
+                <div class="mb-3">
+                    <h6 class="text-muted mb-3">Bot Status</h6>
+                    <div class="d-flex align-items-center mb-2">
+                        {% if bot_status.status == 'active' %}
+                        <div class="badge bg-success me-2">Active</div>
+                        {% elif bot_status.status == 'inactive' %}
+                        <div class="badge bg-secondary me-2">Inactive</div>
+                        {% else %}
+                        <div class="badge bg-danger me-2">Error</div>
+                        {% endif %}
+                        <small class="text-muted">{{ bot_status.message }}</small>
+                    </div>
+                    <small class="text-muted">Last checked: {{ bot_status.last_checked }}</small>
+                </div>
+                
+                <a href="{{ url_for('admin.add_student') }}" class="quick-action-btn mb-2">
+                    <i class="fas fa-user-plus"></i>
+                    Add Student
+                </a>
+                
+                <a href="{{ url_for('admin.add_notification') }}" class="quick-action-btn mb-2">
+                    <i class="fas fa-bell"></i>
+                    Send Notification
+                </a>
+                
+                <a href="{{ url_for('admin.add_faculty') }}" class="quick-action-btn mb-2">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    Add Faculty
+                </a>
+                
+                <a href="{{ url_for('admin.admin_upload') }}" class="quick-action-btn mb-2">
+                    <i class="fas fa-upload"></i>
+                    Upload Data
+                </a>
+                
+                <a href="{{ url_for('admin.analytics') }}" class="quick-action-btn">
+                    <i class="fas fa-chart-line"></i>
+                    View Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title">System Status</h3>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="text-center">
+                <div class="badge bg-success mb-2">Online</div>
+                <h6>Database</h6>
+                <small class="text-muted">Connected</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                {% if bot_status.status == 'active' %}
+                <div class="badge bg-success mb-2">Active</div>
+                {% elif bot_status.status == 'inactive' %}
+                <div class="badge bg-secondary mb-2">Inactive</div>
+                {% else %}
+                <div class="badge bg-danger mb-2">Error</div>
+                {% endif %}
+                <h6>Telegram Bot</h6>
+                <small class="text-muted">{{ bot_status.message }}</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <div class="badge bg-success mb-2">Normal</div>
+                <h6>Server Load</h6>
+                <small class="text-muted">15% CPU</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <div class="badge bg-warning mb-2">Warning</div>
+                <h6>Storage</h6>
+                <small class="text-muted">78% Used</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<script>
+// Initialize bot status checking when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded - checking bot status');
+    
+    // Check bot status immediately using inline code
+    fetch('/admin/bot-status')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Initial bot status:', data);
+            var statusText = document.getElementById('botStatusText');
+            var statusTime = document.getElementById('botStatusTime');
+            var toggleBtn = document.getElementById('botToggleBtn');
+            var toggleText = document.getElementById('toggleText');
+            var statusIcon = document.getElementById('botStatusIcon');
+            
+            if (data.status === 'active' || data.status === 'online') {
+                if (statusText) statusText.textContent = 'Active';
+                if (statusText) statusText.style.color = '#28a745';
+                if (toggleBtn) toggleBtn.classList.add('active');
+                if (toggleText) toggleText.textContent = 'ON';
+                if (statusIcon) statusIcon.style.backgroundColor = '#28a745';
+            } else {
+                if (statusText) statusText.textContent = 'Inactive';
+                if (statusText) statusText.style.color = '#6c757d';
+                if (toggleBtn) toggleBtn.classList.remove('active');
+                if (toggleText) toggleText.textContent = 'OFF';
+                if (statusIcon) statusIcon.style.backgroundColor = '#6c757d';
+            }
+            
+            if (statusTime) {
+                var now = new Date();
+                statusTime.textContent = 'Last checked: ' + now.toLocaleTimeString();
+            }
+        })
+        .catch(error => {
+            console.error('Error checking initial status:', error);
+        });
+    
+    // Update every 10 seconds for real-time monitoring
+    setInterval(function() {
+        fetch('/admin/bot-status')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Updated bot status:', data);
+                var statusText = document.getElementById('botStatusText');
+                var statusTime = document.getElementById('botStatusTime');
+                var toggleBtn = document.getElementById('botToggleBtn');
+                var toggleText = document.getElementById('toggleText');
+                var statusIcon = document.getElementById('botStatusIcon');
+                
+                if (data.status === 'active' || data.status === 'online') {
+                    if (statusText) statusText.textContent = 'Active';
+                    if (statusText) statusText.style.color = '#28a745';
+                    if (toggleBtn) toggleBtn.classList.add('active');
+                    if (toggleText) toggleText.textContent = 'ON';
+                    if (statusIcon) statusIcon.style.backgroundColor = '#28a745';
+                } else {
+                    if (statusText) statusText.textContent = 'Inactive';
+                    if (statusText) statusText.style.color = '#6c757d';
+                    if (toggleBtn) toggleBtn.classList.remove('active');
+                    if (toggleText) toggleText.textContent = 'OFF';
+                    if (statusIcon) statusIcon.style.backgroundColor = '#6c757d';
+                }
+                
+                if (statusTime) {
+                    var now = new Date();
+                    statusTime.textContent = 'Last checked: ' + now.toLocaleTimeString();
+                }
+            })
+            .catch(error => {
+                console.error('Error checking status:', error);
+            });
+    }, 10000);
+    
+    console.log('Bot toggle button ready - all functionality is inline!');
+});
+</script>

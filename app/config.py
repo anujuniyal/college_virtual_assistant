@@ -4,12 +4,29 @@ Application Configuration
 import os
 from datetime import timedelta
 
+# Load environment variables from .env file BEFORE any configuration
+try:
+    from dotenv import load_dotenv
+    # Get the project root directory (app/config.py -> project root)
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    dotenv_path = os.path.join(project_root, '.env')
+    load_dotenv(dotenv_path)
+except ImportError:
+    # If python-dotenv is not available, continue without it
+    pass
+
 
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///edubot_management.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Default Admin Credentials (from environment)
+    DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME') or 'admin'
+    DEFAULT_ADMIN_EMAIL = os.environ.get('DEFAULT_ADMIN_EMAIL') or 'admin@edubot.com'
+    DEFAULT_ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD') or 'admin123'
+    DEFAULT_ADMIN_ROLE = os.environ.get('DEFAULT_ADMIN_ROLE') or 'admin'
     
     # Telegram Bot Configuration
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN') or ''
@@ -38,7 +55,8 @@ class Config:
     RATE_LIMIT_FEE_QUERIES = int(os.environ.get('RATE_LIMIT_FEE_QUERIES') or 1)  # per day
     
     # Notification Expiry
-    NOTIFICATION_EXPIRY_DAYS = int(os.environ.get('NOTIFICATION_EXPIRY_DAYS') or 7)
+    # Notices should expire quickly for memory efficiency (3–4 days).
+    NOTIFICATION_EXPIRY_DAYS = int(os.environ.get('NOTIFICATION_EXPIRY_DAYS') or 4)
     
     # Result Visibility
     RESULT_VISIBILITY_DAYS = int(os.environ.get('RESULT_VISIBILITY_DAYS') or 7)

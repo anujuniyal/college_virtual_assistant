@@ -1,0 +1,688 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Student - College Virtual Assistant{% endblock %}
+
+{% block page_header %}Edit Student Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar">
+            <div class="sidebar-content">
+                <div class="text-center mb-4">
+                    <div class="login-logo" style="width: 60px; height: 60px; margin: 0 auto 10px;">
+                        <i class="bi bi-robot" style="font-size: 2rem; color: var(--rd-surface);"></i>
+                    </div>
+                    <h5 class="mb-1">EduBot</h5>
+                    <small>for Management</small>
+                </div>
+                <hr style="border-color: rgba(255,255,255,0.3);">
+                <nav class="nav flex-column">
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
+                        <i class="bi bi-people"></i> Manage Students
+                    </a>
+                    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
+                        <i class="bi bi-person-badge"></i> Manage Faculty
+                    </a>
+                    <a href="{{ url_for('admin.add_student') }}" class="nav-link">
+                        <i class="bi bi-upload"></i> Add Student
+                    </a>
+                    <a href="{{ url_for('admin.add_notification') }}" class="nav-link">
+                        <i class="bi bi-bell"></i> Notifications
+                    </a>
+                    <a href="{{ url_for('admin.register') }}" class="nav-link">
+                        <i class="bi bi-person-plus"></i> Student Registration
+                    </a>
+                    <a href="{{ url_for('admin.fee_sheet') }}" class="nav-link">
+                        <i class="bi bi-cash-stack"></i> Fee Sheet
+                    </a>
+                    <a href="{{ url_for('admin.analytics') }}" class="nav-link">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                    <hr style="border-color: rgba(255,255,255,0.3);">
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Edit Student Details</h2>
+                    <small class="text-muted">Update student information and fee details</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.manage_students') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Students
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Student Information Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-person"></i> Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.edit_student', student_id=student.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="roll_number" class="form-label">Roll Number *</label>
+                                    <input type="text" class="form-control" id="roll_number" name="roll_number" 
+                                           value="{{ student.roll_number }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ student.name }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ student.email }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" 
+                                           value="{{ student.phone }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department *</label>
+                                    <select class="form-select" id="department" name="department" required>
+                                        <option value="Computer Science" {{ 'selected' if student.department == 'Computer Science' }}>Computer Science</option>
+                                        <option value="Electronics" {{ 'selected' if student.department == 'Electronics' }}>Electronics</option>
+                                        <option value="Mechanical" {{ 'selected' if student.department == 'Mechanical' }}>Mechanical</option>
+                                        <option value="Civil" {{ 'selected' if student.department == 'Civil' }}>Civil</option>
+                                        <option value="Electrical" {{ 'selected' if student.department == 'Electrical' }}>Electrical</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="semester" class="form-label">Semester *</label>
+                                    <select class="form-select" id="semester" name="semester" required>
+                                        <option value="Semester 1" {{ 'selected' if student.semester == 'Semester 1' }}">Semester 1</option>
+                                        <option value="Semester 2" {{ 'selected' if student.semester == 'Semester 2' }}">Semester 2</option>
+                                        <option value="Semester 3" {{ 'selected' if student.semester == 'Semester 3' }}">Semester 3</option>
+                                        <option value="Semester 4" {{ 'selected' if student.semester == 'Semester 4' }}">Semester 4</option>
+                                        <option value="Semester 5" {{ 'selected' if student.semester == 'Semester 5' }}">Semester 5</option>
+                                        <option value="Semester 6" {{ 'selected' if student.semester == 'Semester 6' }}">Semester 6</option>
+                                        <option value="Semester 7" {{ 'selected' if student.semester == 'Semester 7' }}">Semester 7</option>
+                                        <option value="Semester 8" {{ 'selected' if student.semester == 'Semester 8' }}">Semester 8</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="active" {{ 'selected' if student.is_active else '' }}>Active</option>
+                                        <option value="inactive" {{ 'selected' if not student.is_active else '' }}>Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <button type="button" id="saveBtn" class="btn btn-primary">
+                                            <i class="bi bi-check-circle"></i> <span id="saveBtnText">Save Changes</span>
+                                        </button>
+                                        <button type="button" id="resetBtn" class="btn btn-outline-secondary ms-2">
+                                            <i class="bi bi-arrow-clockwise"></i> Reset
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('admin.manage_students') }}" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </a>
+                                    </div>
+                                </div>
+                                <div id="saveStatus" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Fee Information -->
+            {% if fee_record %}
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-cash-stack"></i> Fee Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="fee-info-box">
+                                <h6>Total Fee</h6>
+                                <p class="fee-amount">₹{{ "{:,.0f}".format(fee_record.total_amount) if fee_record.total_amount else 0 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="fee-info-box">
+                                <h6>Paid Amount</h6>
+                                <p class="fee-amount paid">₹{{ "{:,.0f}".format(fee_record.paid_amount) if fee_record.paid_amount else 0 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="fee-info-box">
+                                <h6>Balance</h6>
+                                <p class="fee-amount {{ 'paid' if fee_record.balance_amount == 0 else 'pending' }}">₹{{ "{:,.0f}".format(fee_record.balance_amount) if fee_record.balance_amount else 0 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="fee-info-box">
+                                <h6>Status</h6>
+                                <p>
+                                    {% if fee_record.balance_amount == 0 %}
+                                        <span class="badge bg-success">Fully Paid</span>
+                                    {% elif fee_record.paid_amount > 0 %}
+                                        <span class="badge bg-warning">Partially Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Unpaid</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-success" onclick="addPayment()">
+                            <i class="bi bi-cash"></i> Add Payment
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="printFeeReceipt()">
+                            <i class="bi bi-printer"></i> Print Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Additional Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> Additional Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Student ID:</strong> {{ student.id }}</p>
+                            <p><strong>Created At:</strong> {{ student.created_at.strftime('%Y-%m-%d %H:%M') if student.created_at else 'N/A' }}</p>
+                            <p><strong>Last Updated:</strong> {{ student.updated_at.strftime('%Y-%m-%d %H:%M') if student.updated_at else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if student.is_active else 'secondary' }}">
+                                    {{ 'Active' if student.is_active else 'Inactive' }}
+                                </span>
+                            </p>
+                            <p><strong>Current Semester:</strong> {{ student.semester }}</p>
+                            <p><strong>Department:</strong> {{ student.department }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store original form values for reset functionality
+let originalFormData = {};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Store original form values
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    for (let [key, value] of formData.entries()) {
+        originalFormData[key] = value;
+    }
+    
+    // Add input change listeners for unsaved changes indicator
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            checkForChanges();
+        });
+    });
+});
+
+// Check if form has unsaved changes
+function checkForChanges() {
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    let hasChanges = false;
+    
+    for (let [key, value] of formData.entries()) {
+        if (originalFormData[key] !== value) {
+            hasChanges = true;
+            break;
+        }
+    }
+    
+    const saveBtn = document.getElementById('saveBtn');
+    if (hasChanges) {
+        saveBtn.classList.add('btn-warning');
+        saveBtn.classList.remove('btn-primary');
+        document.getElementById('saveBtnText').textContent = 'Save Changes *';
+    } else {
+        saveBtn.classList.remove('btn-warning');
+        saveBtn.classList.add('btn-primary');
+        document.getElementById('saveBtnText').textContent = 'Save Changes';
+    }
+}
+
+// Save button click handler
+document.getElementById('saveBtn').addEventListener('click', function() {
+    saveStudentData();
+});
+
+// Reset button click handler
+document.getElementById('resetBtn').addEventListener('click', function() {
+    resetForm();
+});
+
+// Save student data via AJAX
+function saveStudentData() {
+    const form = document.querySelector('form');
+    const saveBtn = document.getElementById('saveBtn');
+    const saveBtnText = document.getElementById('saveBtnText');
+    const saveStatus = document.getElementById('saveStatus');
+    
+    // Show saving state
+    saveBtn.disabled = true;
+    saveBtnText.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+    saveStatus.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Saving changes...</div>';
+    
+    // Create form data
+    const formData = new FormData(form);
+    
+    // Send AJAX request
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // Handle HTML response (error page, redirect, etc.)
+            return response.text().then(html => {
+                throw new Error('Server returned HTML instead of JSON. Please try again.');
+            });
+        }
+    })
+    .then(data => {
+        if (data.success) {
+            // Update original form data
+            const newFormData = new FormData(form);
+            originalFormData = {};
+            for (let [key, value] of newFormData.entries()) {
+                originalFormData[key] = value;
+            }
+            
+            // Show success message
+            saveBtnText.innerHTML = '<i class="bi bi-check-circle"></i> Saved!';
+            saveStatus.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle"></i> ${data.message}</div>`;
+            
+            // Reset button state after delay
+            setTimeout(() => {
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('btn-warning');
+                saveBtn.classList.add('btn-primary');
+                saveBtnText.innerHTML = '<i class="bi bi-check-circle"></i> Save Changes';
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => {
+                    saveStatus.innerHTML = '';
+                }, 3000);
+            }, 1000);
+            
+            // Update last updated timestamp on page
+            updateLastUpdatedTime();
+        } else {
+            throw new Error(data.message || 'Save failed');
+        }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        saveStatus.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Error saving changes: ${error.message}</div>`;
+        
+        // Reset button state
+        saveBtn.disabled = false;
+        saveBtnText.innerHTML = '<i class="bi bi-check-circle"></i> Save Changes';
+    });
+}
+
+// Reset form to original values
+function resetForm() {
+    const form = document.querySelector('form');
+    
+    // Reset all form fields to original values
+    Object.keys(originalFormData).forEach(key => {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input) {
+            if (input.type === 'radio' || input.type === 'checkbox') {
+                input.checked = originalFormData[key] === input.value;
+            } else {
+                input.value = originalFormData[key];
+            }
+        }
+    });
+    
+    // Clear save status
+    document.getElementById('saveStatus').innerHTML = '';
+    
+    // Reset button appearance
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.classList.remove('btn-warning');
+    saveBtn.classList.add('btn-primary');
+    document.getElementById('saveBtnText').textContent = 'Save Changes';
+}
+
+// Update last updated time display
+function updateLastUpdatedTime() {
+    const updatedElements = document.querySelectorAll('[data-updated-time]');
+    updatedElements.forEach(element => {
+        const now = new Date();
+        element.textContent = now.toLocaleString();
+    });
+    
+    // Also update the static display if it exists
+    const lastUpdatedElement = document.querySelector('p:contains("Last Updated:")');
+    if (lastUpdatedElement) {
+        const now = new Date();
+        lastUpdatedElement.innerHTML = `<strong>Last Updated:</strong> ${now.toLocaleString()}`;
+    }
+}
+
+// Auto-save functionality (optional - saves after 30 seconds of inactivity)
+let autoSaveTimer;
+function setupAutoSave() {
+    const inputs = document.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                const saveStatus = document.getElementById('saveStatus');
+                saveStatus.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Auto-saving...</div>';
+                saveStudentData();
+            }, 30000); // 30 seconds
+        });
+    });
+}
+
+// Optional: Enable auto-save by uncommenting the next line
+// setupAutoSave();
+
+function addPayment() {
+    // This would open a payment modal
+    alert('Add payment functionality coming soon!');
+}
+
+function printFeeReceipt() {
+    // This would print the fee receipt
+    alert('Print receipt functionality coming soon!');
+}
+</script>
+
+<style>
+.sidebar {
+    background: linear-gradient(180deg, var(--rd-secondary) 0%, var(--rd-secondary-dark) 100%) !important;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.sidebar-content {
+    padding: 20px;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: 12px 16px;
+    margin: 2px 0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: block;
+}
+
+.nav-link:hover, .nav-link.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+.nav-link i {
+    margin-right: 8px;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: white;
+    border-bottom: 1px solid #eee;
+    padding: 15px 20px;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.card-header h5 {
+    margin: 0;
+    color: #333;
+}
+
+.card-header i {
+    margin-right: 8px;
+    color: var(--rd-primary);
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--rd-primary);
+    box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: var(--rd-primary);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: var(--rd-secondary);
+    border: none;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    border: none;
+}
+
+.fee-info-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.fee-info-box h6 {
+    margin: 0 0 10px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.fee-amount {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.fee-amount.paid {
+    color: #28a745;
+}
+
+.fee-amount.pending {
+    color: #ffc107;
+}
+
+/* Real-time save button styles */
+#saveBtn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+#saveBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#saveBtn.btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    border: none;
+    animation: pulse 2s infinite;
+}
+
+#saveBtn.btn-warning:hover {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 152, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+    }
+}
+
+/* Save status animations */
+#saveStatus .alert {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 0;
+    animation: slideIn 0.3s ease-out;
+    border: none;
+    font-weight: 500;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#saveStatus .alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+}
+
+#saveStatus .alert-success {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+    color: #2e7d32;
+}
+
+#saveStatus .alert-danger {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #c62828;
+}
+
+/* Button hover effects */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Form field focus indicators for unsaved changes */
+.form-control.modified, 
+.form-select.modified {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.25);
+}
+
+/* Loading spinner for save button */
+#saveBtn .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 8px;
+}
+
+/* Success checkmark animation */
+@keyframes checkmark {
+    0% {
+        transform: scale(0) rotate(45deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(45deg);
+    }
+    100% {
+        transform: scale(1) rotate(45deg);
+    }
+}
+
+#saveBtn.success .bi-check-circle {
+    animation: checkmark 0.5s ease-out;
+}
+</style>
+{% endblock %}

@@ -16,6 +16,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from functools import wraps
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import (
@@ -34,7 +35,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if current_user.role != 'admin':
             flash('Access denied. Admin privileges required.', 'error')
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -46,7 +47,7 @@ def register_routes(app):
     @app.route('/')
     def index():
         """Home page"""
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -55,6 +56,7 @@ def register_routes(app):
             username = request.form.get('username')
             password = request.form.get('password')
             
+            # First check Admin table
             admin = Admin.query.filter_by(username=username).first()
             
             if admin and admin.check_password(password):
@@ -71,8 +73,44 @@ def register_routes(app):
                     return redirect(url_for('accounts_dashboard'))
                 else:
                     return redirect(url_for('admin_dashboard'))
+            
+            # If not found in Admin table, check Faculty table
+            faculty = Faculty.query.filter_by(email=username).first()
+            
+            if faculty and faculty.check_password(password):
+                login_user(faculty, remember=True)
+                session['user_role'] = faculty.role
+                session['user_name'] = faculty.name
+                
+                # Redirect based on role
+                if faculty.role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif faculty.role == 'faculty':
+                    return redirect(url_for('faculty_dashboard'))
+                elif faculty.role == 'accounts':
+                    return redirect(url_for('accounts_dashboard'))
+                else:
+                    return redirect(url_for('faculty_dashboard'))
+            
+            # Also check by name if email doesn't work
+            faculty_by_name = Faculty.query.filter_by(name=username).first()
+            if faculty_by_name and faculty_by_name.check_password(password):
+                login_user(faculty_by_name, remember=True)
+                session['user_role'] = faculty_by_name.role
+                session['user_name'] = faculty_by_name.name
+                
+                # Redirect based on role
+                if faculty_by_name.role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif faculty_by_name.role == 'faculty':
+                    return redirect(url_for('faculty_dashboard'))
+                elif faculty_by_name.role == 'accounts':
+                    return redirect(url_for('accounts_dashboard'))
+                else:
+                    return redirect(url_for('faculty_dashboard'))
+            
             else:
-                flash('Invalid username or password', 'error')
+                flash('Invalid username/email or password', 'error')
         
         return render_template('login.html')
     
@@ -83,7 +121,7 @@ def register_routes(app):
         logout_user()
         session.clear()
         flash('You have been logged out', 'info')
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     @app.route('/faculty/dashboard')
     @login_required
@@ -776,8 +814,11 @@ def register_routes(app):
             # Log incoming request
             current_app.logger.info("Telegram webhook received request")
             
-            # Hardcoded token for now (temporary solution)
-            bot_token = "7671092916:AAG4GMyeTli6V9rEF6GH9H_HliV4QRq8Guw"
+            # Token comes from config / environment (preferred), or from the setup UI session.
+            bot_token = (current_app.config.get('TELEGRAM_BOT_TOKEN') or session.get('telegram_bot_token') or '').strip()
+            if not bot_token:
+                current_app.logger.error("TELEGRAM_BOT_TOKEN is not configured for Telegram webhook")
+                return jsonify({'error': 'TELEGRAM_BOT_TOKEN is not configured'}), 500
             
             # Initialize bot service
             bot_service = TelegramBotService()
@@ -802,7 +843,8 @@ def register_routes(app):
         """Telegram bot setup page"""
         if request.method == 'POST':
             bot_token = request.form.get('bot_token')
-            webhook_url = request.form.get('webhook_url', f"https://7c5760bf05a5.ngrok-free.app/webhook/telegram")
+            default_webhook = request.url_root.rstrip('/') + url_for('telegram.telegram_webhook')
+            webhook_url = request.form.get('webhook_url') or default_webhook
             
             if not bot_token:
                 flash('Bot token is required', 'error')

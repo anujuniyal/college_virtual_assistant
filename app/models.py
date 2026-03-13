@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app.extensions import db
+from app.config import Config
 
 
 class Admin(UserMixin, db.Model):
@@ -16,6 +17,7 @@ class Admin(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'admin', 'faculty', 'accounts'
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def set_password(self, password):
@@ -41,7 +43,8 @@ class Student(db.Model, UserMixin):
     email = db.Column(db.String(120))
     department = db.Column(db.String(50))
     semester = db.Column(db.Integer)
-    password_hash = db.Column(db.String(255))  # Add password field
+    telegram_user_id = db.Column(db.String(32), nullable=True, index=True)  # Telegram authentication
+    telegram_verified = db.Column(db.Boolean, default=False, nullable=False)  # Verification status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -49,16 +52,92 @@ class Student(db.Model, UserMixin):
     fee_records = db.relationship('FeeRecord', backref='student', lazy=True, cascade='all, delete-orphan')
     complaints = db.relationship('Complaint', backref='student', lazy=True)
     query_logs = db.relationship('QueryLog', backref='student', lazy=True)
+    telegram_mappings = db.relationship('TelegramUserMapping', backref='student_record', lazy=True)
     
-    def set_password(self, password):
-        """Set password hash"""
-        self.password_hash = generate_password_hash(password)
+    def link_telegram_account(self, telegram_user_id):
+        """Link Telegram account to student with proper transaction handling"""
+        from app.extensions import db
+        from sqlalchemy.exc import IntegrityError
+        
+        try:
+            # Start transaction
+            # Update student record first
+            self.telegram_user_id = telegram_user_id
+            self.telegram_verified = True
+            
+            # Also update the TelegramUserMapping table
+            existing_mapping = TelegramUserMapping.query.filter_by(
+                phone_number=self.phone,
+                telegram_user_id=telegram_user_id
+            ).first()
+            
+            if not existing_mapping:
+                mapping = TelegramUserMapping(
+                    telegram_user_id=telegram_user_id,
+                    student_id=self.id,
+                    phone_number=self.phone,
+                    verified=True
+                )
+                db.session.add(mapping)
+            else:
+                # Update existing mapping
+                existing_mapping.student_id = self.id
+                existing_mapping.verified = True
+            
+            # Commit transaction
+            db.session.commit()
+            return True, "Telegram account linked successfully"
+            
+        except IntegrityError as e:
+            db.session.rollback()
+            return False, f"Database integrity error: {str(e)}"
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error linking Telegram account: {str(e)}"
     
-    def check_password(self, password):
-        """Check password"""
-        if not self.password_hash:
-            return False
-        return check_password_hash(self.password_hash, password)
+    def unlink_telegram_account(self):
+        """Unlink Telegram account from student with proper transaction handling"""
+        from app.extensions import db
+        from sqlalchemy.exc import IntegrityError
+        
+        try:
+            # Start transaction
+            self.telegram_user_id = None
+            self.telegram_verified = False
+            
+            # Remove from TelegramUserMapping table
+            TelegramUserMapping.query.filter_by(student_id=self.id).delete()
+            
+            # Commit transaction
+            db.session.commit()
+            return True, "Telegram account unlinked successfully"
+            
+        except IntegrityError as e:
+            db.session.rollback()
+            return False, f"Database integrity error: {str(e)}"
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Error unlinking Telegram account: {str(e)}"
+    
+    def is_telegram_verified(self):
+        """Check if student has verified Telegram account"""
+        return self.telegram_verified and self.telegram_user_id is not None
+    
+    def get_telegram_info(self):
+        """Get Telegram verification info"""
+        if self.is_telegram_verified():
+            return {
+                'verified': True,
+                'telegram_user_id': self.telegram_user_id,
+                'phone': self.phone
+            }
+        else:
+            return {
+                'verified': False,
+                'telegram_user_id': None,
+                'phone': self.phone,
+                'message': 'Student needs to verify via Telegram bot'
+            }
     
     @property
     def role(self):
@@ -78,7 +157,10 @@ class Notification(db.Model):
     content = db.Column(db.Text, nullable=False)
     file_url = db.Column(db.String(500))
     link_url = db.Column(db.String(500))
+    notification_type = db.Column(db.String(50), default='general', nullable=False)
+    priority = db.Column(db.String(20), default='medium', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('admins.id'))
     
@@ -101,12 +183,18 @@ class Result(db.Model):
     marks = db.Column(db.Float, nullable=False)
     grade = db.Column(db.String(5))
     declared_at = db.Column(db.DateTime, default=datetime.utcnow)
-    semester_end_date = db.Column(db.DateTime, nullable=False)
+    # Auto-delete/reset window: default one week after declaration unless overridden.
+    semester_end_date = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.utcnow() + timedelta(days=Config.RESULT_VISIBILITY_DAYS),
+    )
+    # "Issued by" info (faculty/admin who uploaded the result record)
+    created_by = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=True)
     
     def is_visible(self):
         """Check if result is still visible (within visibility period)"""
-        days_since_declaration = (datetime.utcnow() - self.declared_at).days
-        return days_since_declaration <= Config.RESULT_VISIBILITY_DAYS
+        return (datetime.utcnow() - self.declared_at) <= timedelta(days=Config.RESULT_VISIBILITY_DAYS)
     
     def should_be_deleted(self):
         """Check if result should be deleted (after semester end)"""
@@ -147,6 +235,7 @@ class Faculty(db.Model, UserMixin):
     department = db.Column(db.String(50), nullable=False)
     consultation_time = db.Column(db.String(100))
     phone = db.Column(db.String(15))
+    role = db.Column(db.String(20), nullable=False, default='faculty')  # admin, accounts, faculty
     password_hash = db.Column(db.String(255))  # Add password field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -161,9 +250,9 @@ class Faculty(db.Model, UserMixin):
         return check_password_hash(self.password_hash, password)
     
     @property
-    def role(self):
-        """Return user role"""
-        return 'faculty'
+    def user_role(self):
+        """Return user role from role field"""
+        return self.role
     
     @property
     def username(self):
@@ -171,7 +260,7 @@ class Faculty(db.Model, UserMixin):
         return self.email
     
     def __repr__(self):
-        return f'<Faculty {self.name}>'
+        return f'<Faculty {self.name} ({self.role})>'
 
 
 class Complaint(db.Model):
@@ -309,3 +398,74 @@ class DailyViewCount(db.Model):
     
     def __repr__(self):
         return f'<DailyViewCount {self.student_id} {self.service_type} {self.view_date}>'
+
+
+class StudentRegistration(db.Model):
+    """Student Registration Records - for approval process"""
+    __tablename__ = 'student_registrations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    roll_number = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(15), nullable=False, index=True)
+    email = db.Column(db.String(120))
+    department = db.Column(db.String(50))
+    semester = db.Column(db.Integer)
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'approved', 'rejected'
+    approved_at = db.Column(db.DateTime)
+    approved_by = db.Column(db.Integer, db.ForeignKey('admins.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def approve(self, admin_id):
+        """Approve registration and transfer to student table"""
+        try:
+            # Create student record
+            student = Student(
+                roll_number=self.roll_number,
+                name=self.name,
+                phone=self.phone,
+                email=self.email,
+                department=self.department,
+                semester=self.semester
+            )
+            
+            # Update registration status
+            self.status = 'approved'
+            self.approved_at = datetime.utcnow()
+            self.approved_by = admin_id
+            
+            db.session.add(student)
+            db.session.commit()
+            
+            return True, student
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)
+    
+    def reject(self, admin_id):
+        """Reject registration"""
+        self.status = 'rejected'
+        self.approved_at = datetime.utcnow()
+        self.approved_by = admin_id
+        db.session.commit()
+    
+    def __repr__(self):
+        return f'<StudentRegistration {self.roll_number} - {self.status}>'
+
+
+class TelegramUserMapping(db.Model):
+    """Telegram user ID -> phone number (and optionally verified student)."""
+    __tablename__ = 'telegram_user_mappings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    telegram_user_id = db.Column(db.String(32), unique=True, nullable=False, index=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True, index=True)
+    phone_number = db.Column(db.String(15), nullable=False, index=True)
+    verified = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    student = db.relationship('Student', lazy=True)
+
+    def __repr__(self):
+        return f'<TelegramUserMapping {self.telegram_user_id} -> {self.phone_number}>'

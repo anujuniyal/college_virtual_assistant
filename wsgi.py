@@ -2,7 +2,11 @@
 WSGI Entry Point for Production
 """
 import os
+from dotenv import load_dotenv
 from app import create_app
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Get configuration from environment
 config_name = os.environ.get('FLASK_ENV', 'production')

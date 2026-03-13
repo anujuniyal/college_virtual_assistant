@@ -1,0 +1,399 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Faculty Dashboard - EduBot{% endblock %}
+
+{% block sidebar_nav %}
+<!-- Faculty Navigation (Limited Access) -->
+<div class="nav-item">
+    <a href="{{ url_for('faculty.faculty_dashboard') }}" class="nav-link {% if request.endpoint == 'faculty.faculty_dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('faculty.faculty_manage_students') }}" class="nav-link {% if 'student' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Students</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
+        <i class="fas fa-bell"></i>
+        <span>Notifications</span>
+        <i class="fas fa-chevron-down ms-auto"></i>
+    </a>
+    <div class="submenu">
+        <a href="{{ url_for('notification.send_notification') }}" class="nav-link">
+            <i class="fas fa-plus"></i>
+            <span class="submenu-text">Send Notification</span>
+        </a>
+        <a href="{{ url_for('notification.manage_notifications') }}" class="nav-link">
+            <i class="fas fa-list"></i>
+            <span class="submenu-text">Manage All</span>
+        </a>
+    </div>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('faculty.faculty_profile') }}" class="nav-link {% if 'profile' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-user"></i>
+        <span>My Profile</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('faculty.manage_results') }}" class="nav-link {% if 'results' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-chart-bar"></i>
+        <span>Results</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block page_title %}Faculty Dashboard{% endblock %}
+
+{% block content %}
+<!-- Set default values for template variables -->
+{% set faculty_info = faculty_info or {
+    'name': current_user.username if current_user.is_authenticated else 'Faculty',
+    'email': current_user.email if current_user.is_authenticated else 'faculty@example.com',
+    'department': 'Computer Science',
+    'phone': 'Not specified',
+    'consultation_time': 'Not specified'
+} %}
+
+{% set total_students = total_students or 0 %}
+{% set total_notifications = total_notifications or 0 %}
+{% set total_complaints = total_complaints or 0 %}
+{% set pending_complaints = pending_complaints or 0 %}
+{% set total_results = total_results or 0 %}
+{% set recent_notifications = recent_notifications or [] %}
+
+<!-- Summary Cards (Faculty View) -->
+<div class="summary-cards">
+    <div class="summary-card students">
+        <div class="card-icon students">
+            <i class="fas fa-user-graduate"></i>
+        </div>
+        <div class="card-title">Total Students</div>
+        <div class="card-count">{{ total_students }}</div>
+    </div>
+    
+    <div class="summary-card notifications">
+        <div class="card-icon notifications">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div class="card-title">Notifications</div>
+        <div class="card-count">{{ total_notifications }}</div>
+    </div>
+    
+    <div class="summary-card faculty">
+        <div class="card-icon faculty">
+            <i class="fas fa-chalkboard-teacher"></i>
+        </div>
+        <div class="card-title">My Classes</div>
+        <div class="card-count">{{ faculty_info.department or 'N/A' }}</div>
+    </div>
+    
+    <div class="summary-card issues">
+        <div class="card-icon issues">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <div class="card-title">Pending Tasks</div>
+        <div class="card-count">{{ pending_complaints or 0 }}</div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Faculty Information -->
+    <div class="col-lg-4">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h3 class="section-title">Faculty Information</h3>
+            </div>
+            
+            <div class="faculty-info">
+                <div class="text-center mb-3">
+                    <div class="user-avatar mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem; display: flex; align-items: center; justify-content: center;">
+                        {{ faculty_info.name[0].upper() if faculty_info.name else 'F' }}
+                    </div>
+                    <h5>{{ faculty_info.name or current_user.username }}</h5>
+                    <p class="text-muted">{{ faculty_info.department or 'Not specified' }}</p>
+                </div>
+                
+                <div class="faculty-details">
+                    <div class="mb-3">
+                        <label class="text-muted small">Email</label>
+                        <div><i class="fas fa-envelope me-2"></i>{{ faculty_info.email or current_user.email }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Phone</label>
+                        <div><i class="fas fa-phone me-2"></i>{{ faculty_info.phone or 'Not specified' }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Consultation Time</label>
+                        <div><i class="fas fa-clock me-2"></i>{{ faculty_info.consultation_time or 'Not specified' }}</div>
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('admin.faculty_profile') }}" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="col-lg-8">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h3 class="section-title">Recent Activity</h3>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshActivity()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            
+            <ul class="activity-list">
+                {% for activity in recent_activities %}
+                <li class="activity-item">
+                    <div class="activity-icon {{ activity.color }}">
+                        <i class="fas fa-{{ activity.icon }}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">{{ activity.text }}</div>
+                        <div class="activity-time">{{ activity.time }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+                
+                <li class="activity-item">
+                    <div class="activity-icon success">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Faculty dashboard accessed</div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                </li>
+                
+                {% for notification in recent_notifications %}
+                <li class="activity-item">
+                    <div class="activity-icon info">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">{{ notification.title }}</div>
+                        <div class="activity-time">{{ notification.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+                
+                {% if not recent_activities and not recent_notifications %}
+                <li class="activity-item">
+                    <div class="activity-icon muted">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">No recent activity</div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title">Quick Actions</h3>
+    </div>
+    
+    <div class="quick-actions">
+        <a href="{{ url_for('faculty.send_notification') }}" class="quick-action-btn mb-2">
+            <i class="fas fa-bell"></i>
+            Send Notification
+        </a>
+        <a href="{{ url_for('faculty.faculty_manage_students') }}" class="quick-action-btn mb-2">
+            <i class="fas fa-user-graduate"></i>
+            View Students
+        </a>
+        <a href="{{ url_for('faculty.manage_results') }}" class="quick-action-btn mb-2">
+            <i class="fas fa-chart-bar"></i>
+            Manage Results
+        </a>
+        <a href="{{ url_for('faculty.faculty_profile') }}" class="quick-action-btn mb-2">
+            <i class="fas fa-user"></i>
+            Update Profile
+        </a>
+        <a href="#" class="quick-action-btn" onclick="showScheduleModal()">
+            <i class="fas fa-calendar"></i>
+            My Schedule
+        </a>
+    </div>
+</div>
+
+<!-- Department Statistics -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title">Department Overview</h3>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="text-center p-3 border rounded">
+                <h4 class="text-primary">{{ total_students }}</h4>
+                <p class="text-muted mb-0">Students in Department</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center p-3 border rounded">
+                <h4 class="text-success">{{ total_notifications }}</h4>
+                <p class="text-muted mb-0">Active Notifications</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center p-3 border rounded">
+                <h4 class="text-warning">{{ total_results or 0 }}</h4>
+                <p class="text-muted mb-0">Results to Review</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Modal (Hidden by default) -->
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">My Teaching Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center text-muted">
+                    <i class="fas fa-calendar-alt fa-3x mb-3"></i>
+                    <p>Schedule feature coming soon!</p>
+                    <small>You'll be able to manage your teaching schedule and consultation hours here.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<script>
+// Faculty-specific JavaScript
+function refreshActivity() {
+    const activityList = document.querySelector('.activity-list');
+    const originalContent = activityList.innerHTML;
+    
+    activityList.innerHTML = '<div class="text-center p-3"><div class="loading"></div> Loading...</div>';
+    
+    fetch('/admin/dashboard-data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateActivityList(data.recent_activities, data.recent_notifications);
+                updateDashboardCards(data);
+            } else {
+                activityList.innerHTML = originalContent;
+                alert('Error refreshing data');
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing activity:', error);
+            activityList.innerHTML = originalContent;
+            alert('Error refreshing data');
+        });
+}
+
+function updateActivityList(activities, notifications) {
+    const activityList = document.querySelector('.activity-list');
+    let html = '';
+    
+    // Add real activities
+    activities.forEach(activity => {
+        html += `
+            <li class="activity-item">
+                <div class="activity-icon ${activity.color}">
+                    <i class="fas fa-${activity.icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">${activity.text}</div>
+                    <div class="activity-time">${activity.time}</div>
+                </div>
+            </li>
+        `;
+    });
+    
+    // Add faculty dashboard access
+    html += `
+        <li class="activity-item">
+            <div class="activity-icon success">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-text">Faculty dashboard accessed</div>
+                <div class="activity-time">Just now</div>
+            </div>
+        </li>
+    `;
+    
+    // Add notifications
+    notifications.forEach(notif => {
+        html += `
+            <li class="activity-item">
+                <div class="activity-icon info">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">${notif.title}</div>
+                    <div class="activity-time">${notif.created_at}</div>
+                </div>
+            </li>
+        `;
+    });
+    
+    if (!html) {
+        html = `
+            <li class="activity-item">
+                <div class="activity-icon muted">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">No recent activity</div>
+                    <div class="activity-time">Just now</div>
+                </div>
+            </li>
+        `;
+    }
+    
+    activityList.innerHTML = html;
+}
+
+function showScheduleModal() {
+    const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+    modal.show();
+}
+
+// Update faculty-specific dashboard data
+function refreshFacultyDashboard() {
+    // Add faculty-specific refresh logic here
+    console.log('Refreshing faculty dashboard...');
+}
+
+// Set dashboard URL for auto-refresh (faculty-specific endpoint if available)
+document.body.setAttribute('data-dashboard-url', '/faculty/dashboard-data');
+</script>

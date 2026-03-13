@@ -19,7 +19,6 @@ class OTPService:
         Generate and send OTP
         Returns: (otp_code, success)
         """
-        # Generate 6-digit OTP
         otp_code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
         
         # Calculate expiry

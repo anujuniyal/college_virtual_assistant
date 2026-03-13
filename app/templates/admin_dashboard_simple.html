@@ -1,0 +1,466 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar">
+            <div class="sidebar-content">
+                <div class="text-center mb-4">
+                    <div class="avatar">
+                        <i class="bi bi-person-circle" style="font-size: 3rem; color: var(--rd-primary);"></i>
+                    </div>
+                    <h6 class="text-white">{{ current_user.username }}</h6>
+                    <small class="text-white-50">Administrator</small>
+                </div>
+                
+                <nav class="nav flex-column">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="nav-link active">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.add_student') }}" class="nav-link">
+                        <i class="bi bi-person-plus"></i> Add Student
+                    </a>
+                    <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
+                        <i class="bi bi-people"></i> Manage Students
+                    </a>
+                    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
+                        <i class="bi bi-person-badge"></i> Manage Faculty
+                    </a>
+                    <a href="{{ url_for('admin.add_notification') }}" class="nav-link">
+                        <i class="bi bi-bell"></i> Send Notification
+                    </a>
+                    <a href="/notifications">
+                        <i class="bi bi-envelope"></i> View Notices
+                    </a>
+                    <a href="{{ url_for('admin.analytics') }}" class="nav-link">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Admin Dashboard</h2>
+                    <small class="text-muted">Welcome back, {{ current_user.username }}!</small>
+                </div>
+                <div>
+                    <span class="badge bg-success">Admin Account</span>
+                </div>
+            </div>
+            
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.manage_students') }}" class="stat-card-link">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>{{ total_students }}</h3>
+                                    <p>Total Students</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.manage_faculty') }}" class="stat-card-link">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="bi bi-person-badge"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>{{ total_faculty }}</h3>
+                                    <p>Total Faculty</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.add_notification') }}" class="stat-card-link">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="bi bi-bell"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>{{ total_notifications }}</h3>
+                                    <p>Notifications</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card-wrapper">
+                        <a href="#" class="stat-card-link">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>{{ pending_complaints }}</h3>
+                                    <p>Pending Issues</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+                        
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-lightning"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('admin.add_student') }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-person-plus"></i> Add Student
+                                </a>
+                                <a href="{{ url_for('admin.manage_students') }}" class="btn btn-outline-info">
+                                    <i class="bi bi-people"></i> Manage Students
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-robot"></i> Bot Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> <strong>Status:</strong> Online
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> <strong>Active Users:</strong> Multiple
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> <strong>Response Time:</strong> < 2s
+                            </div>
+                            <div class="text-center">
+                                <small class="text-muted">Bot: @edubot_assistant_bot</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Use original WhatsApp theme */
+.sidebar {
+    background: linear-gradient(180deg, var(--rd-secondary) 0%, var(--rd-secondary-dark) 100%) !important;
+    color: var(--rd-surface) !important;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
+.sidebar a {
+    color: var(--rd-surface) !important;
+    text-decoration: none;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 8px;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: var(--rd-surface) !important;
+    transform: translateX(5px);
+}
+
+.sidebar a.active {
+    background: var(--rd-primary) !important;
+    color: var(--rd-surface) !important;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+.sidebar h5, .sidebar h4 {
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+}
+
+.stat-card-wrapper {
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: var(--rd-surface);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s;
+    border-left: 4px solid var(--rd-primary);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--rd-primary), var(--rd-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.stat-icon i {
+    color: white;
+    font-size: 20px;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.stat-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.card {
+    background: var(--rd-surface);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-secondary) 100%);
+    color: white;
+    border-bottom: none;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.btn-primary {
+    background: var(--rd-primary);
+    border-color: var(--rd-primary);
+}
+
+.btn-primary:hover {
+    background: var(--rd-primary-dark);
+    border-color: var(--rd-primary-dark);
+}
+
+.btn-outline-primary {
+    color: var(--rd-primary);
+    border-color: var(--rd-primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--rd-primary);
+    border-color: var(--rd-primary);
+    color: white;
+}
+
+.btn-outline-info {
+    color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.btn-outline-info:hover {
+    background: #0dcaf0;
+    border-color: #0dcaf0;
+    color: white;
+}
+
+/* Animation for stat cards */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stat-card {
+    animation: slideIn 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        min-height: auto;
+        padding: 1rem;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Admin dashboard loaded');
+    
+    // Auto-refresh dashboard data every 30 seconds
+    setInterval(function() {
+        refreshDashboardData();
+    }, 30000);
+    
+    // Handle notification clicks
+    const notificationItems = document.querySelectorAll('.notification-item');
+    notificationItems.forEach(item => {
+        item.addEventListener('click', function() {
+            refreshDashboardData();
+        });
+    });
+});
+
+// Refresh dashboard data via AJAX
+async function refreshDashboardData() {
+    try {
+        const response = await fetch('/admin/admin-dashboard-data', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to refresh dashboard data');
+        }
+        
+        const data = await response.json();
+        
+        // Update statistics cards with animation
+        updateStatCard('total-students', data.total_students);
+        updateStatCard('total-faculty', data.total_faculty);
+        updateStatCard('total-notifications', data.total_notifications);
+        updateStatCard('pending-complaints', data.pending_complaints);
+        
+        // Update recent notifications
+        if (data.recent_notifications && data.recent_notifications.length > 0) {
+            updateRecentNotifications(data.recent_notifications);
+        }
+        
+        console.log('Dashboard data refreshed successfully');
+        
+    } catch (error) {
+        console.error('Error refreshing dashboard data:', error);
+    }
+}
+
+// Update stat card with animation
+function updateStatCard(type, newValue) {
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach(card => {
+        const link = card.closest('a');
+        if (link && link.href.includes(type)) {
+            const valueElement = card.querySelector('h3');
+            if (valueElement) {
+                // Add animation class
+                card.classList.add('stat-updating');
+                
+                // Update value
+                valueElement.textContent = newValue;
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    card.classList.remove('stat-updating');
+                }, 600);
+            }
+        }
+    });
+}
+
+// Update recent notifications
+function updateRecentNotifications(notifications) {
+    const container = document.querySelector('.notification-items-container') || 
+                     document.querySelector('.card-body');
+    
+    if (!container) return;
+    
+    // Add animation class
+    container.classList.add('notifications-updating');
+    
+    // Update notifications (implementation depends on your template structure)
+    console.log('Updating notifications:', notifications);
+    
+    // Remove animation class after update
+    setTimeout(() => {
+        container.classList.remove('notifications-updating');
+    }, 600);
+}
+
+// Show refresh indicator
+function showRefreshIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'refresh-indicator';
+    indicator.className = 'position-fixed top-0 start-50 translate-middle-x p-3';
+    indicator.style.zIndex = '9999';
+    indicator.style.marginTop = '70px';
+    indicator.innerHTML = `
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-arrow-clockwise"></i> Refreshing dashboard...
+        </div>
+    `;
+    
+    document.body.appendChild(indicator);
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+        indicator.remove();
+    }, 2000);
+}
+</script>
+
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

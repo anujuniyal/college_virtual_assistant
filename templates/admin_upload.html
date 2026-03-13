@@ -1,0 +1,45 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Upload Data - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4 mb-0">Upload Data</h2>
+                <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Upload Status:</strong> Upload functionality is currently being updated. Please try again later.
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-upload fa-3x text-muted mb-3"></i>
+                        <h4>Upload Module</h4>
+                        <p class="text-muted">File upload functionality is temporarily unavailable.</p>
+                        <p class="text-muted">Please check back later for updates.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

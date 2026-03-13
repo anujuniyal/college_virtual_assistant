@@ -1,0 +1,240 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Edit Notification - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="h4 mb-0">Edit Notification</h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-info">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.view_notifications') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i> Notifications
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> When you update this notification, the "Last Updated" timestamp will be refreshed to show the recent modification time.
+                    </div>
+
+                    <form method="POST" id="editNotificationForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-heading input-icon"></i>
+                                        <input type="text" class="form-control" id="title" name="title" 
+                                               value="{{ notification.title }}" placeholder="Enter notification title" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notification_type" class="form-label">Type *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-tag input-icon"></i>
+                                        <select class="form-control" id="notification_type" name="notification_type" required>
+                                            <option value="general" {{ 'selected' if notification.notification_type == 'general' }}>General</option>
+                                            <option value="exam" {{ 'selected' if notification.notification_type == 'exam' }}>Exam</option>
+                                            <option value="holiday" {{ 'selected' if notification.notification_type == 'holiday' }}>Holiday</option>
+                                            <option value="event" {{ 'selected' if notification.notification_type == 'event' }}>Event</option>
+                                            <option value="urgent" {{ 'selected' if notification.notification_type == 'urgent' }}>Urgent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-exclamation-triangle input-icon"></i>
+                                        <select class="form-control" id="priority" name="priority" required>
+                                            <option value="low" {{ 'selected' if notification.priority == 'low' }}>Low</option>
+                                            <option value="medium" {{ 'selected' if notification.priority == 'medium' }}>Medium</option>
+                                            <option value="high" {{ 'selected' if notification.priority == 'high' }}>High</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="expires_at" class="form-label">Expires At *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-clock input-icon"></i>
+                                        <input type="datetime-local" class="form-control" id="expires_at" name="expires_at" 
+                                               value="{{ notification.expires_at.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="content" class="form-label">Content *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-align-left input-icon"></i>
+                                        <textarea class="form-control" id="content" name="content" rows="6" 
+                                                  placeholder="Enter notification content" required>{{ notification.content }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="file_url" class="form-label">File URL (Optional)</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-file input-icon"></i>
+                                        <input type="url" class="form-control" id="file_url" name="file_url" 
+                                               value="{{ notification.file_url or '' }}" placeholder="https://example.com/file.pdf">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="link_url" class="form-label">Link URL (Optional)</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-link input-icon"></i>
+                                        <input type="url" class="form-control" id="link_url" name="link_url" 
+                                               value="{{ notification.link_url or '' }}" placeholder="https://example.com">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Update Notification
+                                    </button>
+                                    <a href="{{ url_for('admin.view_notifications') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 10;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group .form-control,
+.input-group .form-select,
+.input-group textarea {
+    padding-left: 45px;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    border-radius: 0.375rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select, textarea {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus, textarea:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+}
+</style>
+
+<script>
+document.getElementById('editNotificationForm').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const expiresAt = document.getElementById('expires_at').value;
+    
+    if (!title) {
+        e.preventDefault();
+        alert('Title is required!');
+        return false;
+    }
+    
+    if (!content) {
+        e.preventDefault();
+        alert('Content is required!');
+        return false;
+    }
+    
+    if (!expiresAt) {
+        e.preventDefault();
+        alert('Expiry date is required!');
+        return false;
+    }
+    
+    // Check if expiry date is in the future
+    const expiryDate = new Date(expiresAt);
+    const now = new Date();
+    if (expiryDate <= now) {
+        e.preventDefault();
+        alert('Expiry date must be in the future!');
+        return false;
+    }
+    
+    // Set minimum expiry to 1 hour from now
+    const minExpiry = new Date(now.getTime() + 60 * 60 * 1000);
+    if (expiryDate < minExpiry) {
+        e.preventDefault();
+        alert('Expiry date must be at least 1 hour from now!');
+        return false;
+    }
+});
+</script>
+{% endblock %}

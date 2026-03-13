@@ -1,0 +1,286 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
+from app.extensions import db
+from app.models import Student, Faculty, Notification, Complaint, Result, FeeRecord
+from app.services.safe_execute import safe_execute
+from datetime import datetime
+from functools import wraps
+
+accounts_bp = Blueprint('accounts', __name__, url_prefix='/accounts')
+
+def accounts_required(write_access=False):
+    """Decorator to ensure user has accounts privileges with optional write access"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            
+            # Handle both Admin and Faculty models
+            if hasattr(current_user, 'role'):
+                user_role = current_user.role
+            elif hasattr(current_user, 'user_role'):
+                user_role = current_user.user_role
+            else:
+                user_role = 'student'
+            
+            # Check accounts access - allow admin, faculty, and accounts roles
+            if user_role not in ['admin', 'faculty', 'accounts']:
+                flash('Access denied. Accounts privileges required.', 'error')
+                return redirect(url_for('auth.login'))
+            
+            # Check write access for fee operations
+            if write_access and user_role not in ['accounts']:
+                flash('Write access required for fee operations. Contact admin for accounts role.', 'error')
+                return redirect(url_for('auth.login'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@accounts_bp.route('/dashboard')
+@login_required
+@accounts_required()
+def accounts_dashboard():
+    """Accounts dashboard with financial access"""
+    return redirect(url_for('accounts.students_fees_dashboard'))
+
+@accounts_bp.route('/students-fees')
+@login_required
+@accounts_required()
+def students_fees_dashboard():
+    """Students with fee status and CRUD operations"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        search = request.args.get('search', '').strip()
+        fee_status = request.args.get('fee_status', '').strip()
+        semester = request.args.get('semester', '').strip()
+        
+        # Build query
+        query = Student.query
+        
+        # Apply search filter
+        if search:
+            query = query.filter(
+                db.or_(
+                    Student.name.ilike(f'%{search}%'),
+                    Student.roll_number.ilike(f'%{search}%'),
+                    Student.email.ilike(f'%{search}%'),
+                    Student.department.ilike(f'%{search}%')
+                )
+            )
+        
+        # Apply filters
+        if semester:
+            query = query.filter(Student.semester == int(semester))
+        
+        # Get students with pagination
+        students_pagination = safe_execute(
+            lambda: query.order_by(Student.name)
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
+        
+        students = students_pagination.items if students_pagination else []
+        
+        # Calculate fee status for each student
+        students_with_fees = []
+        fully_paid_count = 0
+        partial_payment_count = 0
+        unpaid_count = 0
+        
+        for student in students:
+            # Get latest fee record
+            latest_fee = safe_execute(
+                lambda: FeeRecord.query.filter_by(student_id=student.id)
+                .order_by(FeeRecord.last_updated.desc())
+                .first()
+            )
+            
+            # Determine fee status
+            status = 'no_record'
+            if latest_fee:
+                if latest_fee.balance <= 0:
+                    status = 'paid'
+                    fully_paid_count += 1
+                elif latest_fee.paid_amount > 0:
+                    status = 'partial'
+                    partial_payment_count += 1
+                else:
+                    status = 'unpaid'
+                    unpaid_count += 1
+            
+            # Apply fee status filter
+            if fee_status and status != fee_status:
+                continue
+            
+            student.latest_fee = latest_fee
+            student.fee_status = status
+            students_with_fees.append(student)
+        
+        return render_template('students_fees_standalone.html',
+                             students=students_with_fees,
+                             pagination=students_pagination,
+                             page=page,
+                             total_students=len(students_with_fees),
+                             fully_paid_count=fully_paid_count,
+                             partial_payment_count=partial_payment_count,
+                             unpaid_count=unpaid_count)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading students fees dashboard: {str(e)}")
+        flash('Error loading students fees dashboard.', 'error')
+        return render_template('students_fees_dashboard.html',
+                             students=[],
+                             pagination=None,
+                             page=1,
+                             total_students=0,
+                             fully_paid_count=0,
+                             partial_payment_count=0,
+                             unpaid_count=0)
+
+@accounts_bp.route('/student/<int:student_id>/details', methods=['GET'])
+@login_required
+@accounts_required()
+def get_student_details(student_id):
+    """Get student details for modal"""
+    try:
+        student = safe_execute(
+            lambda: Student.query.get_or_404(student_id)
+        )
+        
+        if student:
+            # Get latest fee record
+            latest_fee = safe_execute(
+                lambda: FeeRecord.query.filter_by(student_id=student.id)
+                .order_by(FeeRecord.last_updated.desc())
+                .first()
+            )
+            
+            return jsonify({
+                'success': True,
+                'student': {
+                    'id': student.id,
+                    'roll_number': student.roll_number,
+                    'name': student.name,
+                    'email': student.email,
+                    'phone': student.phone,
+                    'department': student.department,
+                    'semester': student.semester,
+                    'latest_fee': {
+                        'total_amount': latest_fee.total_amount if latest_fee else 0,
+                        'paid_amount': latest_fee.paid_amount if latest_fee else 0,
+                        'balance': latest_fee.balance if latest_fee else 0,
+                        'last_updated': latest_fee.last_updated.isoformat() if latest_fee else None
+                    } if latest_fee else None
+                }
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+    
+    except Exception as e:
+        current_app.logger.error(f"Error getting student details: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error loading student details'}), 500
+
+@accounts_bp.route('/student/<int:student_id>/add-payment', methods=['POST'])
+@login_required
+@accounts_required(write_access=True)
+def add_student_payment(student_id):
+    """Add payment for student"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'amount' not in data:
+            return jsonify({'success': False, 'message': 'Payment amount is required'}), 400
+        
+        student = safe_execute(
+            lambda: Student.query.get_or_404(student_id)
+        )
+        
+        if not student:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+        
+        # Get or create fee record
+        fee_record = safe_execute(
+            lambda: FeeRecord.query.filter_by(student_id=student.id)
+            .order_by(FeeRecord.last_updated.desc())
+            .first()
+        )
+        
+        if not fee_record:
+            return jsonify({'success': False, 'message': 'No fee record found for this student'}), 404
+        
+        # Update payment
+        fee_record.paid_amount += float(data['amount'])
+        fee_record.balance = fee_record.total_amount - fee_record.paid_amount
+        fee_record.last_updated = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Payment added successfully',
+            'new_balance': fee_record.balance
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Error adding payment: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error adding payment'}), 500
+
+@accounts_bp.route('/manage-accounts')
+@login_required
+@accounts_required()
+def manage_accounts():
+    """Manage college accounts and finances"""
+    try:
+        students = safe_execute(
+            lambda: Student.query.order_by(Student.name).all()
+        ) or []
+        faculty_members = safe_execute(
+            lambda: Faculty.query.order_by(Faculty.name).all()
+        ) or []
+        
+        return render_template('manage_accounts.html', 
+                             students=students, 
+                             faculty_members=faculty_members)
+    except Exception as e:
+        flash('Error loading accounts.', 'error')
+        return render_template('manage_accounts.html', 
+                             students=[], 
+                             faculty_members=[])
+
+@accounts_bp.route('/billing')
+@login_required
+@accounts_required()
+def billing():
+    """Billing and financial management"""
+    try:
+        # Get billing data
+        total_students = safe_execute(Student.query.count) or 0
+        total_faculty = safe_execute(Faculty.query.count) or 0
+        
+        return render_template('billing.html',
+                             total_students=total_students,
+                             total_faculty=total_faculty)
+    except Exception as e:
+        flash('Error loading billing.', 'error')
+        return redirect(url_for('accounts.manage_accounts'))
+
+@accounts_bp.route('/reports')
+@login_required
+@accounts_required()
+def reports():
+    """Financial reports and analytics"""
+    try:
+        # Get report data
+        total_students = safe_execute(Student.query.count) or 0
+        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_notifications = safe_execute(Notification.query.count) or 0
+        
+        return render_template('financial_reports.html',
+                             total_students=total_students,
+                             total_faculty=total_faculty,
+                             total_notifications=total_notifications)
+    except Exception as e:
+        flash('Error loading reports.', 'error')
+        return redirect(url_for('accounts.manage_accounts'))

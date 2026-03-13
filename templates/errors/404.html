@@ -1,0 +1,83 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Page Not Found - EduBot{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-page">
+                <div class="error-code">404</div>
+                <div class="error-message">Page Not Found</div>
+                <div class="error-description">
+                    <p class="text-muted">The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+                </div>
+                
+                <div class="error-actions mt-4">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-home me-2"></i>Go to Dashboard
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 60px 20px;
+}
+
+.error-code {
+    font-size: 120px;
+    font-weight: bold;
+    color: #dc3545;
+    line-height: 1;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    font-size: 32px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.error-description {
+    font-size: 16px;
+    margin-bottom: 30px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+    .error-code {
+        font-size: 80px;
+    }
+    
+    .error-message {
+        font-size: 24px;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .error-actions .btn {
+        width: 200px;
+    }
+}
+</style>
+{% endblock %}
