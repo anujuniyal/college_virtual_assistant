@@ -11,3 +11,4 @@ Flask-Mail==0.9.1
 WTForms==3.0.1
 requests==2.32.5
 psutil==5.9.6
+psycopg2-binary==2.9.9

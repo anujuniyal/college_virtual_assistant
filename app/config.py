@@ -19,8 +19,35 @@ except ImportError:
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///edubot_management.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Database configuration with automatic switching
+    @staticmethod
+    def _get_database_uri():
+        """Determine database URI based on environment"""
+        # Check if explicitly set DATABASE_URL (Render provides this)
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url:
+            # Handle Render PostgreSQL URLs
+            if database_url.startswith('postgres://'):
+                # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            return database_url
+        
+        # Check if we're in production environment
+        if os.environ.get('FLASK_ENV') == 'production':
+            # In production, default to PostgreSQL if no DATABASE_URL is set
+            postgres_url = os.environ.get('POSTGRESQL_URL')
+            if postgres_url:
+                return postgres_url
+            # Fallback to SQLite for local production testing
+            pass
+        
+        # Default to SQLite for local development
+        return 'sqlite:///edubot_management.db'
+    
+    # Set the database URI using a function call
+    SQLALCHEMY_DATABASE_URI = _get_database_uri()
     
     # Default Admin Credentials (from environment)
     DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME') or 'admin'
@@ -84,23 +111,14 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Security settings
-    SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Strict'
-    
-    # Logging
-    LOG_LEVEL = 'INFO'
-    
-    # Rate limiting (more restrictive in production)
-    RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', 'memory://')
-    
-    # File upload restrictions
-    MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8MB in production
-    
+    # Ensure PostgreSQL is used in production
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)
+        
+        # Force database URI check for production
+        if not os.environ.get('DATABASE_URL'):
+            app.logger.warning("No DATABASE_URL found in production - authentication may fail")
         
         # Production logging
         import logging
@@ -119,6 +137,20 @@ class ProductionConfig(Config):
             
             app.logger.setLevel(logging.INFO)
             app.logger.info('EduBot Production Startup')
+    
+    # Security settings
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Strict'
+    
+    # Logging
+    LOG_LEVEL = 'INFO'
+    
+    # Rate limiting (more restrictive in production)
+    RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', 'memory://')
+    
+    # File upload restrictions
+    MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8MB in production
 
 
 class DevelopmentConfig(Config):

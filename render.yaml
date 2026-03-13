@@ -15,7 +15,12 @@ services:
           property: connectionString
       - key: PYTHON_VERSION
         value: 3.10.0
-    healthCheckPath: /auth/login
+      # Add database initialization command
+      - key: INIT_DB_ON_START
+        value: "true"
+    healthCheckPath: /health
+    # Add pre-deploy hook to initialize database
+    preDeployCommand: "python database_manager.py init"
     
 databases:
   # PostgreSQL Database (Render provides free PostgreSQL)
