@@ -53,6 +53,36 @@ def faculty_required(f):
     faculty_decorated_function.__name__ = f.__name__
     return faculty_decorated_function
 
+def _sync_telegram_mappings():
+    """Sync existing Telegram mappings to student records"""
+    try:
+        from app.models import TelegramUserMapping
+        
+        # Find all verified mappings where student.telegram_user_id is not set
+        unmapped_students = db.session.query(Student, TelegramUserMapping).join(
+            TelegramUserMapping, Student.id == TelegramUserMapping.student_id
+        ).filter(
+            TelegramUserMapping.verified == True,
+            Student.telegram_user_id.is_(None)
+        ).all()
+        
+        synced_count = 0
+        for student, mapping in unmapped_students:
+            success, message = student.link_telegram_account(mapping.telegram_user_id)
+            if success:
+                synced_count += 1
+                current_app.logger.info(f"Auto-synced Telegram ID for student {student.name} ({student.roll_number})")
+            else:
+                current_app.logger.warning(f"Failed to auto-sync Telegram ID for {student.name}: {message}")
+        
+        if synced_count > 0:
+            current_app.logger.info(f"Auto-synced {synced_count} student Telegram mappings")
+        
+        return synced_count
+    except Exception as e:
+        current_app.logger.error(f"Error syncing Telegram mappings: {str(e)}")
+        return 0
+
 @admin_bp.route('/dashboard')
 @login_required
 def admin_dashboard_main():
@@ -88,6 +118,12 @@ def _admin_dashboard():
         # Get comprehensive statistics
         total_students = safe_execute(Student.query.count) or 0
         total_faculty = safe_execute(Faculty.query.count) or 0
+        
+        # Auto-sync any missing Telegram mappings
+        synced_count = _sync_telegram_mappings()
+        if synced_count > 0:
+            flash(f'🔄 Auto-synced {synced_count} student Telegram accounts', 'info')
+        
         total_notifications = safe_execute(
             lambda: Notification.query.filter(
                 Notification.expires_at > datetime.utcnow()
@@ -303,6 +339,11 @@ def add_student():
                 mapping.student_id = student.id
                 db.session.add(mapping)
                 db.session.commit()
+                
+                # Also use the student's link_telegram_account method for consistency
+                success, message = student.link_telegram_account(telegram_user_id.strip())
+                if not success:
+                    current_app.logger.warning(f"Failed to link Telegram account: {message}")
             flash('✅ Student added successfully!', 'success')
             return redirect(url_for('admin.admin_dashboard_main'))
         except Exception as e:
@@ -343,23 +384,12 @@ def edit_student(student_id):
             # Handle Telegram User ID update
             telegram_user_id = request.form.get('telegram_user_id')
             if telegram_user_id and telegram_user_id.strip():
-                student.telegram_user_id = telegram_user_id.strip()
-                student.telegram_verified = True
-                # Also update the TelegramUserMapping table
-                from app.models import TelegramUserMapping
-                existing_mapping = TelegramUserMapping.query.filter_by(
-                    phone_number=student.phone,
-                    telegram_user_id=telegram_user_id.strip()
-                ).first()
-                
-                if not existing_mapping:
-                    mapping = TelegramUserMapping(
-                        telegram_user_id=telegram_user_id.strip(),
-                        student_id=student.id,
-                        phone_number=student.phone,
-                        verified=True
-                    )
-                    db.session.add(mapping)
+                # Use the student's link_telegram_account method for proper linking
+                success, message = student.link_telegram_account(telegram_user_id.strip())
+                if success:
+                    current_app.logger.info(f"Successfully linked Telegram account for student {student.name}")
+                else:
+                    current_app.logger.warning(f"Failed to link Telegram account: {message}")
             
             db.session.commit()
             flash('✅ Student updated successfully!', 'success')
@@ -867,6 +897,31 @@ def update_complaint_status(complaint_id):
         complaint.status = new_status
         db.session.commit()
         
+        # Send notifications about status update
+        try:
+            from app.services.complaint_notification_service import ComplaintNotificationService
+            from app.models import Student
+            
+            student = Student.query.get(complaint.student_id)
+            if student:
+                # Send admin notification
+                ComplaintNotificationService.notify_complaint_status_update(
+                    complaint_id=complaint_id,
+                    old_status=old_status,
+                    new_status=new_status,
+                    student_name=student.name
+                )
+                
+                # Send Telegram notification to student
+                ComplaintNotificationService.notify_student_telegram(
+                    complaint_id=complaint_id,
+                    old_status=old_status,
+                    new_status=new_status,
+                    student_id=complaint.student_id
+                )
+        except Exception as e:
+            current_app.logger.error(f"Error sending status update notification: {str(e)}")
+        
         flash(f'✅ Complaint status updated from {old_status} to {new_status}', 'success')
         return redirect(url_for('admin.view_complaint', complaint_id=complaint_id))
         
@@ -882,6 +937,35 @@ def delete_complaint(complaint_id):
     """Delete complaint"""
     try:
         complaint = Complaint.query.get_or_404(complaint_id)
+        
+        # Store complaint details for notification before deletion
+        student_id = complaint.student_id
+        complaint_category = complaint.category
+        complaint_description = complaint.description
+        complaint_status = complaint.status
+        
+        # Send Telegram notification to student before deletion
+        try:
+            from app.services.complaint_notification_service import ComplaintNotificationService
+            from app.models import Student
+            
+            student = Student.query.get(student_id)
+            if student:
+                # Pass complaint details since we're deleting the complaint
+                complaint_details = {
+                    'category': complaint_category,
+                    'description': complaint_description
+                }
+                ComplaintNotificationService.notify_student_telegram(
+                    complaint_id=complaint_id,
+                    old_status=complaint_status,
+                    new_status="DELETED",
+                    student_id=student_id,
+                    complaint_details=complaint_details
+                )
+        except Exception as e:
+            current_app.logger.error(f"Error sending deletion notification: {str(e)}")
+        
         db.session.delete(complaint)
         db.session.commit()
         

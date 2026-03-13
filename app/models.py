@@ -66,12 +66,22 @@ class Student(db.Model, UserMixin):
             self.telegram_verified = True
             
             # Also update the TelegramUserMapping table
+            # First try to find existing mapping by telegram_user_id (most reliable)
             existing_mapping = TelegramUserMapping.query.filter_by(
-                phone_number=self.phone,
                 telegram_user_id=telegram_user_id
             ).first()
             
             if not existing_mapping:
+                # If no mapping exists by telegram_user_id, try by phone_number as fallback
+                existing_mapping = TelegramUserMapping.query.filter_by(
+                    phone_number=self.phone
+                ).first()
+                if existing_mapping:
+                    # Update the existing mapping with correct telegram_user_id
+                    existing_mapping.telegram_user_id = telegram_user_id
+            
+            if not existing_mapping:
+                # Create new mapping if none exists
                 mapping = TelegramUserMapping(
                     telegram_user_id=telegram_user_id,
                     student_id=self.id,
@@ -82,6 +92,7 @@ class Student(db.Model, UserMixin):
             else:
                 # Update existing mapping
                 existing_mapping.student_id = self.id
+                existing_mapping.phone_number = self.phone
                 existing_mapping.verified = True
             
             # Commit transaction

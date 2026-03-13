@@ -386,6 +386,17 @@ class TelegramBotService:
                     from sqlalchemy.exc import IntegrityError
                     
                     try:
+                        # Get the student record
+                        student = Student.query.get(session_obj.student_id)
+                        if student:
+                            # Use the student's link_telegram_account method to update both Student and TelegramUserMapping tables
+                            success, message = student.link_telegram_account(str(validated_user_id))
+                            if success:
+                                logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
+                            else:
+                                logger.warning(f"Failed to link Telegram account: {message}")
+                        
+                        # Also update the TelegramUserMapping table as backup
                         mapping = TelegramUserMapping.query.filter_by(telegram_user_id=str(validated_user_id)).with_for_update().first()
                         if mapping:
                             mapping.student_id = session_obj.student_id

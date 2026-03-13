@@ -234,6 +234,20 @@ class ChatbotService:
         
         session_obj.verified = True
         session_obj.last_activity = datetime.utcnow()
+        
+        # Link Telegram account to student record if this is a Telegram user
+        if telegram_phone.startswith('whatsapp:+visitor_'):
+            # Extract Telegram user ID from visitor phone number
+            telegram_user_id = telegram_phone.replace('whatsapp:+visitor_', '')
+            try:
+                success, message = student.link_telegram_account(telegram_user_id)
+                if success:
+                    current_app.logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
+                else:
+                    current_app.logger.warning(f"Failed to link Telegram account: {message}")
+            except Exception as e:
+                current_app.logger.error(f"Error linking Telegram account: {str(e)}")
+        
         db.session.commit()
         
         # Get view counts status
@@ -444,7 +458,7 @@ Simply type the number (1-6) to choose any service!"""
 
 **🔹 Option 1: File Complaint Now**
 Send your complaint immediately in this format:
-`complaint <category> <description>`
+`complaint [category] [description]`
 
 **📋 Available Categories:**
 • `ragging` - Anti-ragging complaints

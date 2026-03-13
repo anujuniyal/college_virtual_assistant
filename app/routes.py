@@ -1189,11 +1189,20 @@ def register_routes(app):
             try:
                 student = Student.query.get(complaint.student_id)
                 if student:
+                    # Send admin notification
                     ComplaintNotificationService.notify_complaint_status_update(
                         complaint_id=complaint_id,
                         old_status=old_status,
                         new_status=new_status,
                         student_name=student.name
+                    )
+                    
+                    # Send Telegram notification to student
+                    ComplaintNotificationService.notify_student_telegram(
+                        complaint_id=complaint_id,
+                        old_status=old_status,
+                        new_status=new_status,
+                        student_id=complaint.student_id
                     )
             except Exception as e:
                 current_app.logger.error(f"Error sending status update notification: {str(e)}")
