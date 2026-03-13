@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user, UserMixin
 from app.extensions import db
-from app.models import Admin, Student, Faculty
+from app.models import Student, Faculty
 from app.services.user_service import UserService
 from datetime import datetime
 
@@ -67,7 +67,7 @@ def register():
         elif role == 'faculty':
             existing_user = Faculty.query.filter_by(email=email).first()
         else:
-            existing_user = Admin.query.filter_by(username=username).first()
+            existing_user = Faculty.query.filter_by(email=email).first()
 
         if existing_user:
             flash('User already exists with these details', 'error')
@@ -84,20 +84,16 @@ def register():
                 semester=int(request.form.get('semester', 1) or 1),
                 roll_number=request.form.get('roll_number', '')
             )
-        elif role == 'faculty':
-            faculty_name = request.form.get('name') or username
+        else:
+            # For faculty, admin, and accounts roles - use Faculty table
+            user_name = request.form.get('name') or username
             new_user = Faculty(
-                name=faculty_name,
+                name=user_name,
                 email=email,
                 phone=request.form.get('phone', ''),
-                department=request.form.get('department', ''),
-                consultation_time=request.form.get('consultation_time', '')
-            )
-        else:
-            new_user = Admin(
-                username=username,
-                email=email,
-                role=role
+                department=request.form.get('department', 'Administration'),
+                consultation_time=request.form.get('consultation_time', ''),
+                role=role  # Set role as faculty, admin, or accounts
             )
         new_user.set_password(password)
         

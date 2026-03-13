@@ -343,7 +343,7 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="POST" id="loginForm">
+            <form method="POST" id="loginForm" autocomplete="on">
                 <!-- Role Selector -->
                 <div class="role-selector">
                     <div class="role-option selected" data-role="admin">
@@ -370,7 +370,7 @@
                     <label for="username">Username / Email (Faculty Login)</label>
                     <div class="input-group">
                         <i class="fas fa-envelope"></i>
-                        <input type="text" class="form-control" id="username" name="username" placeholder="Enter username, email, or faculty name" required>
+                        <input type="text" class="form-control" id="username" name="username" placeholder="Enter username, email, or faculty name" autocomplete="username" required>
                     </div>
                     <small class="text-muted">Faculty can login with email address or name</small>
                 </div>
@@ -380,7 +380,7 @@
                     <label for="password">Password</label>
                     <div class="input-group">
                         <i class="fas fa-lock"></i>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
                     </div>
                 </div>
 
@@ -439,10 +439,8 @@
             loginBtn.disabled = true;
             loginText.innerHTML = '<span class="loading"></span> Signing in...';
             
-            // Simulate processing (remove this in production)
-            setTimeout(() => {
-                // Form will submit normally
-            }, 1000);
+            // Let the form submit normally - don't prevent default
+            // The loading state will show until the page redirects
         });
 
         // Auto-dismiss alerts after 5 seconds

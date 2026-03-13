@@ -6,7 +6,7 @@ Handles all user operations through database only
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
-from app.models import Admin
+from app.models import Faculty
 import os
 
 
@@ -15,27 +15,25 @@ class UserService:
     
     @staticmethod
     def create_user(username, email, password, role, is_active=True):
-        """Create a new user in the database"""
+        """Create a new user in the Faculty table"""
         try:
-            # Check if user already exists
-            existing_user = Admin.query.filter(
-                (Admin.username == username) | (Admin.email == email)
+            # Check if user already exists in Faculty table
+            existing_user = Faculty.query.filter(
+                (Faculty.email == email)
             ).first()
             
             if existing_user:
-                if existing_user.username == username:
-                    return {'success': False, 'message': 'Username already exists'}
-                else:
-                    return {'success': False, 'message': 'Email already exists'}
+                return {'success': False, 'message': 'Email already exists'}
             
-            # Create new user
-            user = Admin(
-                username=username,
+            # Create new faculty user
+            user = Faculty(
+                name=username,
                 email=email,
-                password_hash=generate_password_hash(password),
+                department='Administration',
                 role=role,
-                is_active=is_active
+                phone='N/A'
             )
+            user.set_password(password)
             
             db.session.add(user)
             db.session.commit()
@@ -77,41 +75,39 @@ class UserService:
     
     @staticmethod
     def get_user_by_id(user_id):
-        """Get user by ID"""
+        """Get user by ID from Faculty table"""
         try:
-            return Admin.query.get(user_id)
+            return Faculty.query.get(user_id)
         except Exception as e:
             current_app.logger.error(f"Error getting user: {str(e)}")
             return None
     
     @staticmethod
     def get_user_by_username(username):
-        """Get user by username or email"""
+        """Get user by email from Faculty table"""
         try:
-            return Admin.query.filter(
-                (Admin.username == username) | (Admin.email == username)
-            ).first()
+            return Faculty.query.filter_by(email=username).first()
         except Exception as e:
             current_app.logger.error(f"Error getting user: {str(e)}")
             return None
     
     @staticmethod
     def update_user(user_id, **kwargs):
-        """Update user information"""
+        """Update user information in Faculty table"""
         try:
-            user = Admin.query.get(user_id)
+            user = Faculty.query.get(user_id)
             if not user:
                 return {'success': False, 'message': 'User not found'}
             
             # Update allowed fields
-            allowed_fields = ['username', 'email', 'role', 'is_active']
+            allowed_fields = ['name', 'email', 'role', 'department', 'phone']
             for field, value in kwargs.items():
                 if field in allowed_fields:
                     setattr(user, field, value)
             
             # Handle password update separately
             if 'password' in kwargs:
-                user.password_hash = generate_password_hash(kwargs['password'])
+                user.set_password(kwargs['password'])
             
             db.session.commit()
             
@@ -127,9 +123,9 @@ class UserService:
     
     @staticmethod
     def delete_user(user_id):
-        """Delete user from database"""
+        """Delete user from Faculty table"""
         try:
-            user = Admin.query.get(user_id)
+            user = Faculty.query.get(user_id)
             if not user:
                 return {'success': False, 'message': 'User not found'}
             
@@ -148,52 +144,51 @@ class UserService:
     
     @staticmethod
     def get_all_users():
-        """Get all users"""
+        """Get all users from Faculty table"""
         try:
-            return Admin.query.order_by(Admin.created_at.desc()).all()
+            return Faculty.query.order_by(Faculty.created_at.desc()).all()
         except Exception as e:
             current_app.logger.error(f"Error getting users: {str(e)}")
             return []
     
     @staticmethod
     def get_users_by_role(role):
-        """Get users by role"""
+        """Get users by role from Faculty table"""
         try:
-            return Admin.query.filter_by(role=role).order_by(Admin.created_at.desc()).all()
+            return Faculty.query.filter_by(role=role).order_by(Faculty.created_at.desc()).all()
         except Exception as e:
             current_app.logger.error(f"Error getting users by role: {str(e)}")
             return []
     
     @staticmethod
     def initialize_default_admin():
-        """Initialize default admin from environment variables"""
+        """Initialize default admin in Faculty table"""
         try:
-            admin_username = current_app.config['DEFAULT_ADMIN_USERNAME']
             admin_email = current_app.config['DEFAULT_ADMIN_EMAIL']
             admin_password = current_app.config['DEFAULT_ADMIN_PASSWORD']
             admin_role = current_app.config['DEFAULT_ADMIN_ROLE']
             
-            # Check if admin already exists
-            existing_admin = Admin.query.filter_by(username=admin_username).first()
+            # Check if admin already exists in Faculty table
+            existing_admin = Faculty.query.filter_by(email=admin_email).first()
             if existing_admin:
-                current_app.logger.info(f"Default admin {admin_username} already exists")
+                current_app.logger.info(f"Default admin {admin_email} already exists in Faculty table")
                 return existing_admin
             
-            # Create default admin
-            result = UserService.create_user(
-                username=admin_username,
+            # Create default admin in Faculty table
+            admin = Faculty(
+                name='Default Admin',
                 email=admin_email,
-                password=admin_password,
+                department='Administration',
                 role=admin_role,
-                is_active=True
+                phone='N/A'
             )
+            admin.set_password(admin_password)
             
-            if result['success']:
-                current_app.logger.info(f"Default admin {admin_username} created successfully")
-                return UserService.get_user_by_username(admin_username)
-            else:
-                current_app.logger.error(f"Failed to create default admin: {result['message']}")
-                return None
+            db.session.add(admin)
+            db.session.commit()
+            
+            current_app.logger.info(f"Default admin {admin_email} created successfully in Faculty table")
+            return admin
                 
         except Exception as e:
             current_app.logger.error(f"Error initializing default admin: {str(e)}")
@@ -227,9 +222,9 @@ class UserService:
     
     @staticmethod
     def change_password(user_id, old_password, new_password):
-        """Change user password"""
+        """Change user password in Faculty table"""
         try:
-            user = Admin.query.get(user_id)
+            user = Faculty.query.get(user_id)
             if not user:
                 return {'success': False, 'message': 'User not found'}
             
@@ -238,7 +233,7 @@ class UserService:
                 return {'success': False, 'message': 'Current password is incorrect'}
             
             # Update password
-            user.password_hash = generate_password_hash(new_password)
+            user.set_password(new_password)
             db.session.commit()
             
             return {'success': True, 'message': 'Password changed successfully'}
@@ -250,14 +245,14 @@ class UserService:
     
     @staticmethod
     def reset_password(user_id, new_password):
-        """Reset user password (admin function)"""
+        """Reset user password in Faculty table (admin function)"""
         try:
-            user = Admin.query.get(user_id)
+            user = Faculty.query.get(user_id)
             if not user:
                 return {'success': False, 'message': 'User not found'}
             
             # Update password
-            user.password_hash = generate_password_hash(new_password)
+            user.set_password(new_password)
             db.session.commit()
             
             return {'success': True, 'message': 'Password reset successfully'}

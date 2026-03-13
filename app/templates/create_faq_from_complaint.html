@@ -1,0 +1,255 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Create FAQ from Complaint{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar">
+            <div class="sidebar-content">
+                <div class="text-center mb-4">
+                    <div class="avatar">
+                        <i class="bi bi-person-circle" style="font-size: 3rem; color: var(--rd-primary);"></i>
+                    </div>
+                    <h6 class="text-white">{{ current_user.username }}</h6>
+                    <small class="text-white-50">Administrator</small>
+                </div>
+                
+                <nav class="nav flex-column">
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('manage_complaints') }}" class="nav-link">
+                        <i class="bi bi-exclamation-triangle"></i> Manage Complaints
+                    </a>
+                    <a href="{{ url_for('complaint_messages') }}" class="nav-link">
+                        <i class="bi bi-chat-dots"></i> Complaint Messages
+                    </a>
+                    <a href="{{ url_for('admin.manage_faqs') }}" class="nav-link">
+                        <i class="bi bi-question-circle"></i> Manage FAQs
+                    </a>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Create FAQ from Complaint</h2>
+                    <small class="text-muted">Generate FAQ from complaint notification</small>
+                </div>
+            </div>
+            
+            <!-- Complaint Notification Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-chat-dots"></i> Original Complaint Notification</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Notification Details:</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td>{{ notification.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td><span class="badge bg-info">{{ notification.notification_type.upper() }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Priority:</strong></td>
+                                    <td><span class="badge bg-{% if notification.priority == 'high' %}danger{% elif notification.priority == 'medium' %}warning{% else %}secondary{% endif %}">{{ notification.priority.upper() }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ notification.created_at.strftime('%d-%m-%Y %H:%M:%S') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Content Preview:</h6>
+                            <div class="alert alert-info" style="max-height: 300px; overflow-y: auto;">
+                                <pre style="white-space: pre-wrap; font-size: 12px;">{{ notification.content }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ Creation Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-plus-circle"></i> FAQ Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="question" class="form-label">Question <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="question" name="question" rows="3" required>{% if question %}{{ question }}{% endif %}</textarea>
+                                <div class="form-text">The question that students will see in FAQ</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                                <select class="form-control" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="complaint" {% if category == 'complaint' %}selected{% endif %}>Complaint</option>
+                                    <option value="admission">Admission</option>
+                                    <option value="course">Course</option>
+                                    <option value="fee">Fee</option>
+                                    <option value="facility">Facility</option>
+                                    <option value="faculty">Faculty</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <div class="form-text">FAQ category for organization</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                                <select class="form-control" id="priority" name="priority" required>
+                                    <option value="">Select Priority</option>
+                                    <option value="1" {% if priority == '1' %}selected{% endif %}>Low</option>
+                                    <option value="2" {% if priority == '2' %}selected{% endif %}>Medium</option>
+                                    <option value="3" {% if priority == '3' %}selected{% endif %}>High</option>
+                                </select>
+                                <div class="form-text">FAQ priority level (1=Low, 2=Medium, 3=High)</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="answer" class="form-label">Answer <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="answer" name="answer" rows="8" required>{% if answer %}{{ answer }}{% endif %}</textarea>
+                                <div class="form-text">Detailed answer for the FAQ question</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active (visible to students)
+                                    </label>
+                                </div>
+                                <div class="form-text">Uncheck to make FAQ inactive</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Create FAQ
+                                </button>
+                                <a href="{{ url_for('complaint_messages') }}" class="btn btn-outline-secondary ms-2">
+                                    <i class="bi bi-arrow-left"></i> Back to Messages
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Use original WhatsApp theme */
+.sidebar {
+    background: linear-gradient(180deg, var(--rd-secondary) 0%, var(--rd-secondary-dark) 100%) !important;
+    color: var(--rd-surface) !important;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
+.sidebar a {
+    color: var(--rd-surface) !important;
+    text-decoration: none;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 8px;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: var(--rd-surface) !important;
+    transform: translateX(5px);
+}
+
+.sidebar a.active {
+    background: var(--rd-primary) !important;
+    color: var(--rd-surface) !important;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+.sidebar h5, .sidebar h4 {
+    color: var(--rd-surface) !important;
+    font-weight: 600;
+}
+
+.card {
+    background: var(--rd-surface);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--rd-primary) 0%, var(--rd-secondary) 100%);
+    color: white;
+    border-bottom: none;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.btn-success {
+    background: var(--rd-primary);
+    border-color: var(--rd-primary);
+}
+
+.btn-success:hover {
+    background: var(--rd-primary-dark);
+    border-color: var(--rd-primary-dark);
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        min-height: auto;
+        padding: 1rem;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Create FAQ from complaint page loaded');
+});
+</script>
+
+{% endblock %}

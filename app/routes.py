@@ -21,11 +21,12 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import (
     Admin, Student, Faculty, Notification, 
-    Result, FeeRecord, Complaint, ChatbotQA, ChatbotUnknown
+    Result, FeeRecord, Complaint, ChatbotQA, FAQRecord
 )
 from app.chatbot.service import ChatbotService
 
 from app.services.otp_service import OTPService
+from app.services.complaint_notification_service import ComplaintNotificationService
 
 
 # Decorators
@@ -35,7 +36,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if current_user.role != 'admin':
             flash('Access denied. Admin privileges required.', 'error')
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -47,7 +48,75 @@ def register_routes(app):
     @app.route('/')
     def index():
         """Home page"""
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('login'))
+    
+    @app.route('/auth/login', methods=['GET', 'POST'])
+    def auth_login_redirect():
+        """Redirect old auth/login to new login route"""
+        if request.method == 'POST':
+            # Handle POST data and process login directly
+            username = request.form.get('username')
+            password = request.form.get('password')
+            
+            # First check Admin table
+            admin = Admin.query.filter_by(username=username).first()
+            
+            if admin and admin.check_password(password):
+                login_user(admin, remember=True)
+                session['user_role'] = admin.role
+                session['user_name'] = admin.username
+                
+                # Redirect based on role
+                if admin.role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif admin.role == 'faculty':
+                    return redirect(url_for('faculty_dashboard'))
+                elif admin.role == 'accounts':
+                    return redirect(url_for('accounts_dashboard'))
+                else:
+                    return redirect(url_for('admin_dashboard'))
+            
+            # If not found in Admin table, check Faculty table
+            faculty = Faculty.query.filter_by(email=username).first()
+            
+            if faculty and faculty.check_password(password):
+                login_user(faculty, remember=True)
+                session['user_role'] = faculty.role
+                session['user_name'] = faculty.name
+                
+                # Redirect based on role
+                if faculty.role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif faculty.role == 'faculty':
+                    return redirect(url_for('faculty_dashboard'))
+                elif faculty.role == 'accounts':
+                    return redirect(url_for('accounts_dashboard'))
+                else:
+                    return redirect(url_for('faculty_dashboard'))
+            
+            # Also check by name if email doesn't work
+            faculty_by_name = Faculty.query.filter_by(name=username).first()
+            if faculty_by_name and faculty_by_name.check_password(password):
+                login_user(faculty_by_name, remember=True)
+                session['user_role'] = faculty_by_name.role
+                session['user_name'] = faculty_by_name.name
+                
+                # Redirect based on role
+                if faculty_by_name.role == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                elif faculty_by_name.role == 'faculty':
+                    return redirect(url_for('faculty_dashboard'))
+                elif faculty_by_name.role == 'accounts':
+                    return redirect(url_for('accounts_dashboard'))
+                else:
+                    return redirect(url_for('faculty_dashboard'))
+            
+            else:
+                flash('Invalid username/email or password', 'error')
+                return render_template('login.html')
+        else:
+            # Redirect GET requests
+            return redirect(url_for('login'))
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -121,7 +190,7 @@ def register_routes(app):
         logout_user()
         session.clear()
         flash('You have been logged out', 'info')
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('login'))
     
     @app.route('/faculty/dashboard')
     @login_required
@@ -1087,5 +1156,322 @@ def register_routes(app):
         except Exception as e:
             flash(f'Error processing file: {str(e)}', 'error')
             return redirect(url_for('admin_upload'))
+
+    @app.route('/admin/manage-complaints')
+    @login_required
+    def manage_complaints():
+        """Manage all complaints (admin only)"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get complaints with student info
+        complaints = db.session.query(Complaint, Student).join(Student).order_by(Complaint.created_at.desc()).all()
+        return render_template('manage_complaints.html', complaints=complaints)
+    
+    @app.route('/admin/update-complaint/<int:complaint_id>', methods=['POST'])
+    @login_required
+    def update_complaint(complaint_id):
+        """Update complaint status"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        complaint = Complaint.query.get_or_404(complaint_id)
+        new_status = request.form.get('status')
+        old_status = complaint.status
+        
+        if new_status in ['pending', 'investigating', 'resolved']:
+            complaint.status = new_status
+            db.session.commit()
+            
+            # Send notification about status update
+            try:
+                student = Student.query.get(complaint.student_id)
+                if student:
+                    ComplaintNotificationService.notify_complaint_status_update(
+                        complaint_id=complaint_id,
+                        old_status=old_status,
+                        new_status=new_status,
+                        student_name=student.name
+                    )
+            except Exception as e:
+                current_app.logger.error(f"Error sending status update notification: {str(e)}")
+            
+            flash('✅ Complaint status updated successfully!', 'success')
+        else:
+            flash('❌ Invalid status.', 'error')
+        
+        return redirect(url_for('manage_complaints'))
+    
+    @app.route('/admin/delete-complaint/<int:complaint_id>')
+    @login_required
+    def delete_complaint(complaint_id):
+        """Delete complaint"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        complaint = Complaint.query.get_or_404(complaint_id)
+        try:
+            db.session.delete(complaint)
+            db.session.commit()
+            flash('✅ Complaint deleted successfully!', 'success')
+        except Exception as e:
+            flash(f'❌ Error deleting complaint: {str(e)}', 'error')
+        
+        return redirect(url_for('manage_complaints'))
+
+    @app.route('/admin/complaint-messages')
+    @login_required
+    def complaint_messages():
+        """View only complaint messages (separate from notifications)"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get only complaint-related notifications
+        complaint_notifications = Notification.query.filter_by(notification_type='complaint').order_by(Notification.created_at.desc()).all()
+        complaint_updates = Notification.query.filter_by(notification_type='complaint_update').order_by(Notification.created_at.desc()).all()
+        
+        return render_template('complaint_messages.html', 
+                             complaint_notifications=complaint_notifications,
+                             complaint_updates=complaint_updates)
+
+    @app.route('/admin/manage-faqs')
+    @login_required
+    def manage_faqs():
+        """Manage FAQs"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get filter parameters
+        search = request.args.get('search', '')
+        selected_category = request.args.get('category', '')
+        selected_priority = request.args.get('priority', '')
+        page = request.args.get('page', 1, type=int)
+        
+        # Build query
+        query = FAQ.query
+        
+        if search:
+            query = query.filter(FAQ.question.ilike(f'%{search}%'))
+        
+        if selected_category:
+            query = query.filter(FAQ.category == selected_category)
+        
+        if selected_priority:
+            query = query.filter(FAQ.priority == int(selected_priority))
+        
+        # Pagination
+        per_page = 10
+        faqs = query.order_by(FAQ.priority.desc(), FAQ.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        # Get categories for filter
+        categories = db.session.query(FAQ.category).distinct().all()
+        categories = [(cat[0], cat[0]) for cat in categories]
+        
+        return render_template('manage_faqs.html', 
+                             faqs=faqs,
+                             search=search,
+                             selected_category=selected_category,
+                             selected_priority=selected_priority,
+                             categories=categories)
+
+    @app.route('/admin/add-faq', methods=['GET', 'POST'])
+    @login_required
+    def add_faq():
+        """Add new FAQ"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        if request.method == 'POST':
+            try:
+                faq = FAQ(
+                    question=request.form.get('question'),
+                    answer=request.form.get('answer'),
+                    category=request.form.get('category', 'general'),
+                    priority=int(request.form.get('priority', 2)),
+                    is_active='is_active' in request.form
+                )
+                db.session.add(faq)
+                db.session.commit()
+                flash('✅ FAQ added successfully!', 'success')
+                return redirect(url_for('manage_faqs'))
+                
+            except Exception as e:
+                flash(f'❌ Error adding FAQ: {str(e)}', 'error')
+        
+        return render_template('add_faq.html')
+
+    @app.route('/admin/edit-faq/<int:faq_id>', methods=['GET', 'POST'])
+    @login_required
+    def edit_faq(faq_id):
+        """Edit existing FAQ"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        faq = FAQ.query.get_or_404(faq_id)
+        
+        if request.method == 'POST':
+            try:
+                faq.question = request.form.get('question')
+                faq.answer = request.form.get('answer')
+                faq.category = request.form.get('category', 'general')
+                faq.priority = int(request.form.get('priority', 2))
+                faq.is_active = 'is_active' in request.form
+                db.session.commit()
+                flash('✅ FAQ updated successfully!', 'success')
+                return redirect(url_for('manage_faqs'))
+                
+            except Exception as e:
+                flash(f'❌ Error updating FAQ: {str(e)}', 'error')
+        
+        return render_template('edit_faq.html', faq=faq)
+
+    @app.route('/admin/delete-faq/<int:faq_id>', methods=['POST'])
+    @login_required
+    def delete_faq(faq_id):
+        """Delete FAQ"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        faq = FAQ.query.get_or_404(faq_id)
+        
+        try:
+            db.session.delete(faq)
+            db.session.commit()
+            flash('✅ FAQ deleted successfully!', 'success')
+        except Exception as e:
+            flash(f'❌ Error deleting FAQ: {str(e)}', 'error')
+        
+        return redirect(url_for('manage_faqs'))
+
+    @app.route('/admin/faq-records')
+    @login_required
+    def faq_records():
+        """View FAQ records and processing history"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get all FAQ records for display
+        faqs = FAQ.query.order_by(FAQ.created_at.desc()).all()
+        
+        return render_template('faq_records.html', faqs=faqs)
+
+    @app.route('/admin/create-faq-from-complaint/<int:notification_id>')
+    @login_required
+    def create_faq_from_complaint(notification_id):
+        """Create FAQ from complaint notification"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        notification = Notification.query.get_or_404(notification_id)
+        
+        if request.method == 'POST':
+            try:
+                from app.models import FAQ
+                # Extract complaint details from notification content
+                content_lines = notification.content.split('\n')
+                question = ""
+                category = "complaint"
+                priority = 3  # High priority for complaints
+                
+                # Parse complaint details
+                for line in content_lines:
+                    if 'Student:' in line:
+                        student_info = line.split('Student:')[1].strip()
+                        question = f"What is the process for filing complaints regarding {student_info}?"
+                    elif 'Category:' in line:
+                        category = line.split('Category:')[1].strip().lower()
+                    elif 'Description:' in line:
+                        desc = line.split('Description:')[1].strip()
+                        question = f"How to report {category} issues like: {desc[:50]}...?"
+                
+                if not question:
+                    question = "How to file a complaint?"
+                
+                # Create FAQ
+                faq = FAQ(
+                    question=question,
+                    answer=get_complaint_faq_answer(),
+                    category=category,
+                    priority=priority,
+                    is_active=True
+                )
+                db.session.add(faq)
+                db.session.commit()
+                
+                flash('✅ FAQ created successfully from complaint message!', 'success')
+                return redirect(url_for('admin.manage_faqs'))
+                
+            except Exception as e:
+                flash(f'❌ Error creating FAQ: {str(e)}', 'error')
+        
+        return render_template('create_faq_from_complaint.html', notification=notification)
+
+def get_complaint_faq_answer():
+    """Get standard answer for complaint FAQ"""
+    return """**How to File a Complaint:**
+
+📝 **Step-by-Step Process:**
+
+1️⃣ **Choose Your Category:**
+   • `ragging` - Anti-ragging complaints
+   • `harassment` - Harassment issues  
+   • `other` - Other complaints
+
+2️⃣ **Format Your Message:**
+   Use: `complaint <category> <description>`
+
+3️⃣ **Provide Details:**
+   • Be specific about incident
+   • Include date, time, location if applicable
+   • Mention names if necessary
+   • Minimum 10 characters description
+
+4️⃣ **Submit:**
+   • Send via chatbot/WhatsApp
+   • Immediate admin notification
+   • Get complaint ID for tracking
+
+📞 **For Urgent Issues:**
+   • Contact admin office: +91-12345-67890
+   • Email: admin@college.edu
+   • Visit admin office in person
+
+⚡ **Response Time:**
+   • Admin reviews within 24 hours
+   • Status updates provided
+   • Action taken promptly
+
+---
+*This FAQ is automatically generated from complaint patterns*"""
+
+    @app.route('/admin/delete-complaint-notification/<int:notification_id>')
+    @login_required
+    def delete_complaint_notification(notification_id):
+        """Delete complaint notification"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        notification = Notification.query.get_or_404(notification_id)
+        try:
+            db.session.delete(notification)
+            db.session.commit()
+            flash('✅ Complaint notification deleted successfully!', 'success')
+        except Exception as e:
+            flash(f'❌ Error deleting notification: {str(e)}', 'error')
+        
+        return redirect(url_for('complaint_messages'))
 
     # Close the register_routes function

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import Student, Faculty, Notification, Complaint, Result, FeeRecord
@@ -8,6 +8,24 @@ from functools import wraps
 
 accounts_bp = Blueprint('accounts', __name__, url_prefix='/accounts')
 
+def get_user_role():
+    """Get current user's role"""
+    if not current_user.is_authenticated:
+        return 'student'
+    
+    # Handle both Admin and Faculty models
+    if hasattr(current_user, 'role'):
+        return current_user.role
+    elif hasattr(current_user, 'user_role'):
+        return current_user.user_role
+    else:
+        return 'student'
+
+def has_write_access():
+    """Check if current user has write access to accounts"""
+    user_role = get_user_role()
+    return user_role == 'accounts'
+
 def accounts_required(write_access=False):
     """Decorator to ensure user has accounts privileges with optional write access"""
     def decorator(f):
@@ -16,13 +34,7 @@ def accounts_required(write_access=False):
             if not current_user.is_authenticated:
                 return redirect(url_for('auth.login'))
             
-            # Handle both Admin and Faculty models
-            if hasattr(current_user, 'role'):
-                user_role = current_user.role
-            elif hasattr(current_user, 'user_role'):
-                user_role = current_user.user_role
-            else:
-                user_role = 'student'
+            user_role = get_user_role()
             
             # Check accounts access - allow admin, faculty, and accounts roles
             if user_role not in ['admin', 'faculty', 'accounts']:
@@ -212,7 +224,7 @@ def add_student_payment(student_id):
         
         # Update payment
         fee_record.paid_amount += float(data['amount'])
-        fee_record.balance = fee_record.total_amount - fee_record.paid_amount
+        fee_record.update_balance()
         fee_record.last_updated = datetime.utcnow()
         
         db.session.commit()
@@ -266,21 +278,100 @@ def billing():
         flash('Error loading billing.', 'error')
         return redirect(url_for('accounts.manage_accounts'))
 
-@accounts_bp.route('/reports')
+@accounts_bp.route('/student/<int:student_id>/update-fee', methods=['POST'])
+@login_required
+@accounts_required(write_access=True)
+def update_student_fee(student_id):
+    """Update student fee record"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'semester' not in data or 'total_amount' not in data or 'paid_amount' not in data:
+            return jsonify({'success': False, 'message': 'All fee fields are required'}), 400
+        
+        student = safe_execute(
+            lambda: Student.query.get_or_404(student_id)
+        )
+        
+        if not student:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+        
+        # Get or create fee record
+        fee_record = safe_execute(
+            lambda: FeeRecord.query.filter_by(student_id=student.id, semester=int(data['semester']))
+            .first()
+        )
+        
+        if fee_record:
+            # Update existing record
+            fee_record.total_amount = float(data['total_amount'])
+            fee_record.paid_amount = float(data['paid_amount'])
+            fee_record.update_balance()
+            fee_record.last_updated = datetime.utcnow()
+        else:
+            # Create new record
+            fee_record = FeeRecord(
+                student_id=student.id,
+                semester=int(data['semester']),
+                total_amount=float(data['total_amount']),
+                paid_amount=float(data['paid_amount']),
+                balance_amount=float(data['total_amount']) - float(data['paid_amount'])
+            )
+            db.session.add(fee_record)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Fee record updated successfully',
+            'new_balance': fee_record.balance
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Error updating fee record: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error updating fee record'}), 500
+
+@accounts_bp.route('/student/<int:student_id>/payment-history', methods=['GET'])
 @login_required
 @accounts_required()
-def reports():
-    """Financial reports and analytics"""
+def get_payment_history(student_id):
+    """Get payment history for student"""
     try:
-        # Get report data
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
-        total_notifications = safe_execute(Notification.query.count) or 0
+        student = safe_execute(
+            lambda: Student.query.get_or_404(student_id)
+        )
         
-        return render_template('financial_reports.html',
-                             total_students=total_students,
-                             total_faculty=total_faculty,
-                             total_notifications=total_notifications)
+        if not student:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+        
+        # Get all fee records for the student (this would be payment history in a real system)
+        fee_records = safe_execute(
+            lambda: FeeRecord.query.filter_by(student_id=student.id)
+            .order_by(FeeRecord.last_updated.desc())
+            .all()
+        ) or []
+        
+        history = []
+        for record in fee_records:
+            history.append({
+                'date': record.last_updated.isoformat(),
+                'semester': record.semester,
+                'total_amount': record.total_amount,
+                'paid_amount': record.paid_amount,
+                'balance': record.balance,
+                'method': 'System Record'  # In a real system, this would track actual payment methods
+            })
+        
+        return jsonify({
+            'success': True,
+            'student': {
+                'id': student.id,
+                'name': student.name,
+                'roll_number': student.roll_number
+            },
+            'history': history
+        })
+    
     except Exception as e:
-        flash('Error loading reports.', 'error')
-        return redirect(url_for('accounts.manage_accounts'))
+        current_app.logger.error(f"Error getting payment history: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error loading payment history'}), 500

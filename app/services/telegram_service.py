@@ -169,10 +169,43 @@ class TelegramBotService:
             from app.extensions import db
             from sqlalchemy.exc import IntegrityError
             
-            # Check if student exists first
+            # Check if student exists with multiple phone format attempts
+            student = None
+            
+            # First try with the exact normalized phone
             student = Student.query.filter_by(phone=phone).first()
+            
+            # If not found and phone has country code, try without it
+            if not student and len(phone) == 12 and phone.startswith('91'):
+                # Remove '91' country code for Indian numbers
+                phone_without_country = phone[2:]
+                student = Student.query.filter_by(phone=phone_without_country).first()
+                if student:
+                    phone = phone_without_country  # Update to use database format
+                    logger.info(f"Phone matched after removing country code: {phone}")
+            
+            # If still not found and phone is 10 digits with leading zero, try without zero
+            if not student and len(phone) == 11 and phone.startswith('0'):
+                phone_without_zero = phone[1:]
+                student = Student.query.filter_by(phone=phone_without_zero).first()
+                if student:
+                    phone = phone_without_zero  # Update to use database format
+                    logger.info(f"Phone matched after removing leading zero: {phone}")
+            
+            # If still not found and phone is 10 digits, try with Indian country code
+            if not student and len(phone) == 10:
+                phone_with_country = '91' + phone
+                student = Student.query.filter_by(phone=phone_with_country).first()
+                if student:
+                    phone = phone_with_country  # Update to use database format
+                    logger.info(f"Phone matched after adding Indian country code: {phone}")
+            
             if not student:
+                # Log the failed attempt for debugging
+                logger.warning(f"Phone verification failed - Phone {phone} not found in student records")
                 return False
+
+            logger.info(f"Phone verification successful - Found student: {student.name} ({student.roll_number})")
 
             # Use FOR UPDATE to lock the row and prevent race conditions
             mapping = TelegramUserMapping.query.filter_by(telegram_user_id=str(telegram_user_id)).with_for_update().first()
@@ -189,12 +222,12 @@ class TelegramBotService:
             else:
                 # Update existing mapping
                 mapping.student_id = student.id
-                mapping.phone_number = phone
+                mapping.phone_number=phone
                 # Student verification happens after roll verification, not here.
                 mapping.verified = False
 
             db.session.commit()
-            logger.info(f"Successfully saved/updated phone mapping for Telegram user {telegram_user_id}")
+            logger.info(f"Successfully saved/updated phone mapping for Telegram user {telegram_user_id} -> Student {student.name}")
             return True
             
         except IntegrityError as e:
@@ -275,7 +308,12 @@ class TelegramBotService:
                 if ok:
                     return self.send_message(
                         chat_id,
-                        "✅ Phone number matched with our student records.\n\nNow verify student access:\nType `register YOUR_ROLL_NUMBER`",
+                        "✅ Phone number matched with our student records.\n\n"
+                        "🎓 **Student Verification Step 2 Complete**\n\n"
+                        "Now enter your roll number to complete verification:\n\n"
+                        "Type: `register YOUR_ROLL_NUMBER`\n"
+                        "Example: `register EDU20240051`\n\n"
+                        "📝 Note: Roll number must match the phone number in our records.",
                     )
                 return self.send_message(
                     chat_id,
@@ -308,21 +346,23 @@ class TelegramBotService:
                 if text.lower().startswith('register') or text.lower().startswith('verify'):
                     return self.send_message(
                         chat_id,
-                        "To verify student access, please share your phone number (must match student records).",
+                        "🎓 **Student Verification Required**\n\nTo access student services, please share your phone number (must match student records).\n\n📱 Click the button below to share your phone number:",
                         reply_markup=self._build_contact_request_markup(),
                     )
 
-                response = (
-                    "👋 **Welcome to EduBot!**\n\n"
-                    "📖 **Visitor Services:**\n\n"
-                    "📚 `admission` - Admission info\n"
-                    "📖 `course` - Course details\n"
-                    "💰 `fee` - Fee structure\n"
-                    "🏫 `facilities` - Campus info\n"
-                    "👨‍🏫 `faculty` - Faculty directory\n"
-                    "ℹ️ `help` - Show this menu\n\n"
-                    "🎓 **Students:** Type `register YOUR_ROLL_NUMBER` to start verification."
-                )
+                # For unmapped users, process visitor commands through chatbot service
+                # Use a temporary phone number for visitor mode
+                temp_phone = f"whatsapp:+visitor_{validated_user_id}"
+                try:
+                    response = self.chatbot_service.process_message(text, temp_phone)
+                    logger.info(f"Chatbot response for visitor {validated_user_id}: {response}")
+                    if not response:
+                        logger.warning("Empty response from chatbot service for visitor")
+                        response = "I'm sorry, I couldn't process your request. Please try again."
+                except Exception as e:
+                    logger.error(f"Error in chatbot service for visitor {validated_user_id}: {str(e)}")
+                    response = "I'm experiencing technical difficulties. Please try again later."
+
                 return self.send_message(chat_id, response)
             
             # Process message with chatbot service

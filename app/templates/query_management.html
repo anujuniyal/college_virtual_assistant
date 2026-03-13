@@ -1,0 +1,199 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Query Management - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="h4 mb-0">Query Management</h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-info">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_queries }}</h4>
+                                    <p class="card-text">Total Queries</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-database fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ unknown_queries }}</h4>
+                                    <p class="card-text">Unknown Queries</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-question-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ pending_unknown }}</h4>
+                                    <p class="card-text">Pending Answers</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ total_queries - unknown_queries }}</h4>
+                                    <p class="card-text">Answered Queries</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <a href="{{ url_for('admin.manage_queries') }}" class="btn btn-outline-primary btn-lg w-100">
+                                        <i class="fas fa-list me-2"></i>Manage Queries
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{{ url_for('admin.add_query') }}" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-plus me-2"></i>Add New Query
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{{ url_for('admin.unknown_queries') }}" class="btn btn-warning btn-lg w-100">
+                                        <i class="fas fa-question me-2"></i>Unknown Queries
+                                        {% if pending_unknown > 0 %}
+                                            <span class="badge bg-danger ms-2">{{ pending_unknown }}</span>
+                                        {% endif %}
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-info btn-lg w-100" onclick="refreshStats()">
+                                        <i class="fas fa-sync me-2"></i>Refresh Stats
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recent Chatbot Queries</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_chatbot_queries %}
+                                {% for query in recent_chatbot_queries %}
+                                <div class="border-bottom pb-2 mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">{{ query.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                                        <span class="badge bg-info">{{ query.category or 'general' }}</span>
+                                    </div>
+                                    <div class="fw-bold">{{ query.question[:50] }}{% if query.question|length > 50 %}...{% endif %}</div>
+                                    <div class="text-muted small">{{ query.answer[:80] }}{% if query.answer|length > 80 %}...{% endif %}</div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No recent queries found.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recent Unknown Queries</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_unknown_queries %}
+                                {% for query in recent_unknown_queries %}
+                                <div class="border-bottom pb-2 mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">{{ query.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                                        {% if query.exported %}
+                                            <span class="badge bg-success">Answered</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="fw-bold">{{ query.query[:50] }}{% if query.query|length > 50 %}...{% endif %}</div>
+                                    <div class="text-muted small">
+                                        {% if query.student_id %}
+                                            Student ID: {{ query.student_id }}
+                                        {% elif query.phone_number %}
+                                            Phone: {{ query.phone_number }}
+                                        {% else %}
+                                            Anonymous
+                                        {% endif %}
+                                    </div>
+                                    {% if not query.exported %}
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('admin.answer_unknown', unknown_id=query.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-reply"></i> Answer
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No unknown queries found.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStats() {
+    location.reload();
+}
+</script>
+{% endblock %}

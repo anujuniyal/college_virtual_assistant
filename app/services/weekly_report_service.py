@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta
 
 from app.extensions import db
-from app.models import ChatbotUnknown
+from app.models import FAQRecord
 from app.services.analytics_service import AnalyticsService
 from app.services.email_service import EmailService
 from app.config import Config
@@ -27,12 +27,12 @@ class WeeklyReportService:
         # Send email to admin
         EmailService.send_weekly_report(Config.ADMIN_EMAIL, report_data)
         
-        # Mark queries as exported
+        # Mark queries as processed
         week_ago = datetime.utcnow() - timedelta(days=7)
-        ChatbotUnknown.query.filter(
-            ChatbotUnknown.created_at >= week_ago,
-            ChatbotUnknown.exported == False
-        ).update({'exported': True})
+        db.session.query(FAQRecord).filter(
+            FAQRecord.created_at >= week_ago,
+            FAQRecord.processed == False
+        ).update({'processed': True})
         db.session.commit()
         
         return csv_path
@@ -44,12 +44,12 @@ class WeeklyReportService:
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         os.makedirs(data_dir, exist_ok=True)
         
-        # Get unexported queries
-        unknown_queries = ChatbotUnknown.query.filter_by(exported=False).all()
+        # Get unprocessed queries
+        unknown_queries = db.session.query(FAQRecord).filter_by(processed=False).all()
         
         # Generate filename with timestamp
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-        csv_filename = f'chatbot_unknown_{timestamp}.csv'
+        csv_filename = f'faq_records_{timestamp}.csv'
         csv_path = os.path.join(data_dir, csv_filename)
         
         # Write to CSV

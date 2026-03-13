@@ -185,20 +185,34 @@
                     Manage Accounts
                 </a>
                 
+                {% if has_write_access() %}
                 <a href="{{ url_for('accounts.accounts_decorated_billing') }}" class="quick-action-btn mb-2">
                     <i class="fas fa-file-invoice-dollar"></i>
                     Generate Bills
                 </a>
+                {% else %}
+                <a href="{{ url_for('accounts.accounts_decorated_billing') }}" class="quick-action-btn mb-2" style="opacity: 0.6; cursor: not-allowed;" title="Read-only access">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    View Bills (Read-only)
+                </a>
+                {% endif %}
                 
                 <a href="{{ url_for('accounts.accounts_decorated_reports') }}" class="quick-action-btn mb-2">
                     <i class="fas fa-chart-pie"></i>
                     View Reports
                 </a>
                 
+                {% if has_write_access() %}
                 <a href="#" class="quick-action-btn mb-2" onclick="showPaymentModal()">
                     <i class="fas fa-credit-card"></i>
                     Record Payment
                 </a>
+                {% else %}
+                <a href="#" class="quick-action-btn mb-2" style="opacity: 0.6; cursor: not-allowed;" title="Read-only access">
+                    <i class="fas fa-credit-card"></i>
+                    Record Payment (Read-only)
+                </a>
+                {% endif %}
                 
                 <a href="#" class="quick-action-btn" onclick="exportFinancialData()">
                     <i class="fas fa-download"></i>
@@ -291,10 +305,17 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Record Payment</h5>
+                <h5 class="modal-title">
+                    {% if has_write_access() %}
+                    Record Payment
+                    {% else %}
+                    Payment Details (Read-only)
+                    {% endif %}
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                {% if has_write_access() %}
                 <form id="paymentForm">
                     <div class="mb-3">
                         <label for="studentSelect" class="form-label">Student</label>
@@ -321,10 +342,30 @@
                         <textarea class="form-control" id="paymentNotes" rows="2"></textarea>
                     </div>
                 </form>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You have read-only access to payment records. Only users with accounts role can record new payments.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Student</label>
+                    <input type="text" class="form-control" value="Select a student to view details" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Amount ($)</label>
+                    <input type="text" class="form-control" value="0.00" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Payment Method</label>
+                    <input type="text" class="form-control" value="N/A" readonly>
+                </div>
+                {% endif %}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                {% if has_write_access() %}
                 <button type="button" class="btn btn-primary" onclick="submitPayment()">Record Payment</button>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -334,9 +375,14 @@
 <script>
 // Accounts-specific JavaScript
 function showPaymentModal() {
+    {% if has_write_access() %}
     const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
     modal.show();
     loadStudentsForPayment();
+    {% else %}
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+    {% endif %}
 }
 
 function loadStudentsForPayment() {
@@ -358,6 +404,7 @@ function loadStudentsForPayment() {
 }
 
 function submitPayment() {
+    {% if has_write_access() %}
     const form = document.getElementById('paymentForm');
     if (form.checkValidity()) {
         // Show loading
@@ -374,6 +421,9 @@ function submitPayment() {
             form.reset();
         }, 2000);
     }
+    {% else %}
+    showNotification('You have read-only access. Cannot record payments.', 'warning');
+    {% endif %}
 }
 
 function updateFinancialPeriod(period) {

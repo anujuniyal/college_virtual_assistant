@@ -17,7 +17,7 @@
                 </div>
                 
                 <nav class="nav flex-column">
-                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="nav-link active">
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">
                         <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
                     <a href="{{ url_for('admin.add_student') }}" class="nav-link">
@@ -31,6 +31,15 @@
                     </a>
                     <a href="{{ url_for('admin.add_notification') }}" class="nav-link">
                         <i class="bi bi-bell"></i> Send Notification
+                    </a>
+                    <a href="{{ url_for('manage_complaints') }}" class="nav-link">
+                        <i class="bi bi-exclamation-triangle"></i> Manage Complaints
+                    </a>
+                    <a href="{{ url_for('complaint_messages') }}" class="nav-link">
+                        <i class="bi bi-chat-dots"></i> Complaint Messages
+                    </a>
+                    <a href="{{ url_for('manage_faqs') }}" class="nav-link">
+                        <i class="bi bi-question-circle"></i> Manage FAQs
                     </a>
                     <a href="/notifications">
                         <i class="bi bi-envelope"></i> View Notices
@@ -109,7 +118,7 @@
                 
                 <div class="col-md-3 mb-3">
                     <div class="stat-card-wrapper">
-                        <a href="#" class="stat-card-link">
+                        <a href="{{ url_for('manage_complaints') }}" class="stat-card-link">
                             <div class="stat-card">
                                 <div class="stat-icon">
                                     <i class="bi bi-exclamation-triangle"></i>

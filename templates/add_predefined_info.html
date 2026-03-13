@@ -1,0 +1,216 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Add Predefined Info - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="h4 mb-0">Add Predefined Information</h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.predefined_info') }}" class="btn btn-outline-info">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.manage_predefined_info') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i> Manage Info
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" id="addPredefinedInfoForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="section" class="form-label">Section *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-folder input-icon"></i>
+                                        <select class="form-control" id="section" name="section" required>
+                                            <option value="">Select Section</option>
+                                            <option value="admission">Admission</option>
+                                            <option value="fees">Fees</option>
+                                            <option value="facilities">Facilities</option>
+                                            <option value="courses">Courses</option>
+                                            <option value="academic">Academic Calendar</option>
+                                            <option value="contact">Contact Information</option>
+                                            <option value="library">Library</option>
+                                            <option value="hostel">Hostel</option>
+                                            <option value="transport">Transport</option>
+                                            <option value="sports">Sports</option>
+                                            <option value="placement">Placement</option>
+                                            <option value="general">General</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-tag input-icon"></i>
+                                        <input type="text" class="form-control" id="category" name="category" 
+                                               placeholder="Sub-category (optional)">
+                                    </div>
+                                    <div class="form-text">Optional sub-category within the section</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-heading input-icon"></i>
+                                        <input type="text" class="form-control" id="title" name="title" 
+                                               placeholder="e.g., Admission Process 2024" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="content" class="form-label">Content *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-align-left input-icon"></i>
+                                        <textarea class="form-control" id="content" name="content" rows="8" 
+                                                  placeholder="Detailed information about this topic..." required></textarea>
+                                    </div>
+                                    <div class="form-text">
+                                        Provide detailed information that will be used by the chatbot to answer visitor questions.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">
+                                            <i class="fas fa-eye me-2"></i>Active
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        When active, this information will be available to the chatbot
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Preview</label>
+                                    <div class="card">
+                                        <div class="card-body p-3">
+                                            <div class="small text-muted mb-2">How it will appear in bot:</div>
+                                            <div class="fw-bold text-primary mb-1">Section: <span id="preview-section">-</span></div>
+                                            <div class="fw-bold mb-1">Title: <span id="preview-title">-</span></div>
+                                            <div>Content: <span id="preview-content">Your content will appear here...</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Real-Time Integration:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>This information will be <strong>immediately available</strong> to the chatbot</li>
+                                        <li>Visitors asking related questions will receive this information</li>
+                                        <li>Updates to this content will be reflected in real-time</li>
+                                        <li>This replaces the need to hard-code information in the bot</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>Add Information
+                                    </button>
+                                    <div>
+                                        <a href="{{ url_for('admin.manage_predefined_info') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addPredefinedInfoForm').addEventListener('input', function() {
+    const section = document.getElementById('section').value;
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    
+    document.getElementById('preview-section').textContent = section || '-';
+    document.getElementById('preview-title').textContent = title || '-';
+    document.getElementById('preview-content').textContent = content || 'Your content will appear here...';
+});
+
+document.getElementById('addPredefinedInfoForm').addEventListener('submit', function(e) {
+    const section = document.getElementById('section').value;
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    
+    if (!section) {
+        e.preventDefault();
+        alert('Please select a section!');
+        return false;
+    }
+    
+    if (!title) {
+        e.preventDefault();
+        alert('Please provide a title!');
+        return false;
+    }
+    
+    if (!content) {
+        e.preventDefault();
+        alert('Please provide content!');
+        return false;
+    }
+    
+    if (content.length < 20) {
+        e.preventDefault();
+        alert('Content must be at least 20 characters long!');
+        return false;
+    }
+    
+    if (confirm('This information will be immediately available to the chatbot. Continue?')) {
+        return true;
+    } else {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-Run Telegram Bot with Polling (No Webhook Required)
+Simple Telegram Bot Polling Service - Student/Visitor Mode
 """
 import os
 import sys
 import time
 import signal
-import threading
 from datetime import datetime
 
 # Load environment variables from .env file
@@ -27,80 +26,58 @@ except ImportError:
 # Add the app directory to Python path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.services.telegram_service import TelegramBotService
 from app import create_app
+from app.services.telegram_service import TelegramBotService
 
-class PollingBotRunner:
-    def __init__(self):
-        self.running = False
-        self.bot_service = None
-        self.polling_thread = None
-        self.app = create_app()
-        self.app_context = self.app.app_context()
-        self.app_context.push()
+def main():
+    """Main bot function"""
+    try:
+        # Create Flask app and push context
+        app = create_app()
+        app.app_context().push()
         
-    def start(self):
-        """Start the bot service with polling"""
-        try:
-            print("🤖 Starting Telegram Bot Service (Polling Mode)...")
-            print(f"📅 Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            print()
-            
-            # Get bot token
-            bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-            if not bot_token:
-                print("❌ TELEGRAM_BOT_TOKEN not found in environment variables")
-                return False
-            
-            print(f"🔧 Bot Token: {bot_token[:10]}...{bot_token[-10:] if len(bot_token) > 20 else ''}")
-            
-            # Initialize bot service
-            self.bot_service = TelegramBotService()
-            self.bot_service.bot_token = bot_token
-            self.running = True
-            
-            # Test bot connection
-            bot_info = self.bot_service.get_bot_info()
-            if not bot_info:
-                print("❌ Failed to connect to Telegram bot")
-                return False
-            
-            print(f"✅ Connected to bot: @{bot_info['username']} ({bot_info['first_name']})")
-            print("🔄 Bot is now running in polling mode...")
-            print("📝 Send a message to your bot to test")
-            print("⏹️  Press Ctrl+C to stop the bot")
-            print("-" * 50)
-            
-            # Start polling in a separate thread
-            self.polling_thread = threading.Thread(target=self._poll_messages)
-            self.polling_thread.daemon = True
-            self.polling_thread.start()
-            
-            # Keep the main thread alive
-            while self.running:
-                time.sleep(1)
-                
-        except KeyboardInterrupt:
-            print("\n⏹️  KeyboardInterrupt received")
-            self.stop()
-        except Exception as e:
-            print(f"❌ Error in bot service: {str(e)}")
-            self.stop()
+        print("🤖 Starting Telegram Bot Service (Polling Mode)...")
+        print(f"📅 Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print()
+        
+        # Get bot token
+        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            print("❌ TELEGRAM_BOT_TOKEN not found in environment variables")
             return False
         
-        return True
-    
-    def _poll_messages(self):
-        """Poll for messages from Telegram"""
-        import requests
-        offset = 0
+        print(f"🔧 Bot Token: {bot_token[:10]}...{bot_token[-10:] if len(bot_token) > 20 else ''}")
         
-        while self.running:
+        # Initialize bot service
+        bot_service = TelegramBotService()
+        bot_service.bot_token = bot_token
+        
+        # Test bot connection
+        bot_info = bot_service.get_bot_info()
+        if not bot_info:
+            print("❌ Failed to connect to Telegram API")
+            return False
+        
+        print(f"✅ Connected to bot: {bot_info.get('first_name')} (@{bot_info.get('username')})")
+        
+        print("✅ Bot service initialized successfully")
+        print("✅ Polling mode activated")
+        print("🔄 Bot is now running and listening for messages...")
+        print("📝 Send a message to @edubot_assistant_bot to test")
+        print("⏹️  Press Ctrl+C to stop the bot")
+        print("-" * 50)
+        
+        # Polling loop
+        last_update_id = 0
+        running = True
+        
+        while running:
             try:
                 # Get updates from Telegram
-                url = f"https://api.telegram.org/bot{self.bot_service.bot_token}/getUpdates"
+                import requests
+                url = f"https://api.telegram.org/bot{bot_service.bot_token}/getUpdates"
                 params = {
-                    'offset': offset,
+                    'offset': last_update_id + 1 if last_update_id else None,
                     'timeout': 30,  # Long polling
                     'allowed_updates': ['message']
                 }
@@ -113,60 +90,49 @@ class PollingBotRunner:
                         updates = result.get('result', [])
                         
                         for update in updates:
-                            # Process each update with app context
+                            # Process the update
                             try:
-                                with self.app.app_context():
-                                    self.bot_service.process_update(update)
-                                    offset = update['update_id'] + 1
+                                result = bot_service.process_update(update)
+                                if result:
+                                    print(f"✅ Processed update {update.get('update_id')}")
+                                last_update_id = update.get('update_id', 0)
                             except Exception as e:
-                                print(f"⚠️  Error processing update: {str(e)}")
-                                offset = update['update_id'] + 1
-                                continue
-                                
+                                print(f"❌ Error processing update: {str(e)}")
+                    else:
+                        error_desc = result.get('description', 'Unknown error')
+                        print(f"❌ Updates error: {error_desc}")
                 else:
-                    print(f"⚠️  Polling error: {response.status_code}")
-                    time.sleep(5)
-                    
+                    print(f"❌ HTTP error getting updates: {response.status_code}")
+                
+                # Small delay to prevent overwhelming the API
+                time.sleep(1)
+                
+            except KeyboardInterrupt:
+                print("\n⏹️  KeyboardInterrupt received")
+                running = False
+                break
             except requests.exceptions.Timeout:
-                continue  # Normal timeout, continue polling
-            except Exception as e:
-                print(f"⚠️  Polling error: {str(e)}")
+                print("⚠️  Timeout getting updates, retrying...")
+                continue
+            except requests.exceptions.ConnectionError:
+                print("⚠️  Connection error getting updates, retrying...")
                 time.sleep(5)
                 continue
-    
-    def stop(self):
-        """Stop the bot service"""
-        if self.running:
-            print("🛑 Stopping bot service...")
-            self.running = False
-            
-            if self.bot_service:
-                try:
-                    # Cleanup webhook if needed
-                    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-                    if bot_token:
-                        import requests
-                        webhook_url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
-                        requests.post(webhook_url, timeout=10)
-                        print("✅ Webhook deleted")
-                except Exception as e:
-                    print(f"⚠️  Error cleaning up webhook: {str(e)}")
-            
-            # Clean up app context
-            try:
-                self.app_context.pop()
-                print("✅ App context cleaned up")
             except Exception as e:
-                print(f"⚠️  Error cleaning up app context: {str(e)}")
-            
-            print(f"📅 Stopped at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            print("👋 Bot service stopped successfully")
+                print(f"❌ Polling error: {str(e)}")
+                time.sleep(5)
+        
+        print(f"📅 Stopped at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("👋 Bot service stopped successfully")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error in bot service: {str(e)}")
+        return False
 
 def signal_handler(signum, frame):
     """Handle shutdown signals"""
     print(f"\n📡 Received signal {signum}")
-    if 'runner' in globals():
-        runner.stop()
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -174,9 +140,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    # Create and start bot runner
-    runner = PollingBotRunner()
-    success = runner.start()
+    # Run the bot
+    success = main()
     
     if not success:
         print("❌ Bot failed to start properly")

@@ -161,6 +161,24 @@ console.log('toggleBot function defined in head');
 
 <div class="nav-item">
     <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
+        <i class="fas fa-info-circle"></i>
+        <span>College Info</span>
+        <i class="fas fa-chevron-down ms-auto"></i>
+    </a>
+    <div class="submenu">
+        <a href="{{ url_for('admin.predefined_info') }}" class="nav-link">
+            <i class="fas fa-edit"></i>
+            <span class="submenu-text">Predefined Info</span>
+        </a>
+        <a href="{{ url_for('admin.faq_management') }}" class="nav-link">
+            <i class="fas fa-question"></i>
+            <span class="submenu-text">FAQ Management</span>
+        </a>
+    </div>
+</div>
+
+<div class="nav-item">
+    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
         <i class="fas fa-bell"></i>
         <span>Notifications</span>
         <i class="fas fa-chevron-down ms-auto"></i>
@@ -177,10 +195,11 @@ console.log('toggleBot function defined in head');
     </div>
 </div>
 
+
 <div class="nav-item">
-    <a href="{{ url_for('admin.admin_upload') }}" class="nav-link {% if 'upload' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-upload"></i>
-        <span>Upload Data</span>
+    <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link {% if 'complaint' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Complaints</span>
     </a>
 </div>
 
@@ -332,14 +351,6 @@ console.log('toggleBot function defined in head');
             </button>
         </div>
     </div>
-    
-    <div class="summary-card issues">
-        <div class="card-icon issues">
-            <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <div class="card-title">Pending Issues</div>
-        <div class="card-count">{{ pending_complaints }}</div>
-    </div>
 </div>
 
 <div class="row">
@@ -401,21 +412,6 @@ console.log('toggleBot function defined in head');
             </div>
             
             <div class="quick-actions">
-                <div class="mb-3">
-                    <h6 class="text-muted mb-3">Bot Status</h6>
-                    <div class="d-flex align-items-center mb-2">
-                        {% if bot_status.status == 'active' %}
-                        <div class="badge bg-success me-2">Active</div>
-                        {% elif bot_status.status == 'inactive' %}
-                        <div class="badge bg-secondary me-2">Inactive</div>
-                        {% else %}
-                        <div class="badge bg-danger me-2">Error</div>
-                        {% endif %}
-                        <small class="text-muted">{{ bot_status.message }}</small>
-                    </div>
-                    <small class="text-muted">Last checked: {{ bot_status.last_checked }}</small>
-                </div>
-                
                 <a href="{{ url_for('admin.add_student') }}" class="quick-action-btn mb-2">
                     <i class="fas fa-user-plus"></i>
                     Add Student
@@ -431,59 +427,55 @@ console.log('toggleBot function defined in head');
                     Add Faculty
                 </a>
                 
-                <a href="{{ url_for('admin.admin_upload') }}" class="quick-action-btn mb-2">
-                    <i class="fas fa-upload"></i>
-                    Upload Data
-                </a>
+                <button class="quick-action-btn mb-2" onclick="sendWeeklyReportInline()" id="weeklyReportBtn">
+                    <i class="fas fa-file-export"></i>
+                    Send Weekly Report
+                </button>
                 
-                <a href="{{ url_for('admin.analytics') }}" class="quick-action-btn">
-                    <i class="fas fa-chart-line"></i>
-                    View Analytics
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- System Status -->
-<div class="dashboard-section">
-    <div class="section-header">
-        <h3 class="section-title">System Status</h3>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-3">
-            <div class="text-center">
-                <div class="badge bg-success mb-2">Online</div>
-                <h6>Database</h6>
-                <small class="text-muted">Connected</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="text-center">
-                {% if bot_status.status == 'active' %}
-                <div class="badge bg-success mb-2">Active</div>
-                {% elif bot_status.status == 'inactive' %}
-                <div class="badge bg-secondary mb-2">Inactive</div>
-                {% else %}
-                <div class="badge bg-danger mb-2">Error</div>
-                {% endif %}
-                <h6>Telegram Bot</h6>
-                <small class="text-muted">{{ bot_status.message }}</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="text-center">
-                <div class="badge bg-success mb-2">Normal</div>
-                <h6>Server Load</h6>
-                <small class="text-muted">15% CPU</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="text-center">
-                <div class="badge bg-warning mb-2">Warning</div>
-                <h6>Storage</h6>
-                <small class="text-muted">78% Used</small>
+                <script>
+                // Define function immediately after button
+                function sendWeeklyReportInline() {
+                    const btn = document.getElementById('weeklyReportBtn');
+                    const originalContent = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+                    btn.disabled = true;
+                    
+                    fetch('/admin/send-weekly-report', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Weekly report response:', data);
+                        
+                        if (data.success) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> Sent Successfully';
+                            alert('✅ ' + (data.message || 'Weekly report sent successfully!'));
+                        } else {
+                            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+                            alert('❌ ' + (data.message || 'Failed to send weekly report'));
+                        }
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }, 3000);
+                    })
+                    .catch(error => {
+                        console.error('Error sending weekly report:', error);
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+                        alert('❌ Error sending weekly report');
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }, 2000);
+                    });
+                }
+                </script>
             </div>
         </div>
     </div>
@@ -491,6 +483,86 @@ console.log('toggleBot function defined in head');
 {% endblock %}
 
 <script>
+// Define handleWeeklyReport immediately
+function handleWeeklyReport() {
+    const reportBtn = document.getElementById('weeklyReportBtn');
+    const originalContent = reportBtn.innerHTML;
+    
+    // Show loading state
+    reportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    reportBtn.disabled = true;
+    
+    // Send request to generate and send weekly report
+    fetch('/admin/send-weekly-report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Weekly report response:', data);
+        
+        if (data.success) {
+            // Show success state
+            reportBtn.innerHTML = '<i class="fas fa-check"></i> Sent Successfully';
+            
+            // Show success message
+            if (data.message) {
+                showNotification(data.message, 'success');
+            }
+            
+            // If file was generated, show download info
+            if (data.file_path) {
+                showNotification(`Report generated: ${data.file_name}`, 'info');
+            }
+        } else {
+            // Show error state
+            reportBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            showNotification(data.message || 'Failed to send weekly report', 'error');
+        }
+        
+        // Reset button after delay
+        setTimeout(() => {
+            reportBtn.innerHTML = originalContent;
+            reportBtn.disabled = false;
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Error sending weekly report:', error);
+        reportBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+        showNotification('Error sending weekly report', 'error');
+        
+        setTimeout(() => {
+            reportBtn.innerHTML = originalContent;
+            reportBtn.disabled = false;
+        }, 2000);
+    });
+}
+
+// Helper function to show notifications
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+};
+
 // Initialize bot status checking when page loads
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded - checking bot status');
@@ -564,6 +636,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error checking status:', error);
             });
     }, 10000);
+    
+    console.log('Bot toggle button ready - all functionality is inline!');
+
+    // Real-time activity refresh function
+    function refreshActivity() {
+        const refreshBtn = document.querySelector('.btn-sm.btn-outline-primary');
+        const originalIcon = refreshBtn.innerHTML;
+        
+        // Show loading state
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        refreshBtn.disabled = true;
+        
+        // Fetch real-time activity data
+        fetch('/admin/refresh-activity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Real-time activity data:', data);
+            
+            // Update activity list with real data
+            const activityList = document.querySelector('.activity-list');
+            if (activityList && data.activities) {
+                activityList.innerHTML = '';
+                
+                if (data.activities.length === 0) {
+                    activityList.innerHTML = `
+                        <li class="activity-item">
+                            <div class="activity-icon muted">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">No recent activity found</div>
+                                <div class="activity-time">Just now</div>
+                            </div>
+                        </li>
+                    `;
+                } else {
+                    data.activities.forEach(activity => {
+                        const activityItem = document.createElement('li');
+                        activityItem.className = 'activity-item';
+                        activityItem.innerHTML = `
+                            <div class="activity-icon ${activity.color}">
+                                <i class="fas fa-${activity.icon}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">${activity.text}</div>
+                                <div class="activity-time">${activity.time}</div>
+                            </div>
+                        `;
+                        activityList.appendChild(activityItem);
+                    });
+                }
+            }
+            
+            // Show success feedback
+            refreshBtn.innerHTML = '<i class="fas fa-check"></i> Updated';
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalIcon;
+                refreshBtn.disabled = false;
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error refreshing activity:', error);
+            refreshBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalIcon;
+                refreshBtn.disabled = false;
+            }, 2000);
+        });
+    }
+    
+    // Make refreshActivity globally available
+    window.refreshActivity = refreshActivity;
     
     console.log('Bot toggle button ready - all functionality is inline!');
 });

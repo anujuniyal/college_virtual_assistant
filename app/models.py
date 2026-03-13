@@ -221,6 +221,10 @@ class FeeRecord(db.Model):
         """Calculate balance"""
         return self.total_amount - self.paid_amount
     
+    def update_balance(self):
+        """Update balance_amount field to match calculated balance"""
+        self.balance_amount = self.balance
+    
     def __repr__(self):
         return f'<FeeRecord {self.student_id} - Sem {self.semester}>'
 
@@ -292,19 +296,55 @@ class ChatbotQA(db.Model):
         return f'<ChatbotQA {self.id}>'
 
 
-class ChatbotUnknown(db.Model):
-    """Unknown Chatbot Queries"""
-    __tablename__ = 'chatbot_unknown'
+class PredefinedInfo(db.Model):
+    """Predefined College Information - Editable by Admin"""
+    __tablename__ = 'predefined_info'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    section = db.Column(db.String(50), nullable=False, index=True)  # 'admission', 'fees', 'facilities', etc.
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(50))  # sub-category within section
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=True)
+    
+    def __repr__(self):
+        return f'<PredefinedInfo {self.section}: {self.title}>'
+
+class FAQ(db.Model):
+    """Frequently Asked Questions - High Frequency Queries"""
+    __tablename__ = 'faq'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text, nullable=False, index=True)
+    answer = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(50))  # 'admission', 'fees', 'facilities', etc.
+    priority = db.Column(db.Integer, default=1)  # 1=low, 2=medium, 3=high
+    view_count = db.Column(db.Integer, default=0)  # Track popularity
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=True)
+    
+    def __repr__(self):
+        return f'<FAQ {self.id}: {self.question[:50]}...>'
+
+class FAQRecord(db.Model):
+    """FAQ Records - Questions from visitors/students to be processed"""
+    __tablename__ = 'faq_records'
     
     id = db.Column(db.Integer, primary_key=True)
     query = db.Column(db.Text, nullable=False)
     phone_number = db.Column(db.String(15))
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    exported = db.Column(db.Boolean, default=False)
+    processed = db.Column(db.Boolean, default=False)  # renamed from exported
+    faq_id = db.Column(db.Integer, db.ForeignKey('faq.id'), nullable=True)  # link to created FAQ
     
     def __repr__(self):
-        return f'<ChatbotUnknown {self.id}>'
+        return f'<FAQRecord {self.id}: {self.query[:50]}...>'
 
 
 class QueryLog(db.Model):
@@ -469,3 +509,19 @@ class TelegramUserMapping(db.Model):
 
     def __repr__(self):
         return f'<TelegramUserMapping {self.telegram_user_id} -> {self.phone_number}>'
+
+
+class VisitorQuery(db.Model):
+    """Visitor mode queries for tracking and analysis"""
+    __tablename__ = 'visitor_queries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    query_type = db.Column(db.String(50), nullable=False)  # 'admission', 'course', 'fee', 'facilities', 'faculty', 'other'
+    query_text = db.Column(db.Text, nullable=False)
+    response_text = db.Column(db.Text, nullable=False)
+    phone_number = db.Column(db.String(15), nullable=True)  # Optional for anonymous visitors
+    telegram_user_id = db.Column(db.String(32), nullable=True, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    def __repr__(self):
+        return f'<VisitorQuery {self.query_type} - {self.id}>'

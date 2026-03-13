@@ -1,0 +1,131 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}FAQ Management - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="h4 mb-0">FAQ Management</h2>
+                    <span class="badge bg-warning">Frequently Asked Questions</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-info">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.manage_faqs') }}" class="btn btn-primary">
+                        <i class="fas fa-list me-2"></i> Manage FAQs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.manage_faqs') }}" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="fas fa-list me-2"></i>Manage FAQs
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.add_faq') }}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-plus me-2"></i>Add New FAQ
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.faq_records') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-list-alt me-2"></i>FAQ Records
+                                {% if unprocessed_records > 0 %}
+                                    <span class="badge bg-danger ms-2">{{ unprocessed_records }}</span>
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-info btn-lg w-100" onclick="refreshStats()">
+                                <i class="fas fa-sync me-2"></i>Refresh Stats
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Overview -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">FAQ Categories</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if categories %}
+                                {% for category in categories %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <i class="fas fa-tag text-primary me-2"></i>
+                                        <strong>{{ category[0] or 'general' | title }}</strong>
+                                    </div>
+                                    <span class="badge bg-primary">{{ category[1] }} FAQs</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No categories found. Add some FAQs to get started.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recent FAQ Records</h5>
+                            <small class="text-muted">Real-time visitor questions</small>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_records %}
+                                {% for record in recent_records %}
+                                <div class="border-bottom pb-2 mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">{{ record.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                                        <span class="badge bg-{{ 'success' if record.processed else 'warning' }}">
+                                            {{ 'Processed' if record.processed else 'Pending' }}
+                                        </span>
+                                    </div>
+                                    <div class="fw-bold">{{ record.query[:50] }}{% if record.query|length > 50 %}...{% endif %}</div>
+                                    <div class="text-muted small">
+                                        {% if record.student_id %}
+                                            Student ID: {{ record.student_id }}
+                                        {% elif record.phone_number %}
+                                            Phone: {{ record.phone_number }}
+                                        {% else %}
+                                            Anonymous
+                                        {% endif %}
+                                    </div>
+                                    {% if not record.processed %}
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('admin.process_faq_record', record_id=record.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-cog"></i> Process
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No FAQ records found. Questions from visitors will appear here.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStats() {
+    location.reload();
+}
+</script>
+{% endblock %}

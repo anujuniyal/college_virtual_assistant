@@ -5,7 +5,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 
 from app.extensions import db
-from app.models import ChatbotUnknown, ChatbotQA, QueryLog, Student, Session, Result, FeeRecord, Notification
+from app.models import FAQRecord, ChatbotQA, QueryLog, Student, Session, Result, FeeRecord, Notification
 
 
 class AnalyticsService:
@@ -23,9 +23,9 @@ class AnalyticsService:
         """Get data for weekly report"""
         week_ago = datetime.utcnow() - timedelta(days=7)
         
-        # Get unknown queries from past week
-        weekly_unknown = ChatbotUnknown.query.filter(
-            ChatbotUnknown.created_at >= week_ago
+        # Get FAQ records from past week
+        weekly_unknown = db.session.query(FAQRecord).filter(
+            FAQRecord.created_at >= week_ago
         ).all()
         
         # Get query texts for analysis

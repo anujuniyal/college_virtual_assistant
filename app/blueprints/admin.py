@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from app.extensions import db
-from app.models import Student, Faculty, Notification, Complaint, Result, FeeRecord, StudentRegistration, QueryLog, ChatbotUnknown
+from app.models import Student, Faculty, Notification, Complaint, Result, FeeRecord, StudentRegistration, QueryLog, FAQRecord, ChatbotQA, PredefinedInfo, FAQ
 from app.services.safe_execute import safe_execute
 from datetime import datetime, timedelta
 import json
@@ -370,16 +370,38 @@ def edit_student(student_id):
     
     return render_template('edit_student.html', student=student)
 
-@admin_bp.route('/delete-student/<int:student_id>')
+@admin_bp.route('/delete-student/<int:student_id>', methods=['GET', 'POST'])
 @admin_required
 def delete_student(student_id):
-    """Delete student"""
+    """Delete student with proper cascade handling"""
     try:
         student = Student.query.get_or_404(student_id)
+        
+        # Delete related records first to avoid foreign key constraints
+        from app.models import Result, FeeRecord, TelegramUserMapping, QueryLog, Complaint
+        
+        # Delete related results
+        Result.query.filter_by(student_id=student_id).delete()
+        
+        # Delete related fee records
+        FeeRecord.query.filter_by(student_id=student_id).delete()
+        
+        # Delete related telegram mappings
+        TelegramUserMapping.query.filter_by(student_id=student_id).delete()
+        
+        # Delete related query logs
+        QueryLog.query.filter_by(student_id=student_id).delete()
+        
+        # Delete complaints related to the student
+        Complaint.query.filter_by(student_id=student_id).delete()
+        
+        # Now delete the student
         db.session.delete(student)
         db.session.commit()
+        
         flash('✅ Student deleted successfully!', 'success')
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error deleting student: {str(e)}")
         flash(f'❌ Error deleting student: {str(e)}', 'error')
     
@@ -763,11 +785,114 @@ def faculty_manage_results():
         flash('Error loading results.', 'error')
         return render_template('faculty_manage_results.html', results=[], students=[])
 
-@admin_bp.route('/upload')
+@admin_bp.route('/manage-complaints')
 @admin_required
-def admin_upload():
-    """Admin upload page"""
-    return render_template('admin_upload.html')
+def manage_complaints():
+    """Manage all complaints"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        status_filter = request.args.get('status', '')
+        category_filter = request.args.get('category', '')
+        
+        # Build query
+        query = Complaint.query
+        
+        if status_filter:
+            query = query.filter_by(status=status_filter)
+        
+        if category_filter:
+            query = query.filter_by(category=category_filter)
+        
+        # Paginate
+        complaints_pagination = query.order_by(Complaint.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        # Get statistics
+        total_complaints = safe_execute(Complaint.query.count) or 0
+        pending_complaints = safe_execute(
+            lambda: Complaint.query.filter_by(status='pending').count()
+        ) or 0
+        investigating_complaints = safe_execute(
+            lambda: Complaint.query.filter_by(status='investigating').count()
+        ) or 0
+        resolved_complaints = safe_execute(
+            lambda: Complaint.query.filter_by(status='resolved').count()
+        ) or 0
+        
+        return render_template('manage_complaints.html',
+                             complaints_pagination=complaints_pagination,
+                             total_complaints=total_complaints,
+                             pending_complaints=pending_complaints,
+                             investigating_complaints=investigating_complaints,
+                             resolved_complaints=resolved_complaints,
+                             selected_status=status_filter,
+                             selected_category=category_filter)
+    except Exception as e:
+        current_app.logger.error(f"Error loading manage complaints: {str(e)}")
+        flash('Error loading complaints.', 'error')
+        return render_template('manage_complaints.html',
+                             complaints_pagination=None,
+                             total_complaints=0,
+                             pending_complaints=0,
+                             investigating_complaints=0,
+                             resolved_complaints=0)
+
+@admin_bp.route('/view-complaint/<int:complaint_id>')
+@admin_required
+def view_complaint(complaint_id):
+    """View individual complaint details"""
+    try:
+        complaint = Complaint.query.get_or_404(complaint_id)
+        return render_template('view_complaint.html', complaint=complaint)
+    except Exception as e:
+        current_app.logger.error(f"Error viewing complaint: {str(e)}")
+        flash('Error loading complaint details.', 'error')
+        return redirect(url_for('admin.manage_complaints'))
+
+@admin_bp.route('/update-complaint-status/<int:complaint_id>', methods=['POST'])
+@admin_required
+def update_complaint_status(complaint_id):
+    """Update complaint status"""
+    try:
+        complaint = Complaint.query.get_or_404(complaint_id)
+        new_status = request.form.get('status')
+        
+        if new_status not in ['pending', 'investigating', 'resolved']:
+            flash('Invalid status.', 'error')
+            return redirect(url_for('admin.view_complaint', complaint_id=complaint_id))
+        
+        old_status = complaint.status
+        complaint.status = new_status
+        db.session.commit()
+        
+        flash(f'✅ Complaint status updated from {old_status} to {new_status}', 'success')
+        return redirect(url_for('admin.view_complaint', complaint_id=complaint_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating complaint status: {str(e)}")
+        flash(f'❌ Error updating complaint status: {str(e)}', 'error')
+        return redirect(url_for('admin.view_complaint', complaint_id=complaint_id))
+
+@admin_bp.route('/delete-complaint/<int:complaint_id>', methods=['POST'])
+@admin_required
+def delete_complaint(complaint_id):
+    """Delete complaint"""
+    try:
+        complaint = Complaint.query.get_or_404(complaint_id)
+        db.session.delete(complaint)
+        db.session.commit()
+        
+        flash('✅ Complaint deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting complaint: {str(e)}")
+        flash(f'❌ Error deleting complaint: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.manage_complaints'))
 
 
 @admin_bp.route('/view-notifications')
@@ -947,7 +1072,7 @@ def _get_bot_status():
             try:
                 if proc.info['name'] in ['python', 'python.exe']:
                     cmdline = ' '.join(proc.info['cmdline'] or [])
-                    if any(script in cmdline for script in ['run_telegram_bot_simple.py', 'run_telegram_bot_polling.py', 'run_telegram_bot.py', 'activate_telegram_bot.py', 'simple_telegram_bot.py']):
+                    if 'run_telegram_bot_polling.py' in cmdline:
                         bot_process_running = True
                         uptime = time.time() - proc.info['create_time'] if proc.info.get('create_time') else 0
                         bot_process_info = {
@@ -1223,18 +1348,12 @@ def bot_status():
             try:
                 if proc.info['name'] in ['python', 'python.exe']:
                     cmdline = ' '.join(proc.info['cmdline'] or [])
-                    # More specific matching to avoid false positives
-                    if any(script in cmdline for script in ['run_telegram_bot_simple.py', 'run_telegram_bot_polling.py', 'run_telegram_bot.py', 'activate_telegram_bot.py', 'simple_telegram_bot.py']):
+                    # Check for the main bot script (student/visitor polling mode)
+                    if 'run_telegram_bot_polling.py' in cmdline:
                         bot_running = True
                         uptime = time.time() - proc.info['create_time'] if proc.info.get('create_time') else 0
                         
-                        # Determine bot type for message
-                        if 'run_telegram_bot_simple.py' in cmdline:
-                            bot_type = 'Simple Polling'
-                        elif 'run_telegram_bot_polling.py' in cmdline:
-                            bot_type = 'Polling'
-                        else:
-                            bot_type = 'Webhook'
+                        bot_type = 'Student/Visitor Bot (Polling)'
                         
                         bot_info.update({
                             'status': 'online',
@@ -1297,7 +1416,8 @@ def toggle_bot():
             for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 if proc.info['name'] in ['python', 'python.exe']:
                     cmdline = ' '.join(proc.info['cmdline'] or [])
-                    if any(script in cmdline for script in ['run_telegram_bot_simple.py', 'run_telegram_bot_polling.py', 'run_telegram_bot.py', 'activate_telegram_bot.py', 'simple_telegram_bot.py']):
+                    # Prioritize the main bot script (student/visitor polling mode)
+                    if 'run_telegram_bot_polling.py' in cmdline:
                         bot_already_running = True
                         current_app.logger.info(f"Bot already running with PID: {proc.info['pid']}")
                         break
@@ -1309,23 +1429,18 @@ def toggle_bot():
                     'status': 'online'
                 })
             
-            # Try multiple possible bot scripts (simple first for reliability)
-            bot_scripts = ['run_telegram_bot_simple.py', 'run_telegram_bot_polling.py', 'run_telegram_bot.py', 'activate_telegram_bot.py', 'simple_telegram_bot.py']
-            bot_script_path = None
+            # Try the main bot script (student/visitor polling mode)
+            bot_script = 'run_telegram_bot_polling.py'
+            bot_script_path = os.path.join(os.getcwd(), bot_script)
             
-            for script in bot_scripts:
-                script_path = os.path.join(os.getcwd(), script)
-                if os.path.exists(script_path):
-                    bot_script_path = script_path
-                    current_app.logger.info(f"Found bot script: {script_path}")
-                    break
-            
-            if not bot_script_path:
+            if not os.path.exists(bot_script_path):
                 return jsonify({
                     'success': False,
-                    'message': 'No bot runner script found. Checked: run_telegram_bot.py, activate_telegram_bot.py, simple_telegram_bot.py',
+                    'message': f'Bot script not found: {bot_script}',
                     'status': 'error'
                 })
+            
+            current_app.logger.info(f"Using bot script: {bot_script_path}")
             
             # Start bot with improved error handling
             def start_bot_process():
@@ -1481,4 +1596,584 @@ def toggle_bot():
             'message': f'Error toggling bot: {str(e)}',
             'status': 'error',
             'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+# Predefined Info Management Routes
+@admin_bp.route('/predefined-info')
+@admin_required
+def predefined_info():
+    """Manage predefined college information"""
+    try:
+        # Get statistics
+        total_info = PredefinedInfo.query.count()
+        active_info = PredefinedInfo.query.filter_by(is_active=True).count()
+        
+        # Group by sections
+        sections = db.session.query(
+            PredefinedInfo.section,
+            db.func.count(PredefinedInfo.id).label('count')
+        ).group_by(PredefinedInfo.section).all()
+        
+        # Get recent updates
+        recent_info = PredefinedInfo.query.order_by(PredefinedInfo.updated_at.desc()).limit(5).all()
+        
+        return render_template('predefined_info.html',
+                             total_info=total_info,
+                             active_info=active_info,
+                             sections=sections,
+                             recent_info=recent_info)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading predefined info: {str(e)}")
+        flash('Error loading predefined information.', 'error')
+        return redirect(url_for('admin.admin_dashboard_main'))
+
+@admin_bp.route('/manage-predefined-info')
+@admin_required
+def manage_predefined_info():
+    """Manage predefined information"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        section = request.args.get('section', '')
+        search = request.args.get('search', '')
+        
+        # Build query
+        query = PredefinedInfo.query
+        
+        if section:
+            query = query.filter_by(section=section)
+        
+        if search:
+            query = query.filter(
+                PredefinedInfo.title.contains(search) |
+                PredefinedInfo.content.contains(search)
+            )
+        
+        # Paginate
+        info_pagination = query.order_by(PredefinedInfo.section, PredefinedInfo.title).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        # Get sections for filter
+        sections = db.session.query(PredefinedInfo.section).distinct().all()
+        
+        return render_template('manage_predefined_info.html',
+                             info_pagination=info_pagination,
+                             sections=sections,
+                             selected_section=section,
+                             search=search)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading manage predefined info: {str(e)}")
+        flash('Error loading predefined information.', 'error')
+        return redirect(url_for('admin.predefined_info'))
+
+@admin_bp.route('/add-predefined-info', methods=['GET', 'POST'])
+@admin_required
+def add_predefined_info():
+    """Add new predefined information"""
+    if request.method == 'POST':
+        try:
+            info = PredefinedInfo(
+                section=request.form.get('section'),
+                title=request.form.get('title'),
+                content=request.form.get('content'),
+                category=request.form.get('category'),
+                is_active='is_active' in request.form,
+                updated_by=current_user.id
+            )
+            
+            db.session.add(info)
+            db.session.commit()
+            
+            flash('✅ Predefined information added successfully!', 'success')
+            return redirect(url_for('admin.manage_predefined_info'))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error adding predefined info: {str(e)}")
+            flash(f'❌ Error adding predefined information: {str(e)}', 'error')
+    
+    return render_template('add_predefined_info.html')
+
+@admin_bp.route('/edit-predefined-info/<int:info_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_predefined_info(info_id):
+    """Edit predefined information"""
+    info = PredefinedInfo.query.get_or_404(info_id)
+    
+    if request.method == 'POST':
+        try:
+            info.section = request.form.get('section')
+            info.title = request.form.get('title')
+            info.content = request.form.get('content')
+            info.category = request.form.get('category')
+            info.is_active = 'is_active' in request.form
+            info.updated_by = current_user.id
+            info.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash('✅ Predefined information updated successfully!', 'success')
+            return redirect(url_for('admin.manage_predefined_info'))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating predefined info: {str(e)}")
+            flash(f'❌ Error updating predefined information: {str(e)}', 'error')
+    
+    return render_template('edit_predefined_info.html', info=info)
+
+@admin_bp.route('/delete-predefined-info/<int:info_id>', methods=['POST'])
+@admin_required
+def delete_predefined_info(info_id):
+    """Delete predefined information"""
+    try:
+        info = PredefinedInfo.query.get_or_404(info_id)
+        db.session.delete(info)
+        db.session.commit()
+        
+        flash('✅ Predefined information deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting predefined info: {str(e)}")
+        flash(f'❌ Error deleting predefined information: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.manage_predefined_info'))
+
+# FAQ Records Management Routes (Real-time Data Processing)
+@admin_bp.route('/faq-records')
+@admin_required
+def faq_records():
+    """Manage FAQ Records - Questions from visitors/students"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        show_processed = request.args.get('show_processed', 'false') == 'true'
+        
+        # Build query using real FAQ records
+        query = db.session.query(FAQRecord)
+        
+        if not show_processed:
+            query = query.filter_by(processed=False)
+        
+        # Paginate
+        records_pagination = query.order_by(FAQRecord.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        return render_template('faq_records.html',
+                             records_pagination=records_pagination,
+                             show_processed=show_processed)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading FAQ records: {str(e)}")
+        flash('Error loading FAQ records.', 'error')
+        return redirect(url_for('admin.faq_management'))
+
+@admin_bp.route('/process-faq-record/<int:record_id>', methods=['GET', 'POST'])
+@admin_required
+def process_faq_record(record_id):
+    """Process FAQ record and convert to FAQ"""
+    record = db.session.query(FAQRecord).get_or_404(record_id)
+    
+    if request.method == 'POST':
+        try:
+            # Check if this query has been asked frequently (count > 20)
+            query_count = db.session.query(FAQRecord).filter(
+                FAQRecord.query.ilike(f'%{record.query}%')
+            ).count()
+            
+            if query_count < 20:
+                flash('⚠️ This query has been asked less than 20 times. It will be added to regular Q&A instead of FAQ.', 'warning')
+                # Add to regular ChatbotQA
+                new_query = ChatbotQA(
+                    question=record.query,
+                    answer=request.form.get('answer'),
+                    category=request.form.get('category')
+                )
+            else:
+                # Add to FAQ (high frequency)
+                new_faq = FAQ(
+                    question=record.query,
+                    answer=request.form.get('answer'),
+                    category=request.form.get('category'),
+                    priority=int(request.form.get('priority', 2)),  # default medium priority
+                    updated_by=current_user.id
+                )
+                record.faq_id = new_faq.id  # Link record to created FAQ
+                db.session.add(new_faq)
+            
+            # Mark record as processed
+            record.processed = True
+            
+            db.session.add(new_query if query_count < 20 else new_faq)
+            db.session.commit()
+            
+            flash(f'✅ FAQ record processed successfully! (Asked {query_count} times)', 'success')
+            return redirect(url_for('admin.faq_records'))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error processing FAQ record: {str(e)}")
+            flash(f'❌ Error processing FAQ record: {str(e)}', 'error')
+    
+    return render_template('process_faq_record.html', record=record)
+
+@admin_bp.route('/delete-faq-record/<int:record_id>', methods=['POST'])
+@admin_required
+def delete_faq_record(record_id):
+    """Delete FAQ record"""
+    try:
+        record = db.session.query(FAQRecord).get_or_404(record_id)
+        db.session.delete(record)
+        db.session.commit()
+        
+        flash('✅ FAQ record deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting FAQ record: {str(e)}")
+        flash(f'❌ Error deleting FAQ record: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.faq_records'))
+
+# Update FAQ Management to show real-time data
+@admin_bp.route('/faq-management')
+@admin_required
+def faq_management():
+    """Manage frequently asked questions - Real-time data"""
+    try:
+        # Get real-time statistics
+        total_faqs = FAQ.query.count()
+        active_faqs = FAQ.query.filter_by(is_active=True).count()
+        high_priority_faqs = FAQ.query.filter_by(priority=3).count()
+        
+        # Get real FAQ records count
+        total_records = db.session.query(FAQRecord).count()
+        unprocessed_records = db.session.query(FAQRecord).filter_by(processed=False).count()
+        
+        # Get categories from real FAQs
+        categories = db.session.query(
+            FAQ.category,
+            db.func.count(FAQ.id).label('count')
+        ).group_by(FAQ.category).all()
+        
+        # Get popular FAQs (high view count)
+        popular_faqs = FAQ.query.order_by(FAQ.view_count.desc()).limit(5).all()
+        
+        # Get recent FAQ records
+        recent_records = db.session.query(FAQRecord).order_by(FAQRecord.created_at.desc()).limit(5).all()
+        
+        return render_template('faq_management.html',
+                             total_faqs=total_faqs,
+                             active_faqs=active_faqs,
+                             high_priority_faqs=high_priority_faqs,
+                             total_records=total_records,
+                             unprocessed_records=unprocessed_records,
+                             categories=categories,
+                             popular_faqs=popular_faqs,
+                             recent_records=recent_records)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading FAQ management: {str(e)}")
+        flash('Error loading FAQ management.', 'error')
+        return redirect(url_for('admin.admin_dashboard_main'))
+
+@admin_bp.route('/manage-faqs')
+@admin_required
+def manage_faqs():
+    """Manage FAQs"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        category = request.args.get('category', '')
+        priority = request.args.get('priority', '')
+        search = request.args.get('search', '')
+        
+        # Build query
+        query = FAQ.query
+        
+        if category:
+            query = query.filter_by(category=category)
+        
+        if priority:
+            query = query.filter_by(priority=int(priority))
+        
+        if search:
+            query = query.filter(
+                FAQ.question.contains(search) |
+                FAQ.answer.contains(search)
+            )
+        
+        # Paginate
+        faq_pagination = query.order_by(FAQ.priority.desc(), FAQ.question).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        # Get categories and priorities for filter
+        categories = db.session.query(FAQ.category).distinct().all()
+        
+        return render_template('manage_faqs.html',
+                             faq_pagination=faq_pagination,
+                             categories=categories,
+                             selected_category=category,
+                             selected_priority=priority,
+                             search=search)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading manage FAQs: {str(e)}")
+        flash('Error loading FAQs.', 'error')
+        return redirect(url_for('admin.faq_management'))
+
+@admin_bp.route('/add-faq', methods=['GET', 'POST'])
+@admin_required
+def add_faq():
+    """Add new FAQ"""
+    if request.method == 'POST':
+        try:
+            faq = FAQ(
+                question=request.form.get('question'),
+                answer=request.form.get('answer'),
+                category=request.form.get('category'),
+                priority=int(request.form.get('priority', 1)),
+                is_active='is_active' in request.form,
+                updated_by=current_user.id
+            )
+            
+            db.session.add(faq)
+            db.session.commit()
+            
+            flash('✅ FAQ added successfully!', 'success')
+            return redirect(url_for('admin.manage_faqs'))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error adding FAQ: {str(e)}")
+            flash(f'❌ Error adding FAQ: {str(e)}', 'error')
+    
+    return render_template('add_faq.html')
+
+@admin_bp.route('/edit-faq/<int:faq_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_faq(faq_id):
+    """Edit FAQ"""
+    faq = FAQ.query.get_or_404(faq_id)
+    
+    if request.method == 'POST':
+        try:
+            faq.question = request.form.get('question')
+            faq.answer = request.form.get('answer')
+            faq.category = request.form.get('category')
+            faq.priority = int(request.form.get('priority', 1))
+            faq.is_active = 'is_active' in request.form
+            faq.updated_by = current_user.id
+            faq.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash('✅ FAQ updated successfully!', 'success')
+            return redirect(url_for('admin.manage_faqs'))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating FAQ: {str(e)}")
+            flash(f'❌ Error updating FAQ: {str(e)}', 'error')
+    
+    return render_template('edit_faq.html', faq=faq)
+
+@admin_bp.route('/delete-faq/<int:faq_id>', methods=['POST'])
+@admin_required
+def delete_faq(faq_id):
+    """Delete FAQ"""
+    try:
+        faq = FAQ.query.get_or_404(faq_id)
+        db.session.delete(faq)
+        db.session.commit()
+        
+        flash('✅ FAQ deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting FAQ: {str(e)}")
+        flash(f'❌ Error deleting FAQ: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.manage_faqs'))
+
+# Real-time Activity Refresh Route
+@admin_bp.route('/refresh-activity', methods=['POST'])
+@admin_required
+def refresh_activity():
+    """Refresh recent activity with real-time data"""
+    try:
+        from datetime import datetime, timedelta
+        
+        activities = []
+        
+        # Get real recent notifications (last 24 hours)
+        recent_notifications = Notification.query.filter(
+            Notification.created_at >= datetime.utcnow() - timedelta(hours=24)
+        ).order_by(Notification.created_at.desc()).limit(5).all()
+        
+        for notification in recent_notifications:
+            activities.append({
+                'text': f"New notification: {notification.title}",
+                'time': format_time_ago(notification.created_at),
+                'icon': 'bullhorn',
+                'color': 'info'
+            })
+        
+        # Get real recent student registrations (last 24 hours)
+        recent_registrations = StudentRegistration.query.filter(
+            StudentRegistration.created_at >= datetime.utcnow() - timedelta(hours=24)
+        ).order_by(StudentRegistration.created_at.desc()).limit(3).all()
+        
+        for registration in recent_registrations:
+            activities.append({
+                'text': f"New student registration: {registration.name} ({registration.roll_number})",
+                'time': format_time_ago(registration.created_at),
+                'icon': 'user-plus',
+                'color': 'success'
+            })
+        
+        # Get real recent complaints (last 24 hours)
+        recent_complaints = Complaint.query.filter(
+            Complaint.created_at >= datetime.utcnow() - timedelta(hours=24)
+        ).order_by(Complaint.created_at.desc()).limit(3).all()
+        
+        for complaint in recent_complaints:
+            activities.append({
+                'text': f"New complaint registered: {complaint.category.title()}",
+                'time': format_time_ago(complaint.created_at),
+                'icon': 'exclamation-triangle',
+                'color': 'warning'
+            })
+        
+        # Get real recent FAQ records (last 24 hours)
+        recent_faq_records = db.session.query(FAQRecord).filter(
+            FAQRecord.created_at >= datetime.utcnow() - timedelta(hours=24)
+        ).order_by(FAQRecord.created_at.desc()).limit(3).all()
+        
+        for record in recent_faq_records:
+            activities.append({
+                'text': f"New FAQ record: {record.query[:50]}...",
+                'time': format_time_ago(record.created_at),
+                'icon': 'question',
+                'color': 'primary'
+            })
+        
+        # Get real recent predefined info updates (last 24 hours)
+        recent_info_updates = PredefinedInfo.query.filter(
+            PredefinedInfo.updated_at >= datetime.utcnow() - timedelta(hours=24)
+        ).order_by(PredefinedInfo.updated_at.desc()).limit(3).all()
+        
+        for info in recent_info_updates:
+            activities.append({
+                'text': f"Updated {info.section.title()}: {info.title}",
+                'time': format_time_ago(info.updated_at),
+                'icon': 'edit',
+                'color': 'secondary'
+            })
+        
+        # Sort all activities by time (most recent first)
+        activities.sort(key=lambda x: x['time'], reverse=True)
+        
+        # Limit to 10 most recent activities
+        activities = activities[:10]
+        
+        return jsonify({
+            'success': True,
+            'activities': activities,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error refreshing activity: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error refreshing activity',
+            'activities': []
+        }), 500
+
+def format_time_ago(dt):
+    """Format datetime as 'X hours/minutes ago'"""
+    from datetime import datetime
+    now = datetime.utcnow()
+    diff = now - dt
+    
+    if diff < timedelta(minutes=1):
+        return "Just now"
+    elif diff < timedelta(hours=1):
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    elif diff < timedelta(days=1):
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    else:
+        days = diff.days
+        return f"{days} day{'s' if days != 1 else ''} ago"
+
+# Weekly Report Route
+@admin_bp.route('/send-weekly-report', methods=['POST'])
+@admin_required
+def send_weekly_report():
+    """Generate and send weekly report"""
+    try:
+        from app.services.weekly_report_service import WeeklyReportService
+        from app.services.email_service import EmailService
+        from app.config import Config
+        import os
+        
+        # Generate weekly report
+        csv_path = WeeklyReportService.generate_weekly_report()
+        
+        if csv_path and os.path.exists(csv_path):
+            # Get file info
+            file_name = os.path.basename(csv_path)
+            
+            # Send email with attachment
+            try:
+                EmailService.send_weekly_report(
+                    Config.ADMIN_EMAIL, 
+                    {
+                        'total_students': Student.query.count(),
+                        'total_faculty': Faculty.query.count(),
+                        'total_notifications': Notification.query.count(),
+                        'total_complaints': Complaint.query.count(),
+                        'total_queries': Student.query.count() + ChatbotQA.query.count(),
+                        'unknown_queries': db.session.query(FAQRecord).filter(FAQRecord.created_at >= datetime.utcnow() - timedelta(days=7)).count(),
+                        'top_unknown': [],
+                        'report_date': datetime.utcnow().strftime('%Y-%m-%d')
+                    },
+                    csv_path
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
+                    'file_path': csv_path,
+                    'file_name': file_name
+                })
+                
+            except Exception as e:
+                current_app.logger.error(f"Error sending email: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Report generated but email failed: {str(e)}',
+                    'file_path': csv_path,
+                    'file_name': file_name
+                })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to generate weekly report file'
+            })
+            
+    except Exception as e:
+        current_app.logger.error(f"Error in send_weekly_report: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error generating weekly report: {str(e)}'
         }), 500

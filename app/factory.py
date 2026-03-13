@@ -4,7 +4,8 @@ Flask Application Factory Pattern Implementation
 
 import os
 from functools import wraps
-from flask import Flask
+from flask import Flask, current_app
+from flask_login import current_user
 from app.config import config
 from app.extensions import db, login_manager, mail
 
@@ -45,9 +46,16 @@ def create_app(config_name=None):
     
     # Register blueprints
     register_blueprints(app)
+    
+    # Register application routes
+    from app.routes import register_routes
+    register_routes(app)
 
     # Register small core routes
     register_core_routes(app)
+    
+    # Register template context processors
+    register_context_processors(app)
     
     # Register error handlers
     register_error_handlers(app)
@@ -89,6 +97,52 @@ def register_blueprints(app):
     app.register_blueprint(accounts.accounts_bp)
     app.register_blueprint(telegram.telegram_bp)
     app.register_blueprint(notification.notification_bp)
+
+
+def register_context_processors(app):
+    """Register template context processors"""
+    @app.context_processor
+    def utility_processor():
+        def get_user_role():
+            """Get current user's role"""
+            if not current_user.is_authenticated:
+                return 'student'
+            
+            # Handle both Admin and Faculty models
+            if hasattr(current_user, 'role'):
+                return current_user.role
+            elif hasattr(current_user, 'user_role'):
+                return current_user.user_role
+            else:
+                return 'student'
+        
+        def has_write_access():
+            """Check if current user has write access to accounts"""
+            user_role = get_user_role()
+            return user_role == 'accounts'
+        
+        def is_accounts_role():
+            """Check if current user has accounts role"""
+            user_role = get_user_role()
+            return user_role == 'accounts'
+        
+        def is_admin_role():
+            """Check if current user has admin role"""
+            user_role = get_user_role()
+            return user_role == 'admin'
+        
+        def is_faculty_role():
+            """Check if current user has faculty role"""
+            user_role = get_user_role()
+            return user_role == 'faculty'
+        
+        return {
+            'get_user_role': get_user_role,
+            'has_write_access': has_write_access,
+            'is_accounts_role': is_accounts_role,
+            'is_admin_role': is_admin_role,
+            'is_faculty_role': is_faculty_role
+        }
 
 
 def register_error_handlers(app):
@@ -405,32 +459,6 @@ def register_core_routes(app):
         
         # Return empty 204 response if no favicon exists
         return '', 204
-
-    @app.route('/')
-    def index():
-        """Main index route"""
-        from flask import render_template, redirect, url_for
-        from flask_login import current_user
-        
-        if current_user.is_authenticated:
-            # Redirect based on user role
-            if hasattr(current_user, 'role'):
-                user_role = current_user.role
-            elif hasattr(current_user, 'user_role'):
-                user_role = current_user.user_role
-            else:
-                user_role = 'admin'
-            
-            if user_role == 'admin':
-                return redirect(url_for('admin.admin_dashboard_main'))
-            elif user_role == 'faculty':
-                return redirect(url_for('faculty.faculty_dashboard'))
-            elif user_role == 'accounts':
-                return redirect(url_for('accounts.accounts_dashboard'))
-            else:
-                return redirect(url_for('auth.login'))
-        else:
-            return redirect(url_for('auth.login'))
 
     @app.route('/health')
     def health_check():
