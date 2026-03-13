@@ -5,7 +5,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 
 from app.extensions import db
-from app.models import FAQRecord, ChatbotQA, QueryLog, Student, Session, Result, FeeRecord, Notification
+from app.models import FAQRecord, ChatbotQA, QueryLog, Student, Session, Result, FeeRecord, Notification, VisitorQuery
 
 
 class AnalyticsService:
@@ -43,11 +43,21 @@ class AnalyticsService:
     def get_analytics() -> dict:
         """Get analytics data"""
         try:
-            # Simple analytics without complex queries
+            # Get visitor queries count
+            try:
+                unknown_queries = VisitorQuery.query.count() or 0
+                unknown_queries_week = VisitorQuery.query.filter(
+                    VisitorQuery.created_at >= datetime.utcnow() - timedelta(days=7)
+                ).count() or 0
+            except Exception as e:
+                current_app.logger.warning(f"VisitorQuery query failed: {e}")
+                unknown_queries = 0
+                unknown_queries_week = 0
+            
             return {
                 'total_queries': 10,  # Static value for now
-                'unknown_queries': 3,  # Static value for now
-                'top_unknown': ['help', 'hi', 'hello'],
+                'unknown_queries': unknown_queries,  
+                'top_unknown': [],
                 'registered_students': Student.query.count(),
                 'result_queries_today': 0,
                 'fee_queries_today': 0,
@@ -55,6 +65,7 @@ class AnalyticsService:
                 'fee_queries_week': 0,
             }
         except Exception as e:
+            current_app.logger.error(f"Analytics error: {e}")
             # Return default values if there's an error
             return {
                 'total_queries': 0,

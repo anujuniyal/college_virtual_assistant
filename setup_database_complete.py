@@ -13,8 +13,9 @@ from app import create_app
 from app.extensions import db
 from app.models import (
     Student, Faculty, Admin, Notification, Result, FeeRecord,
-    Complaint, ChatbotQA, ChatbotUnknown, QueryLog, Session,
-    DailyViewCount, StudentRegistration, TelegramUserMapping, VisitorQuery
+    Complaint, ChatbotQA, QueryLog, Session,
+    DailyViewCount, StudentRegistration, TelegramUserMapping, VisitorQuery,
+    PredefinedInfo, FAQ, FAQRecord, OTP
 )
 from werkzeug.security import generate_password_hash
 
@@ -40,7 +41,8 @@ def populate_sample_data():
         db.session.query(TelegramUserMapping).delete()
         db.session.query(DailyViewCount).delete()
         db.session.query(QueryLog).delete()
-        db.session.query(ChatbotUnknown).delete()
+        db.session.query(FAQRecord).delete()
+        db.session.query(FAQ).delete()
         db.session.query(ChatbotQA).delete()
         db.session.query(Complaint).delete()
         db.session.query(FeeRecord).delete()
@@ -48,6 +50,8 @@ def populate_sample_data():
         db.session.query(Notification).delete()
         db.session.query(Session).delete()
         db.session.query(StudentRegistration).delete()
+        db.session.query(OTP).delete()
+        db.session.query(PredefinedInfo).delete()
         db.session.query(Student).delete()
         db.session.query(Faculty).delete()
         db.session.query(Admin).delete()

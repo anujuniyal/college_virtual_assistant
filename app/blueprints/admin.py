@@ -488,6 +488,16 @@ def edit_faculty(faculty_id):
             faculty.department = request.form.get('department')
             faculty.consultation_time = request.form.get('consultation_time')
             
+            # Handle role update
+            new_role = request.form.get('role')
+            if new_role and new_role.strip():
+                valid_roles = ['admin', 'faculty', 'accounts']
+                if new_role in valid_roles:
+                    faculty.role = new_role
+                else:
+                    flash(f'❌ Invalid role: {new_role}. Valid roles are: {", ".join(valid_roles)}', 'error')
+                    return render_template('edit_faculty.html', faculty=faculty)
+            
             # Handle password update if provided
             password = request.form.get('password')
             if password and password.strip():
