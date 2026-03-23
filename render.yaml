@@ -4,7 +4,7 @@ services:
     name: edubot-college-assistant
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt && python scripts/deployment/robust_init.py"
+    buildCommand: "pip install -r requirements.txt && python scripts/deployment/robust_init.py && python scripts/deployment/emergency_fix.py"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 wsgi:app"
     envVars:
       - key: FLASK_ENV
