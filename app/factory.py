@@ -9,16 +9,7 @@ from flask_login import current_user
 from app.config import config
 from app.extensions import db, login_manager, mail
 
-# Load environment variables from .env file
-try:
-    from dotenv import load_dotenv
-    # Get the project root directory (app/factory.py -> project root)
-    project_root = os.path.dirname(os.path.dirname(__file__))
-    dotenv_path = os.path.join(project_root, '.env')
-    load_dotenv(dotenv_path)
-except ImportError:
-    # If python-dotenv is not available, continue without it
-    pass
+# Environment variables are loaded in config.py to avoid conflicts
 
 
 def create_app(config_name=None):
