@@ -1,126 +1,286 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Accounts - College Virtual Assistant</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background-color: #f5f7fa;
-        }
-        .container {
-            padding: 20px;
-        }
-        .header {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .account-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #17a2b8;
-            transition: transform 0.2s;
-        }
-        .account-card:hover {
-            transform: translateY(-2px);
-        }
-        .badge {
-            font-size: 0.8rem;
-        }
-        .role-badge {
-            font-size: 0.7rem;
-            padding: 2px 8px;
-        }
-        .role-badge.admin {
-            background-color: #dc3545;
-        }
-        .role-badge.faculty {
-            background-color: #28a745;
-        }
-        .role-badge.accounts {
-            background-color: #17a2b8;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="bi bi-shield-lock"></i> Manage Accounts</h2>
-                <div>
-                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-secondary btn-sm">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
-                    </a>
+{% extends "base_dashboard.html" %}
+
+{% block title %}Manage Accounts - EduBot{% endblock %}
+
+{% block sidebar_nav %}
+<!-- Accounts Navigation -->
+<div class="nav-item">
+    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link {% if request.endpoint == 'accounts.accounts_dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
+        <i class="fas fa-users-cog"></i>
+        <span>Accounts</span>
+        <i class="fas fa-chevron-down ms-auto"></i>
+    </a>
+    <div class="submenu">
+        <a href="{{ url_for('accounts.students_fees_dashboard') }}" class="nav-link {% if request.endpoint and 'students-fees' in request.endpoint %}active{% endif %}">
+            <i class="fas fa-users"></i>
+            <span class="submenu-text">Student Fees</span>
+        </a>
+        <a href="{{ url_for('accounts.manage_accounts') }}" class="nav-link {% if request.endpoint == 'accounts.manage_accounts' %}active{% endif %}">
+            <i class="fas fa-cog"></i>
+            <span class="submenu-text">Manage Accounts</span>
+        </a>
+        <a href="{{ url_for('accounts.billing') }}" class="nav-link {% if request.endpoint == 'accounts.billing' %}active{% endif %}">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span class="submenu-text">Billing</span>
+        </a>
+        <a href="{{ url_for('accounts.reports') }}" class="nav-link {% if request.endpoint == 'accounts.reports' %}active{% endif %}">
+            <i class="fas fa-chart-line"></i>
+            <span class="submenu-text">Reports</span>
+        </a>
+    </div>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block page_title %}Manage Accounts{% endblock %}
+
+{% block content %}
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title">Manage College Accounts</h3>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ students|length }}</h4>
+                            <p class="card-text">Total Students</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-graduate fa-2x"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="row">
-            <div class="col-12">
-                <div class="mb-3">
-                    <span class="text-muted">Total Accounts: {{ accounts|length }}</span>
-                </div>
-                
-                {% for account in accounts %}
-                <div class="account-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <h5>{{ account.username }}</h5>
-                            <div class="mb-2">
-                                <span class="badge role-badge {{ account.role }}">{{ account.role|title }}</span>
-                            </div>
-                            <div class="small text-muted">
-                                <div><i class="bi bi-envelope-fill"></i> {{ account.email }}</div>
-                                <div><i class="bi bi-calendar-fill"></i> Joined: {{ account.created_at.strftime('%d %b %Y') }}</div>
-                            </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ faculty_members|length }}</h4>
+                            <p class="card-text">Total Faculty</p>
                         </div>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="alert('Account editing not available. Use Flask-Admin for detailed editing.')">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </a></li>
-                                <li><a class="dropdown-item text-warning" href="#" onclick="alert('Account deletion not available. Use Flask-Admin for detailed management.')">
-                                    <i class="bi bi-trash"></i> Delete
-                                </a></li>
-                            </ul>
+                        <div class="align-self-center">
+                            <i class="fas fa-chalkboard-teacher fa-2x"></i>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-                
-                {% if not accounts %}
-                <div class="text-center py-5">
-                    <i class="bi bi-shield-lock" style="font-size: 4rem; color: #ccc;"></i>
-                    <h5 class="mt-3">No Accounts Found</h5>
-                    <p class="text-muted">Admin accounts are managed through the system.</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">Active</h4>
+                            <p class="card-text">System Status</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-server fa-2x"></i>
+                        </div>
+                    </div>
                 </div>
-                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ (students|length + faculty_members|length) }}</h4>
+                            <p class="card-text">Total Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+
+    <!-- Account Management -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Student Accounts</h5>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Roll Number</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in students[:5] %}
+                                    <tr>
+                                        <td>{{ student.roll_number }}</td>
+                                        <td>{{ student.name }}</td>
+                                        <td>{{ student.department or '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-success">Active</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if students|length > 5 %}
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Showing 5 of {{ students|length }} students</small>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-user-graduate fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No student accounts found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Faculty Accounts</h5>
+                </div>
+                <div class="card-body">
+                    {% if faculty_members %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Department</th>
+                                        <th>Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for faculty in faculty_members[:5] %}
+                                    <tr>
+                                        <td>{{ faculty.name }}</td>
+                                        <td>{{ faculty.email }}</td>
+                                        <td>{{ faculty.department }}</td>
+                                        <td>
+                                            {% if faculty.role == 'admin' %}
+                                                <span class="badge bg-danger">Admin</span>
+                                            {% elif faculty.role == 'accounts' %}
+                                                <span class="badge bg-primary">Accounts</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Faculty</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if faculty_members|length > 5 %}
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Showing 5 of {{ faculty_members|length }} faculty</small>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No faculty accounts found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                                <h6>Student Management</h6>
+                                <p class="text-muted">Manage student accounts and records</p>
+                                <button class="btn btn-sm btn-outline-primary">Manage Students</button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-chalkboard-teacher fa-3x text-success mb-2"></i>
+                                <h6>Faculty Management</h6>
+                                <p class="text-muted">Manage faculty accounts and permissions</p>
+                                <button class="btn btn-sm btn-outline-success">Manage Faculty</button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-file-invoice-dollar fa-3x text-info mb-2"></i>
+                                <h6>Billing & Finance</h6>
+                                <p class="text-muted">Manage billing and financial records</p>
+                                <a href="{{ url_for('accounts.billing') }}" class="btn btn-sm btn-outline-info">Go to Billing</a>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line fa-3x text-warning mb-2"></i>
+                                <h6>Reports & Analytics</h6>
+                                <p class="text-muted">View reports and system analytics</p>
+                                <a href="{{ url_for('accounts.reports') }}" class="btn btn-sm btn-outline-warning">View Reports</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

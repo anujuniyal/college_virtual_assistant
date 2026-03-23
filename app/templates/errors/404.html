@@ -1,70 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found | EduBot</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background: linear-gradient(135deg, #25D366 0%, #075E54 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .error-container {
-            background: white;
-            border-radius: 20px;
-            padding: 3rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 500px;
-        }
-        .error-code {
-            font-size: 6rem;
-            font-weight: bold;
-            color: #25D366;
-            margin-bottom: 1rem;
-        }
-        .error-title {
-            font-size: 1.5rem;
-            color: #075E54;
-            margin-bottom: 1rem;
-        }
-        .error-description {
-            color: #666;
-            margin-bottom: 2rem;
-        }
-        .btn-home {
-            background: #25D366;
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
-        .btn-home:hover {
-            background: #075E54;
-            color: white;
-            transform: translateY(-2px);
-        }
-    </style>
-</head>
-<body>
-    <div class="error-container">
-        <div class="error-code">404</div>
-        <h1 class="error-title">Page Not Found</h1>
-        <p class="error-description">
-            Oops! The page you're looking for doesn't exist or has been moved.
-        </p>
-        <a href="/auth/login" class="btn-home">
-            <i class="bi bi-house"></i> Go Home
-        </a>
+{% extends "base_dashboard.html" %}
+
+{% block title %}Page Not Found - EduBot{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-page">
+                <div class="error-code">404</div>
+                <div class="error-message">Page Not Found</div>
+                <div class="error-description">
+                    <p class="text-muted">The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+                </div>
+                
+                <div class="error-actions mt-4">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-home me-2"></i>Go to Dashboard
+                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-</body>
-</html>
+</div>
+
+<style>
+.error-page {
+    padding: 60px 20px;
+}
+
+.error-code {
+    font-size: 120px;
+    font-weight: bold;
+    color: #dc3545;
+    line-height: 1;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    font-size: 32px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.error-description {
+    font-size: 16px;
+    margin-bottom: 30px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+    .error-code {
+        font-size: 80px;
+    }
+    
+    .error-message {
+        font-size: 24px;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .error-actions .btn {
+        width: 200px;
+    }
+}
+</style>
+{% endblock %}

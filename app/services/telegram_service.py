@@ -73,6 +73,7 @@ class TelegramBotService:
     """Telegram Bot Service"""
     
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.bot_token = None
         self.webhook_url = None
         self.chatbot_service = ChatbotService()
@@ -96,17 +97,17 @@ class TelegramBotService:
             if response.status_code == 200:
                 result = response.json()
                 if result.get('ok'):
-                    logger.info("Telegram webhook set successfully")
+                    self.logger.info("Telegram webhook set successfully")
                     return True
                 else:
-                    logger.error(f"Failed to set webhook: {result.get('description', 'Unknown error')}")
+                    self.logger.error(f"Failed to set webhook: {result.get('description', 'Unknown error')}")
                     return False
             else:
-                logger.error(f"HTTP error setting webhook: {response.status_code}")
+                self.logger.error(f"HTTP error setting webhook: {response.status_code}")
                 return False
                 
         except Exception as e:
-            logger.error(f"Error setting Telegram webhook: {str(e)}")
+            self.logger.error(f"Error setting Telegram webhook: {str(e)}")
             return False
     
     def _get_phone_number_from_mapping(self, telegram_user_id):
@@ -122,20 +123,20 @@ class TelegramBotService:
             telegram_user_id_str = str(telegram_user_id)
             mapping = TelegramUserMapping.query.filter_by(telegram_user_id=telegram_user_id_str).first()
             if not mapping:
-                logger.warning(f"No Telegram mapping found for user {telegram_user_id_str}")
+                self.logger.warning(f"No Telegram mapping found for user {telegram_user_id_str}")
                 return None
 
             # Extra safety: ensure mapped phone still exists in student records.
             student = Student.query.get(mapping.student_id)
             if not student or student.phone != mapping.phone_number:
-                logger.warning(f"Stale Telegram mapping for user {telegram_user_id_str}")
+                self.logger.warning(f"Stale Telegram mapping for user {telegram_user_id_str}")
                 return None
 
-            logger.info(f"Mapped Telegram user {telegram_user_id_str} to phone {mapping.phone_number}")
+            self.logger.info(f"Mapped Telegram user {telegram_user_id_str} to phone {mapping.phone_number}")
             return f"whatsapp:+{mapping.phone_number}"
                 
         except Exception as e:
-            logger.error(f"Error in phone number mapping: {str(e)}")
+            self.logger.error(f"Error in phone number mapping: {str(e)}")
             return None
 
     def _normalize_phone(self, raw: str):
@@ -146,7 +147,7 @@ class TelegramBotService:
         # Validate phone number format
         is_valid, phone = validate_phone_number(raw)
         if not is_valid:
-            logger.warning(f"Invalid phone number format: {raw}")
+            self.logger.warning(f"Invalid phone number format: {raw}")
             return None
         
         return phone
@@ -182,7 +183,7 @@ class TelegramBotService:
                 student = Student.query.filter_by(phone=phone_without_country).first()
                 if student:
                     phone = phone_without_country  # Update to use database format
-                    logger.info(f"Phone matched after removing country code: {phone}")
+                    self.logger.info(f"Phone matched after removing country code: {phone}")
             
             # If still not found and phone is 10 digits with leading zero, try without zero
             if not student and len(phone) == 11 and phone.startswith('0'):
@@ -190,7 +191,7 @@ class TelegramBotService:
                 student = Student.query.filter_by(phone=phone_without_zero).first()
                 if student:
                     phone = phone_without_zero  # Update to use database format
-                    logger.info(f"Phone matched after removing leading zero: {phone}")
+                    self.logger.info(f"Phone matched after removing leading zero: {phone}")
             
             # If still not found and phone is 10 digits, try with Indian country code
             if not student and len(phone) == 10:
@@ -198,14 +199,14 @@ class TelegramBotService:
                 student = Student.query.filter_by(phone=phone_with_country).first()
                 if student:
                     phone = phone_with_country  # Update to use database format
-                    logger.info(f"Phone matched after adding Indian country code: {phone}")
+                    self.logger.info(f"Phone matched after adding Indian country code: {phone}")
             
             if not student:
                 # Log the failed attempt for debugging
-                logger.warning(f"Phone verification failed - Phone {phone} not found in student records")
+                self.logger.warning(f"Phone verification failed - Phone {phone} not found in student records")
                 return False
 
-            logger.info(f"Phone verification successful - Found student: {student.name} ({student.roll_number})")
+            self.logger.info(f"Phone verification successful - Found student: {student.name} ({student.roll_number})")
 
             # Use FOR UPDATE to lock the row and prevent race conditions
             mapping = TelegramUserMapping.query.filter_by(telegram_user_id=str(telegram_user_id)).with_for_update().first()
@@ -227,12 +228,12 @@ class TelegramBotService:
                 mapping.verified = False
 
             db.session.commit()
-            logger.info(f"Successfully saved/updated phone mapping for Telegram user {telegram_user_id} -> Student {student.name}")
+            self.logger.info(f"Successfully saved/updated phone mapping for Telegram user {telegram_user_id} -> Student {student.name}")
             return True
             
         except IntegrityError as e:
             db.session.rollback()
-            logger.warning(f"Integrity error saving phone mapping for {telegram_user_id}: {str(e)}")
+            self.logger.warning(f"Integrity error saving phone mapping for {telegram_user_id}: {str(e)}")
             # Race condition - another process created the mapping
             # Try to fetch the existing mapping
             try:
@@ -245,7 +246,7 @@ class TelegramBotService:
             
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error saving phone mapping for {telegram_user_id}: {str(e)}")
+            self.logger.error(f"Error saving phone mapping for {telegram_user_id}: {str(e)}")
             return False
     
     def process_update(self, update):
@@ -253,24 +254,24 @@ class TelegramBotService:
         try:
             # Validate update structure
             if not update or not isinstance(update, dict):
-                logger.error("Invalid update received: not a dictionary")
+                self.logger.error("Invalid update received: not a dictionary")
                 return None
                 
             message = update.get('message', {})
             if not message or not isinstance(message, dict):
-                logger.error("Invalid message in update: not a dictionary")
+                self.logger.error("Invalid message in update: not a dictionary")
                 return None
                 
             # Extract and validate chat_id
             chat_info = message.get('chat', {})
             if not isinstance(chat_info, dict):
-                logger.error("Invalid chat info in message")
+                self.logger.error("Invalid chat info in message")
                 return None
                 
             chat_id = chat_info.get('id')
             is_valid_chat_id, validated_chat_id = validate_telegram_user_id(chat_id)
             if not is_valid_chat_id:
-                logger.error(f"Invalid chat_id: {chat_id}")
+                self.logger.error(f"Invalid chat_id: {chat_id}")
                 return None
             
             chat_id = int(validated_chat_id)
@@ -280,7 +281,7 @@ class TelegramBotService:
             if text:
                 is_valid_text, sanitized_text = validate_message_text(text)
                 if not is_valid_text:
-                    logger.error(f"Invalid message text: {text[:100]}...")
+                    self.logger.error(f"Invalid message text: {text[:100]}...")
                     return None
                 text = sanitized_text
 
@@ -289,13 +290,13 @@ class TelegramBotService:
             if isinstance(contact, dict) and chat_id:
                 user_info = message.get('from', {})
                 if not isinstance(user_info, dict):
-                    logger.error("Invalid user info in contact message")
+                    self.logger.error("Invalid user info in contact message")
                     return None
                 
                 sender_id = user_info.get('id')
                 is_valid_sender, validated_sender = validate_telegram_user_id(sender_id)
                 if not is_valid_sender:
-                    logger.error("Invalid sender ID in contact message")
+                    self.logger.error("Invalid sender ID in contact message")
                     return None
                 
                 contact_user_id = contact.get('user_id')
@@ -321,24 +322,24 @@ class TelegramBotService:
                 )
             
             if not text or not chat_id:
-                logger.warning("Empty message or missing chat ID")
+                self.logger.warning("Empty message or missing chat ID")
                 return None
             
             # Get and validate user info
             user = message.get('from', {})
             if not user or not isinstance(user, dict):
-                logger.error("Invalid user info in message")
+                self.logger.error("Invalid user info in message")
                 return None
                 
             telegram_user_id = user.get('id', '')
             is_valid_user, validated_user_id = validate_telegram_user_id(telegram_user_id)
             if not is_valid_user:
-                logger.error("Missing or invalid user ID")
+                self.logger.error("Missing or invalid user ID")
                 return None
             
             # Map Telegram user ID to actual phone number
             phone_number = self._get_phone_number_from_mapping(validated_user_id)
-            logger.info(f"Mapped phone number for user {validated_user_id}: {phone_number}")
+            self.logger.info(f"Mapped phone number for user {validated_user_id}: {phone_number}")
 
             is_mapped_user = bool(phone_number)
 
@@ -355,12 +356,12 @@ class TelegramBotService:
                 temp_phone = f"whatsapp:+visitor_{validated_user_id}"
                 try:
                     response = self.chatbot_service.process_message(text, temp_phone)
-                    logger.info(f"Chatbot response for visitor {validated_user_id}: {response}")
+                    self.logger.info(f"Chatbot response for visitor {validated_user_id}: {response}")
                     if not response:
-                        logger.warning("Empty response from chatbot service for visitor")
+                        self.logger.warning("Empty response from chatbot service for visitor")
                         response = "I'm sorry, I couldn't process your request. Please try again."
                 except Exception as e:
-                    logger.error(f"Error in chatbot service for visitor {validated_user_id}: {str(e)}")
+                    self.logger.error(f"Error in chatbot service for visitor {validated_user_id}: {str(e)}")
                     response = "I'm experiencing technical difficulties. Please try again later."
 
                 return self.send_message(chat_id, response)
@@ -368,12 +369,12 @@ class TelegramBotService:
             # Process message with chatbot service
             try:
                 response = self.chatbot_service.process_message(text, phone_number)
-                logger.info(f"Chatbot response: {response}")
+                self.logger.info(f"Chatbot response: {response}")
                 if not response:
-                    logger.warning("Empty response from chatbot service")
+                    self.logger.warning("Empty response from chatbot service")
                     response = "I'm sorry, I couldn't process your request. Please try again."
             except Exception as e:
-                logger.error(f"Error in chatbot service: {str(e)}")
+                self.logger.error(f"Error in chatbot service: {str(e)}")
                 response = "I'm experiencing technical difficulties. Please try again later."
 
             # If roll verification succeeded, ChatbotService will mark Session as verified.
@@ -392,9 +393,9 @@ class TelegramBotService:
                             # Use the student's link_telegram_account method to update both Student and TelegramUserMapping tables
                             success, message = student.link_telegram_account(str(validated_user_id))
                             if success:
-                                logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
+                                self.logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
                             else:
-                                logger.warning(f"Failed to link Telegram account: {message}")
+                                self.logger.warning(f"Failed to link Telegram account: {message}")
                         
                         # Also update the TelegramUserMapping table as backup
                         mapping = TelegramUserMapping.query.filter_by(telegram_user_id=str(validated_user_id)).with_for_update().first()
@@ -403,21 +404,21 @@ class TelegramBotService:
                             mapping.phone_number = phone_number.replace('whatsapp:+', '')
                             mapping.verified = True
                         db.session.commit()
-                        logger.info(f"Successfully finalized Telegram mapping for user {validated_user_id}")
+                        self.logger.info(f"Successfully finalized Telegram mapping for user {validated_user_id}")
                     except IntegrityError as e:
                         db.session.rollback()
-                        logger.warning(f"Integrity error finalizing Telegram mapping: {str(e)}")
+                        self.logger.warning(f"Integrity error finalizing Telegram mapping: {str(e)}")
                     except Exception as e:
                         db.session.rollback()
-                        logger.warning(f"Could not finalize Telegram mapping: {str(e)}")
+                        self.logger.warning(f"Could not finalize Telegram mapping: {str(e)}")
             except Exception as e:
-                logger.error(f"Database error in Telegram mapping finalization: {str(e)}")
+                self.logger.error(f"Database error in Telegram mapping finalization: {str(e)}")
             
             # Send response back to Telegram
             return self.send_message(chat_id, response)
             
         except Exception as e:
-            logger.error(f"Error processing Telegram update: {str(e)}")
+            self.logger.error(f"Error processing Telegram update: {str(e)}")
             return None
     
     def send_message(self, chat_id, text, reply_markup=None):
@@ -425,11 +426,11 @@ class TelegramBotService:
         try:
             # Validate inputs
             if not chat_id or not isinstance(chat_id, int) or chat_id <= 0:
-                logger.error(f"Invalid chat_id for sending message: {chat_id}")
+                self.logger.error(f"Invalid chat_id for sending message: {chat_id}")
                 return False
                 
             if not text or not isinstance(text, str):
-                logger.error("Invalid text for sending message")
+                self.logger.error("Invalid text for sending message")
                 return False
             
             # Truncate message if too long (Telegram limit is 4096 characters)
@@ -445,7 +446,7 @@ class TelegramBotService:
             if reply_markup:
                 data['reply_markup'] = reply_markup
             
-            logger.info(f"Sending message to chat_id {chat_id}: {text[:100]}...")
+            self.logger.info(f"Sending message to chat_id {chat_id}: {text[:100]}...")
             
             # Implement retry logic for network issues
             max_retries = 3
@@ -455,72 +456,72 @@ class TelegramBotService:
                     break
                 except requests.exceptions.Timeout:
                     if attempt < max_retries - 1:
-                        logger.warning(f"Timeout sending message (attempt {attempt + 1}), retrying...")
+                        self.logger.warning(f"Timeout sending message (attempt {attempt + 1}), retrying...")
                         continue
                     else:
-                        logger.error("Timeout while sending message to Telegram after all retries")
+                        self.logger.error("Timeout while sending message to Telegram after all retries")
                         return False
                 except requests.exceptions.ConnectionError:
                     if attempt < max_retries - 1:
-                        logger.warning(f"Connection error sending message (attempt {attempt + 1}), retrying...")
+                        self.logger.warning(f"Connection error sending message (attempt {attempt + 1}), retrying...")
                         continue
                     else:
-                        logger.error("Connection error sending message to Telegram after all retries")
+                        self.logger.error("Connection error sending message to Telegram after all retries")
                         return False
             
             # Log full response for debugging
-            logger.info(f"Telegram API response status: {response.status_code}")
-            logger.info(f"Telegram API response body: {response.text[:500]}")
+            self.logger.info(f"Telegram API response status: {response.status_code}")
+            self.logger.info(f"Telegram API response body: {response.text[:500]}")
             
             if response.status_code == 200:
                 result = response.json()
                 if result.get('ok'):
-                    logger.info(f"Message sent successfully to chat_id: {chat_id}")
+                    self.logger.info(f"Message sent successfully to chat_id: {chat_id}")
                     return True
                 else:
                     error_desc = result.get('description', 'Unknown error')
                     error_code = result.get('error_code', 'Unknown')
-                    logger.error(f"Telegram API error {error_code}: {error_desc}")
+                    self.logger.error(f"Telegram API error {error_code}: {error_desc}")
                     
                     # Handle specific error codes
                     if error_code == 429:
-                        logger.warning("Rate limit exceeded, backing off...")
+                        self.logger.warning("Rate limit exceeded, backing off...")
                         return False
                     elif error_code == 403:
-                        logger.error("Bot was blocked by user")
+                        self.logger.error("Bot was blocked by user")
                         return False
                     elif error_code == 400:
-                        logger.error("Bad request - invalid parameters")
+                        self.logger.error("Bad request - invalid parameters")
                         return False
                     
                     return False
             elif response.status_code == 429:
-                logger.warning("Rate limit exceeded")
+                self.logger.warning("Rate limit exceeded")
                 retry_after = response.headers.get('retry-after', 5)
-                logger.info(f"Will retry after {retry_after} seconds")
+                self.logger.info(f"Will retry after {retry_after} seconds")
                 return False
             elif response.status_code == 500:
-                logger.error("Telegram server error")
+                self.logger.error("Telegram server error")
                 return False
             elif response.status_code == 403:
-                logger.error("Forbidden - invalid bot token or blocked")
+                self.logger.error("Forbidden - invalid bot token or blocked")
                 return False
             else:
-                logger.error(f"HTTP error sending message: {response.status_code}")
-                logger.error(f"Response body: {response.text}")
+                self.logger.error(f"HTTP error sending message: {response.status_code}")
+                self.logger.error(f"Response body: {response.text}")
                 return False
                 
         except requests.exceptions.Timeout:
-            logger.error("Timeout while sending message to Telegram")
+            self.logger.error("Timeout while sending message to Telegram")
             return False
         except requests.exceptions.ConnectionError:
-            logger.error("Connection error sending message to Telegram")
+            self.logger.error("Connection error sending message to Telegram")
             return False
         except requests.exceptions.RequestException as e:
-            logger.error(f"Network error sending message: {str(e)}")
+            self.logger.error(f"Network error sending message: {str(e)}")
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending message: {str(e)}")
+            self.logger.error(f"Unexpected error sending message: {str(e)}")
             return False
     
     def get_bot_info(self):
@@ -537,7 +538,7 @@ class TelegramBotService:
             return None
             
         except Exception as e:
-            logger.error(f"Error getting bot info: {str(e)}")
+            self.logger.error(f"Error getting bot info: {str(e)}")
             return None
     
     def remove_webhook(self):
@@ -553,5 +554,5 @@ class TelegramBotService:
             return False
             
         except Exception as e:
-            logger.error(f"Error removing webhook: {str(e)}")
+            self.logger.error(f"Error removing webhook: {str(e)}")
             return False

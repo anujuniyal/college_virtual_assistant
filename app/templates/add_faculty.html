@@ -1,106 +1,297 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Faculty - College Virtual Assistant</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background-color: #f5f7fa;
-        }
-        .form-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            margin: 50px auto;
-            max-width: 600px;
-        }
-        .form-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .form-header h2 {
-            color: #28a745;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="form-container">
-            <div class="form-header">
-                <h2><i class="bi bi-person-badge-fill"></i> Add New Faculty</h2>
-                <p class="text-muted">Fill in the faculty information below</p>
-            </div>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="name" class="form-label">Full Name *</label>
-                    <input type="text" class="form-control" id="name" name="name" required>
+{% extends "base_dashboard.html" %}
+
+{% block title %}Add Faculty - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="h4 mb-0">Add New Faculty Member</h2>
                 </div>
-                
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email Address *</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-                    <div class="form-text">Example: faculty@college.edu</div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="phone" class="form-label">Phone Number *</label>
-                    <input type="tel" class="form-control" id="phone" name="phone" required 
-                           pattern="[0-9]{10}" title="Enter 10-digit phone number">
-                    <div class="form-text">Example: 9876543210</div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="department" class="form-label">Department *</label>
-                    <select class="form-select" id="department" name="department" required>
-                        <option value="">Select Department</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Mechanical">Mechanical</option>
-                        <option value="Civil">Civil</option>
-                        <option value="Electrical">Electrical</option>
-                        <option value="Physics">Physics</option>
-                        <option value="Chemistry">Chemistry</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Treasurer">Treasurer (Accounts)</option>
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="consultation_time" class="form-label">Consultation Time</label>
-                    <input type="text" class="form-control" id="consultation_time" name="consultation_time" 
-                           placeholder="e.g., Mon-Wed 2-4 PM">
-                    <div class="form-text">Example: Mon-Wed 2-4 PM</div>
-                </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{{ url_for('manage_faculty') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Faculty
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-info">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                     </a>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle"></i> Add Faculty
-                    </button>
+                    <a href="{{ url_for('admin.manage_faculty') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i> Faculty
+                    </a>
                 </div>
-            </form>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" id="addFacultyForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-user input-icon"></i>
+                                        <input type="text" class="form-control" id="name" name="name" 
+                                               placeholder="Enter faculty name" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-envelope input-icon"></i>
+                                        <input type="email" class="form-control" id="email" name="email" 
+                                               placeholder="Enter email address" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-building input-icon"></i>
+                                        <select class="form-control" id="department" name="department" required>
+                                            <option value="">Select Department</option>
+                                            <option value="Computer Science">Computer Science</option>
+                                            <option value="Information Technology">Information Technology</option>
+                                            <option value="Electronics">Electronics</option>
+                                            <option value="Mechanical">Mechanical</option>
+                                            <option value="Civil">Civil</option>
+                                            <option value="Electrical">Electrical</option>
+                                            <option value="Accounts">Accounts</option>
+                                            <option value="Treasurer">Treasurer (Accounts)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="role" class="form-label">Role *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-user-tag input-icon"></i>
+                                        <select class="form-control" id="role" name="role" required>
+                                            <option value="">Select Role</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="faculty">Faculty</option>
+                                            <option value="accounts">Accounts</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-phone input-icon"></i>
+                                        <input type="tel" class="form-control" id="phone" name="phone" 
+                                               placeholder="Enter phone number" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="consultation_time" class="form-label">Consultation Time</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-clock input-icon"></i>
+                                        <input type="text" class="form-control" id="consultation_time" name="consultation_time" 
+                                               placeholder="e.g., 10:00 AM - 12:00 PM">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-lock input-icon"></i>
+                                        <input type="password" class="form-control" id="password" name="password" 
+                                               placeholder="Enter password (optional)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-lock input-icon"></i>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                               placeholder="Confirm password">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="send_credentials" name="send_credentials" value="1">
+                                        <label class="form-check-label" for="send_credentials">
+                                            Send login credentials to faculty member via email
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                                        <i class="fas fa-save me-2"></i>
+                                        <span id="submitText">Add Faculty</span>
+                                    </button>
+                                    <a href="{{ url_for('admin.manage_faculty') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+
+<style>
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 10;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group .form-control,
+.input-group .form-select {
+    padding-left: 45px;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    border-radius: 0.375rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-input:checked ~ .form-check-label::before {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('addFacultyForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const roleSelect = document.getElementById('role');
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        // Password confirmation validation
+        if (passwordInput.value && confirmPasswordInput.value) {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                return false;
+            }
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Adding...';
+    });
+
+    // Real-time password validation
+    confirmPasswordInput.addEventListener('input', function() {
+        if (passwordInput.value && confirmPasswordInput.value) {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+                confirmPasswordInput.setCustomValidity('Passwords do not match');
+            } else {
+                confirmPasswordInput.setCustomValidity('');
+            }
+        }
+    });
+
+    // Auto-generate password based on role
+    roleSelect.addEventListener('change', function() {
+        if (passwordInput.value && !confirmPasswordInput.value) {
+            const name = document.getElementById('name').value;
+            if (name && this.value) {
+                const firstName = name.split(' ')[0].toLowerCase();
+                const generatedPassword = firstName + '123';
+                passwordInput.value = generatedPassword;
+                confirmPasswordInput.value = generatedPassword;
+            }
+        }
+    });
+
+    // Auto-format phone number
+    document.getElementById('phone').addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/\D/g, '');
+    });
+
+    // Email validation
+    document.getElementById('email').addEventListener('blur', function() {
+        const email = this.value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email && !emailRegex.test(email)) {
+            this.setCustomValidity('Please enter a valid email address');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

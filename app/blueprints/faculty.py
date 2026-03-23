@@ -188,8 +188,8 @@ def send_notification():
                         'file_url': notification.file_url,
                         'notification_type': notification.notification_type,
                         'priority': notification.priority,
-                        'expires_at': notification.expires_at.strftime('%Y-%m-%d %H:%M'),
-                        'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M')
+                        'expires_at': notification.expires_at.strftime('%Y-%m-%d %H:%M') if notification.expires_at else 'N/A',
+                        'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else 'N/A'
                     }
                 })
             else:
@@ -312,7 +312,7 @@ def faculty_dashboard_data():
                 'id': notif.id,
                 'title': notif.title,
                 'content': notif.content[:100] + ('...' if len(notif.content) > 100 else ''),
-                'created_at': notif.created_at.strftime('%d %b %Y, %I:%M %p')
+                'created_at': notif.created_at.strftime('%d %b %Y, %I:%M %p') if notif.created_at else 'N/A'
             })
         
         return jsonify({

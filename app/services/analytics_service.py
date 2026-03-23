@@ -3,6 +3,7 @@ Analytics Service
 """
 from collections import Counter
 from datetime import datetime, timedelta
+from flask import current_app
 
 from app.extensions import db
 from app.models import FAQRecord, ChatbotQA, QueryLog, Student, Session, Result, FeeRecord, Notification, VisitorQuery
@@ -33,7 +34,7 @@ class AnalyticsService:
         top_unknown = [item[0] for item in Counter(query_texts).most_common(10)]
         
         return {
-            'total_queries': len(query_texts) + ChatbotQA.query.count(),
+            'total_queries': len(query_texts) + db.session.query(ChatbotQA).count(),
             'unknown_queries': len(weekly_unknown),
             'top_unknown': top_unknown,
             'report_date': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -45,8 +46,8 @@ class AnalyticsService:
         try:
             # Get visitor queries count
             try:
-                unknown_queries = VisitorQuery.query.count() or 0
-                unknown_queries_week = VisitorQuery.query.filter(
+                unknown_queries = db.session.query(VisitorQuery).count() or 0
+                unknown_queries_week = db.session.query(VisitorQuery).filter(
                     VisitorQuery.created_at >= datetime.utcnow() - timedelta(days=7)
                 ).count() or 0
             except Exception as e:
@@ -55,10 +56,10 @@ class AnalyticsService:
                 unknown_queries_week = 0
             
             return {
-                'total_queries': 10,  # Static value for now
+                'total_queries': db.session.query(QueryLog).count(),  # Real query count from database
                 'unknown_queries': unknown_queries,  
                 'top_unknown': [],
-                'registered_students': Student.query.count(),
+                'registered_students': db.session.query(Student).count(),
                 'result_queries_today': 0,
                 'fee_queries_today': 0,
                 'result_queries_week': 0,

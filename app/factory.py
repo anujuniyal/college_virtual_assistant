@@ -30,9 +30,9 @@ def create_app(config_name=None):
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
     
-    # Get the absolute path to the project root
-    template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
-    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    # Get the absolute path to the app directories
+    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    static_dir = os.path.join(os.path.dirname(__file__), 'static')
     
     # Create Flask application instance with correct template and static folders
     app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)

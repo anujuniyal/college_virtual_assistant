@@ -12,7 +12,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 def admin_required(f):
     """Decorator to ensure user has admin privileges"""
     def admin_decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
+        if not current_user or not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
         
         # Handle both Admin and Faculty models
@@ -34,7 +34,7 @@ def admin_required(f):
 def faculty_required(f):
     """Decorator to ensure user has faculty privileges"""
     def faculty_decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
+        if not current_user or not current_user.is_authenticated:
             return redirect(url_for('auth.login'))
         
         # Handle both Admin and Faculty models
@@ -275,7 +275,7 @@ def admin_dashboard_data():
             recent_notifications_data.append({
                 'id': notif.id,
                 'title': notif.title,
-                'created_at': notif.created_at.strftime('%d %b %Y, %I:%M %p')
+                'created_at': notif.created_at.strftime('%d %b %Y, %I:%M %p') if notif.created_at else 'N/A'
             })
         
         # Get bot status and recent activities
@@ -457,13 +457,23 @@ def add_faculty():
     """Add new faculty member"""
     if request.method == 'POST':
         try:
+            # Get role from form, default to 'faculty' if not provided
+            role = request.form.get('role', 'faculty')
+            
             faculty = Faculty(
                 name=request.form.get('name'),
                 email=request.form.get('email'),
                 phone=request.form.get('phone'),
                 department=request.form.get('department'),
-                consultation_time=request.form.get('consultation_time')
+                consultation_time=request.form.get('consultation_time'),
+                role=role  # Set the role from form
             )
+            
+            # Set password if provided
+            password = request.form.get('password')
+            if password:
+                faculty.set_password(password)
+            
             db.session.add(faculty)
             db.session.commit()
             flash('✅ Faculty added successfully!', 'success')
@@ -589,8 +599,8 @@ def add_notification():
                         'file_url': notification.file_url,
                         'notification_type': notification.notification_type,
                         'priority': notification.priority,
-                        'expires_at': notification.expires_at.strftime('%Y-%m-%d %H:%M'),
-                        'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M')
+                        'expires_at': notification.expires_at.strftime('%Y-%m-%d %H:%M') if notification.expires_at else 'N/A',
+                        'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else 'N/A'
                     }
                 })
             else:
@@ -671,14 +681,14 @@ def analytics():
         
         # Chatbot unknown queries
         try:
-            unknown_queries = safe_execute(lambda: ChatbotUnknown.query.count()) or 0
+            unknown_queries = safe_execute(lambda: db.session.query(FAQRecord).count()) or 0
             unknown_queries_week = safe_execute(
-                lambda: ChatbotUnknown.query.filter(
-                    ChatbotUnknown.created_at >= datetime.utcnow() - timedelta(days=7)
+                lambda: db.session.query(FAQRecord).filter(
+                    FAQRecord.created_at >= datetime.utcnow() - timedelta(days=7)
                 ).count()
             ) or 0
         except Exception as e:
-            current_app.logger.warning(f"ChatbotUnknown query failed: {e}")
+            current_app.logger.warning(f"FAQRecord query failed: {e}")
             unknown_queries = 0
             unknown_queries_week = 0
         
@@ -697,7 +707,16 @@ def analytics():
             ).group_by(Student.department).all()
         ) or []
         
-        # Prepare analytics data structure
+        # Get top unknown questions
+        try:
+            from app.services.analytics_service import AnalyticsService
+            top_unknown_data = AnalyticsService.get_weekly_report_data()
+            top_unknown = top_unknown_data.get('top_unknown', [])
+        except Exception as e:
+            current_app.logger.warning(f"Failed to get top unknown questions: {e}")
+            top_unknown = []
+        
+        # Prepare analytics data structure with real database data only
         analytics_data = {
             'total_queries': total_notifications + total_complaints + total_queries_today,
             'unknown_queries': unknown_queries,
@@ -712,12 +731,7 @@ def analytics():
             'recent_notifications': recent_notifications,
             'department_stats': dept_stats,
             'unknown_queries_week': unknown_queries_week,
-            # Real performance metrics
-            'system_health': 95 + (total_queries_today * 0.1),  # Dynamic health score
-            'server_status': 'operational' if total_queries_today < 100 else 'under_load',
-            'response_time': 0.5 + (total_queries_today * 0.01),  # Dynamic response time
-            'memory_usage': 128 + (total_students * 0.5) + (total_results * 0.1),  # Dynamic memory
-            'cpu_usage': 20 + (total_queries_today * 0.1)  # Dynamic CPU
+            'top_unknown': top_unknown
         }
         
         return render_template('analytics.html',
@@ -1005,7 +1019,7 @@ def view_notifications():
         
         notifications = notifications_pagination.items if notifications_pagination else []
         
-        return render_template('view_notifications_simple.html',
+        return render_template('notifications.html',
                              notifications=notifications,
                              pagination=notifications_pagination,
                              page=page)
@@ -1037,8 +1051,8 @@ def notification_details(notification_id):
                     'content': notification.content,
                     'notification_type': notification.notification_type,
                     'priority': notification.priority,
-                    'created_at': notification.created_at.strftime('%d %b %Y, %I:%M %p'),
-                    'expires_at': notification.expires_at.strftime('%d %b %Y, %I:%M %p'),
+                    'created_at': notification.created_at.strftime('%d %b %Y, %I:%M %p') if notification.created_at else 'N/A',
+                    'expires_at': notification.expires_at.strftime('%d %b %Y, %I:%M %p') if notification.expires_at else 'N/A',
                     'is_expired': notification.is_expired(),
                     'file_url': notification.file_url,
                     'link_url': notification.link_url
@@ -1244,7 +1258,7 @@ def _get_recent_activities():
             activities.append({
                 'type': 'student_registration',
                 'text': f'New student registered: {student.name} ({student.roll_number})',
-                'time': student.created_at.strftime('%d %b %Y, %I:%M %p'),
+                'time': student.created_at.strftime('%d %b %Y, %I:%M %p') if student.created_at else 'N/A',
                 'icon': 'user-plus',
                 'color': 'success'
             })
@@ -1258,7 +1272,7 @@ def _get_recent_activities():
             activities.append({
                 'type': 'notification',
                 'text': f'Notification sent: {notif.title}',
-                'time': notif.created_at.strftime('%d %b %Y, %I:%M %p'),
+                'time': notif.created_at.strftime('%d %b %Y, %I:%M %p') if notif.created_at else 'N/A',
                 'icon': 'bullhorn',
                 'color': 'info'
             })
@@ -1272,7 +1286,7 @@ def _get_recent_activities():
             activities.append({
                 'type': 'complaint',
                 'text': f'New complaint filed: {complaint.category}',
-                'time': complaint.created_at.strftime('%d %b %Y, %I:%M %p'),
+                'time': complaint.created_at.strftime('%d %b %Y, %I:%M %p') if complaint.created_at else 'N/A',
                 'icon': 'exclamation-triangle',
                 'color': 'warning'
             })
@@ -2172,7 +2186,12 @@ def refresh_activity():
             })
         
         # Sort all activities by time (most recent first)
-        activities.sort(key=lambda x: x['time'], reverse=True)
+        # Put 'N/A' values at the end
+        activities_with_time = [a for a in activities if a['time'] != 'N/A']
+        activities_with_na = [a for a in activities if a['time'] == 'N/A']
+        
+        activities_with_time.sort(key=lambda x: x['time'], reverse=True)
+        activities = activities_with_time + activities_with_na
         
         # Limit to 10 most recent activities
         activities = activities[:10]
@@ -2193,6 +2212,9 @@ def refresh_activity():
 
 def format_time_ago(dt):
     """Format datetime as 'X hours/minutes ago'"""
+    if dt is None:
+        return 'N/A'
+    
     from datetime import datetime
     now = datetime.utcnow()
     diff = now - dt

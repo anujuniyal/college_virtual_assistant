@@ -1,338 +1,248 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Notification - College Virtual Assistant</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background-color: #f5f7fa;
-        }
-        .form-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            margin: 50px auto;
-            max-width: 800px;
-        }
-        .form-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .form-header h2 {
-            color: #6f42c1;
-            font-weight: bold;
-        }
-        .preview-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid #dee2e6;
-        }
-        .preview-title {
-            color: #495057;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-        .preview-content {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            border-left: 4px solid #6f42c1;
-        }
-        .char-counter {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-        .char-counter.warning {
-            color: #ffc107;
-        }
-        .char-counter.danger {
-            color: #dc3545;
-        }
-        .priority-badge {
-            font-size: 0.8rem;
-            padding: 4px 8px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="form-container">
-            <div class="form-header">
-                <h2><i class="bi bi-bell-fill"></i> Add New Notification</h2>
-                <p class="text-muted">Create a new notification for students and faculty</p>
+{% extends "base_dashboard.html" %}
+
+{% block title %}Add Notification - EduBot Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4 mb-0">Add New Notification</h2>
+                <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
             </div>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form method="POST" id="notificationForm">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Notification Title *</label>
-                            <input type="text" class="form-control" id="title" name="title" required 
-                                   placeholder="Enter notification title" maxlength="100">
-                            <div class="char-counter" id="titleCounter">0 / 100 characters</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label for="priority" class="form-label">Priority</label>
-                            <select class="form-select" id="priority" name="priority">
-                                <option value="normal">Normal</option>
-                                <option value="important">Important</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="content" class="form-label">Content *</label>
-                    <textarea class="form-control" id="content" name="content" rows="5" required 
-                              placeholder="Enter notification content" maxlength="500"></textarea>
-                    <div class="char-counter" id="contentCounter">0 / 500 characters</div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="link_url" class="form-label">Link URL</label>
-                            <input type="url" class="form-control" id="link_url" name="link_url" 
-                                   placeholder="https://example.com">
-                            <div class="form-text">Optional: Link to external resource</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="link_text" class="form-label">Link Text</label>
-                            <input type="text" class="form-control" id="link_text" name="link_text" 
-                                   placeholder="View Details">
-                            <div class="form-text">Text to display for the link</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="file_url" class="form-label">File URL</label>
-                            <input type="url" class="form-control" id="file_url" name="file_url" 
-                                   placeholder="/uploads/notification.pdf">
-                            <div class="form-text">Optional: Path to uploaded file</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="expiry_days" class="form-label">Expiry Period</label>
-                            <select class="form-select" id="expiry_days" name="expiry_days">
-                                <option value="7">7 Days</option>
-                                <option value="14">14 Days</option>
-                                <option value="30">30 Days</option>
-                                <option value="90">3 Months</option>
-                                <option value="365">1 Year</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="target_audience" class="form-label">Target Audience</label>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="target_students" name="target_audience" value="students" checked>
-                                <label class="form-check-label" for="target_students">
-                                    Students
-                                </label>
+
+            <div class="card">
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" id="addNotificationForm">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Notification Title *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-heading input-icon"></i>
+                                        <input type="text" class="form-control" id="title" name="title" 
+                                               placeholder="Enter notification title" required>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="target_faculty" name="target_audience" value="faculty">
-                                <label class="form-check-label" for="target_faculty">
-                                    Faculty
-                                </label>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="content" class="form-label">Notification Content *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-align-left input-icon"></i>
+                                        <textarea class="form-control" id="content" name="content" rows="6" 
+                                                  placeholder="Enter notification content" required></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="target_all" name="target_audience" value="all">
-                                <label class="form-check-label" for="target_all">
-                                    All Users
-                                </label>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="notification_type" class="form-label">Notification Type</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-tag input-icon"></i>
+                                        <select class="form-control" id="notification_type" name="notification_type">
+                                            <option value="general">General</option>
+                                            <option value="academic">Academic</option>
+                                            <option value="exam">Exam</option>
+                                            <option value="holiday">Holiday</option>
+                                            <option value="emergency">Emergency</option>
+                                            <option value="event">Event</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-exclamation-triangle input-icon"></i>
+                                        <select class="form-control" id="priority" name="priority">
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="expires_at" class="form-label">Expires At</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-clock input-icon"></i>
+                                        <input type="datetime-local" class="form-control" id="expires_at" name="expires_at">
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Live Preview Section -->
-                <div class="preview-section">
-                    <div class="preview-title">
-                        <i class="bi bi-eye"></i> Live Preview
-                    </div>
-                    <div class="preview-content">
-                        <h5 id="previewTitle">
-                            <span id="previewPriorityBadge" class="badge bg-secondary priority-badge">Normal</span>
-                            <span id="previewTitleText">Your notification title will appear here</span>
-                        </h5>
-                        <p id="previewContent" class="mb-2">Your notification content will appear here...</p>
-                        <div id="previewLinks" class="mb-2">
-                            <!-- Links will be added dynamically -->
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="link_url" class="form-label">Link URL (Optional)</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-link input-icon"></i>
+                                        <input type="url" class="form-control" id="link_url" name="link_url" 
+                                               placeholder="https://example.com">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="file_url" class="form-label">File URL (Optional)</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-file input-icon"></i>
+                                        <input type="url" class="form-control" id="file_url" name="file_url" 
+                                               placeholder="https://example.com/file.pdf">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> Posted: Just now | 
-                            <i class="bi bi-calendar-x"></i> Expires: In 7 days
-                        </small>
-                    </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                                        <i class="fas fa-bell me-2"></i>
+                                        <span id="submitText">Send Notification</span>
+                                    </button>
+                                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <a href="{{ url_for('admin.admin_dashboard_main') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Notifications
-                    </a>
-                    <button type="button" class="btn btn-outline-primary" onclick="resetForm()">
-                        <i class="bi bi-arrow-clockwise"></i> Reset
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle"></i> Add Notification
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
+</div>
+
+<style>
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 10;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group .form-control,
+.input-group .form-select,
+.input-group textarea {
+    padding-left: 45px;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    border-radius: 0.375rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select, textarea {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus, textarea:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('addNotificationForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+
+    // Set default expiry time to 7 days from now
+    const expiresAtInput = document.getElementById('expires_at');
+    const defaultExpiry = new Date();
+    defaultExpiry.setDate(defaultExpiry.getDate() + 7);
+    expiresAtInput.value = defaultExpiry.toISOString().slice(0, 16);
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        // Show loading state
+        submitBtn.disabled = true;
+        submitText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Sending...';
+    });
+
+    // Character counter for content
+    const contentTextarea = document.getElementById('content');
+    const maxLength = 1000;
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Character counters
-        document.getElementById('title').addEventListener('input', function() {
-            const length = this.value.length;
-            const counter = document.getElementById('titleCounter');
-            counter.textContent = `${length} / 100 characters`;
-            
-            if (length > 80) {
-                counter.classList.add('danger');
-                counter.classList.remove('warning');
-            } else if (length > 60) {
-                counter.classList.add('warning');
-                counter.classList.remove('danger');
-            } else {
-                counter.classList.remove('warning', 'danger');
-            }
-            
-            updatePreview();
-        });
-        
-        document.getElementById('content').addEventListener('input', function() {
-            const length = this.value.length;
-            const counter = document.getElementById('contentCounter');
-            counter.textContent = `${length} / 500 characters`;
-            
-            if (length > 400) {
-                counter.classList.add('danger');
-                counter.classList.remove('warning');
-            } else if (length > 300) {
-                counter.classList.add('warning');
-                counter.classList.remove('danger');
-            } else {
-                counter.classList.remove('warning', 'danger');
-            }
-            
-            updatePreview();
-        });
-        
-        // Priority change handler
-        document.getElementById('priority').addEventListener('change', updatePreview);
-        
-        // Link handlers
-        document.getElementById('link_url').addEventListener('input', updatePreview);
-        document.getElementById('link_text').addEventListener('input', updatePreview);
-        document.getElementById('file_url').addEventListener('input', updatePreview);
-        
-        // Expiry days handler
-        document.getElementById('expiry_days').addEventListener('change', updatePreview);
-        
-        function updatePreview() {
-            const title = document.getElementById('title').value || 'Your notification title will appear here';
-            const content = document.getElementById('content').value || 'Your notification content will appear here...';
-            const priority = document.getElementById('priority').value;
-            const linkUrl = document.getElementById('link_url').value;
-            const linkText = document.getElementById('link_text').value || 'View Link';
-            const fileUrl = document.getElementById('file_url').value;
-            const expiryDays = document.getElementById('expiry_days').value;
-            
-            // Update title
-            document.getElementById('previewTitleText').textContent = title;
-            
-            // Update priority badge
-            const badge = document.getElementById('previewPriorityBadge');
-            badge.className = 'badge priority-badge';
-            switch(priority) {
-                case 'urgent':
-                    badge.classList.add('bg-danger');
-                    badge.textContent = 'Urgent';
-                    break;
-                case 'important':
-                    badge.classList.add('bg-warning');
-                    badge.textContent = 'Important';
-                    break;
-                default:
-                    badge.classList.add('bg-secondary');
-                    badge.textContent = 'Normal';
-            }
-            
-            // Update content
-            document.getElementById('previewContent').textContent = content;
-            
-            // Update links
-            const linksContainer = document.getElementById('previewLinks');
-            linksContainer.innerHTML = '';
-            
-            if (linkUrl) {
-                const linkElement = document.createElement('a');
-                linkElement.href = linkUrl;
-                linkElement.target = '_blank';
-                linkElement.className = 'btn btn-sm btn-outline-primary me-2';
-                linkElement.innerHTML = `<i class="bi bi-link-45deg"></i> ${linkText}`;
-                linksContainer.appendChild(linkElement);
-            }
-            
-            if (fileUrl) {
-                const fileElement = document.createElement('a');
-                fileElement.href = fileUrl;
-                fileElement.target = '_blank';
-                fileElement.className = 'btn btn-sm btn-outline-secondary me-2';
-                fileElement.innerHTML = '<i class="bi bi-file-earmark"></i> View File';
-                linksContainer.appendChild(fileElement);
-            }
+    contentTextarea.addEventListener('input', function() {
+        const remaining = maxLength - this.value.length;
+        if (remaining < 100) {
+            this.style.borderColor = '#dc3545';
+        } else {
+            this.style.borderColor = '#ced4da';
         }
-        
-        function resetForm() {
-            document.getElementById('notificationForm').reset();
-            document.getElementById('titleCounter').textContent = '0 / 100 characters';
-            document.getElementById('contentCounter').textContent = '0 / 500 characters';
-            document.getElementById('titleCounter').classList.remove('warning', 'danger');
-            document.getElementById('contentCounter').classList.remove('warning', 'danger');
-            updatePreview();
+    });
+
+    // URL validation
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
         }
-        
-        // Initialize preview on page load
-        updatePreview();
-    </script>
-</body>
-</html>
+    }
+
+    // Real-time URL validation
+    document.getElementById('link_url').addEventListener('blur', function() {
+        if (this.value && !isValidUrl(this.value)) {
+            this.setCustomValidity('Please enter a valid URL');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    document.getElementById('file_url').addEventListener('blur', function() {
+        if (this.value && !isValidUrl(this.value)) {
+            this.setCustomValidity('Please enter a valid URL');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

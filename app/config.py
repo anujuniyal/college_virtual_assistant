@@ -19,7 +19,7 @@ except ImportError:
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = True
     
     # Database configuration with automatic switching
     @staticmethod
@@ -43,8 +43,8 @@ class Config:
             # Fallback to SQLite for local production testing
             pass
         
-        # Default to SQLite for local development
-        return 'sqlite:///edubot_management.db'
+        # Default to SQLite for local development (use instance folder for Flask best practice)
+        return 'sqlite:///instance/edubot_management.db'
     
     # Set the database URI using a function call
     SQLALCHEMY_DATABASE_URI = _get_database_uri()

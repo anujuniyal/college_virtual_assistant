@@ -969,7 +969,7 @@ Your complaint will be registered with your roll number."""
             db.session.commit()
             
         except Exception as e:
-            logger.error(f"Error storing visitor query: {str(e)}")
+            current_app.logger.error(f"Error storing visitor query: {str(e)}")
             db.session.rollback()
     
     def _store_unknown_query(self, message: str, phone_number: str, student_id: int = None):

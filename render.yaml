@@ -4,7 +4,7 @@ services:
     name: edubot-college-assistant
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "pip install -r data/requirements.txt && python scripts/setup_supabase.py setup"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 wsgi:app"
     envVars:
       - key: FLASK_ENV
@@ -15,15 +15,66 @@ services:
           property: connectionString
       - key: PYTHON_VERSION
         value: 3.10.0
-      # Add database initialization command
-      - key: INIT_DB_ON_START
-        value: "true"
+      # Security settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_COOKIE_SECURE
+        value: true
+      - key: SESSION_COOKIE_HTTPONLY
+        value: true
+      - key: SESSION_COOKIE_SAMESITE
+        value: Strict
+      # Admin credentials (change these in production)
+      - key: DEFAULT_ADMIN_USERNAME
+        value: admin
+      - key: DEFAULT_ADMIN_EMAIL
+        value: admin@edubot.com
+      - key: DEFAULT_ADMIN_PASSWORD
+        value: change-this-password
+      - key: DEFAULT_ADMIN_ROLE
+        value: admin
+      # Email configuration
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: true
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
+      # Telegram configuration
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PUBLIC_BASE_URL
+        value: https://edubot-college-assistant.onrender.com
+      # Rate limiting
+      - key: RATE_LIMIT_RESULT_QUERIES
+        value: 2
+      - key: RATE_LIMIT_FEE_QUERIES
+        value: 2
+      # Data expiry
+      - key: NOTIFICATION_EXPIRY_DAYS
+        value: 4
+      - key: RESULT_VISIBILITY_DAYS
+        value: 7
+      - key: OTP_EXPIRY_MINUTES
+        value: 10
+      # Static data
+      - key: POPULATE_STATIC_DATA
+        value: true
+      # Logging
+      - key: LOG_LEVEL
+        value: INFO
     healthCheckPath: /health
-    # Add pre-deploy hook to initialize database
-    preDeployCommand: "python database_manager.py init"
+    autoDeploy: true
     
 databases:
   # PostgreSQL Database (Render provides free PostgreSQL)
   - name: edubot-db
     databaseName: edubot
     user: edubot_user
+    plan: free
