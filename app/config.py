@@ -9,8 +9,19 @@ try:
     from dotenv import load_dotenv
     # Get the project root directory (app/config.py -> project root)
     project_root = os.path.dirname(os.path.dirname(__file__))
+    
+    # Load base .env file first
     dotenv_path = os.path.join(project_root, '.env')
     load_dotenv(dotenv_path)
+    
+    # Load production-specific .env file if in production
+    if os.environ.get('FLASK_ENV') == 'production':
+        dotenv_prod_path = os.path.join(project_root, '.env.production')
+        if os.path.exists(dotenv_prod_path):
+            load_dotenv(dotenv_prod_path, override=True)
+            print(f"Loaded production config from {dotenv_prod_path}")
+        else:
+            print("Warning: .env.production file not found")
 except ImportError:
     # If python-dotenv is not available, continue without it
     pass
