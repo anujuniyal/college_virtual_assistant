@@ -4,7 +4,7 @@ services:
     name: edubot-college-assistant
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt && python scripts/setup_supabase.py setup"
+    buildCommand: "pip install -r requirements.txt && python scripts/deployment/robust_init.py"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 wsgi:app"
     envVars:
       - key: FLASK_ENV
@@ -30,7 +30,7 @@ services:
       - key: DEFAULT_ADMIN_EMAIL
         value: admin@edubot.com
       - key: DEFAULT_ADMIN_PASSWORD
-        value: change-this-password
+        value: admin123
       - key: DEFAULT_ADMIN_ROLE
         value: admin
       # Email configuration

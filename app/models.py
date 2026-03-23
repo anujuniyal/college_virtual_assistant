@@ -516,7 +516,7 @@ class TelegramUserMapping(db.Model):
     verified = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-    student = db.relationship('Student', lazy=True)
+    student = db.relationship('Student', lazy=True, overlaps="student_record,telegram_mappings")
 
     def __repr__(self):
         return f'<TelegramUserMapping {self.telegram_user_id} -> {self.phone_number}>'
