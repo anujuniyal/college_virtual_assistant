@@ -51,23 +51,29 @@ class UserService:
     
     @staticmethod
     def authenticate_user(username, password):
-        """Authenticate user against faculty table only for dashboard login"""
+        """Authenticate user against Admin and Faculty tables"""
         try:
-            # Only check Faculty table for dashboard authentication
-            from app.models import Faculty
+            from app.models import Admin, Faculty
+            
+            # First check Admin table for admin users
+            admin = Admin.query.filter_by(email=username).first()
+            if admin and admin.check_password(password):
+                return {
+                    'success': True,
+                    'message': 'Authentication successful',
+                    'user': admin
+                }
+            
+            # Then check Faculty table for faculty/accounts users
             faculty = Faculty.query.filter_by(email=username).first()
+            if faculty and faculty.check_password(password):
+                return {
+                    'success': True,
+                    'message': 'Authentication successful',
+                    'user': faculty
+                }
             
-            if not faculty:
-                return {'success': False, 'message': 'Invalid credentials'}
-            
-            if not faculty.check_password(password):
-                return {'success': False, 'message': 'Invalid credentials'}
-            
-            return {
-                'success': True,
-                'message': 'Authentication successful',
-                'user': faculty
-            }
+            return {'success': False, 'message': 'Invalid credentials'}
             
         except Exception as e:
             current_app.logger.error(f"Authentication error: {str(e)}")
@@ -75,18 +81,38 @@ class UserService:
     
     @staticmethod
     def get_user_by_id(user_id):
-        """Get user by ID from Faculty table"""
+        """Get user by ID from Admin and Faculty tables"""
         try:
-            return Faculty.query.get(user_id)
+            from app.models import Admin, Faculty
+            
+            # First check Admin table
+            user = Admin.query.get(user_id)
+            if user:
+                return user
+            
+            # Then check Faculty table
+            user = Faculty.query.get(user_id)
+            return user
+            
         except Exception as e:
             current_app.logger.error(f"Error getting user: {str(e)}")
             return None
     
     @staticmethod
     def get_user_by_username(username):
-        """Get user by email from Faculty table"""
+        """Get user by email from Admin and Faculty tables"""
         try:
-            return Faculty.query.filter_by(email=username).first()
+            from app.models import Admin, Faculty
+            
+            # First check Admin table
+            user = Admin.query.filter_by(email=username).first()
+            if user:
+                return user
+            
+            # Then check Faculty table
+            user = Faculty.query.filter_by(email=username).first()
+            return user
+            
         except Exception as e:
             current_app.logger.error(f"Error getting user: {str(e)}")
             return None
