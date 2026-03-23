@@ -4,7 +4,7 @@ services:
     name: edubot-college-assistant
     env: python
     plan: free
-    buildCommand: "pip install -r data/requirements.txt && python scripts/setup_supabase.py setup"
+    buildCommand: "pip install -r requirements.txt && python scripts/setup_supabase.py setup"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 wsgi:app"
     envVars:
       - key: FLASK_ENV
