@@ -15,10 +15,11 @@ try:
     load_dotenv(dotenv_path)
     
     # Load production-specific .env file if in production
+    # But don't override existing environment variables (like Render's DATABASE_URL)
     if os.environ.get('FLASK_ENV') == 'production':
         dotenv_prod_path = os.path.join(project_root, '.env.production')
         if os.path.exists(dotenv_prod_path):
-            load_dotenv(dotenv_prod_path, override=True)
+            load_dotenv(dotenv_prod_path, override=False)  # Don't override existing vars
             print(f"Loaded production config from {dotenv_prod_path}")
         else:
             print("Warning: .env.production file not found")
