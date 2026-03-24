@@ -155,11 +155,40 @@ class Config:
         print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
         print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
         
-        # For production, try SQLite fallback first to ensure app starts
+        # For production, prioritize Supabase database
         if os.environ.get('FLASK_ENV') == 'production':
-            # Use SQLite as temporary fallback to get the app running
+            if database_url:
+                # Handle Render PostgreSQL URLs
+                if database_url.startswith('postgres://'):
+                    # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+                    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+                
+                # Add Supabase-specific optimizations for production
+                if '?' not in database_url:
+                    database_url += '?'
+                else:
+                    database_url += '&'
+                
+                # Supabase/PostgreSQL optimization parameters for network resilience
+                database_url += 'sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
+                
+                print(f"✅ Using DATABASE_URL (Supabase): {database_url[:50]}...")
+                return database_url
+            
+            # Check for POSTGRESQL_URL as fallback
+            postgres_url = os.environ.get('POSTGRESQL_URL')
+            if postgres_url:
+                if postgres_url.startswith('postgres://'):
+                    postgres_url = postgres_url.replace('postgres://', 'postgresql://', 1)
+                print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
+                return postgres_url
+            
+            # CRITICAL: In production, we MUST have a database URL
+            print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
+            print("❌ Using SQLite fallback to ensure application starts")
+            # Use SQLite as emergency fallback ONLY
             sqlite_path = 'sqlite:///instance/edubot_management.db'
-            print(f"🔄 Using SQLite fallback for startup: {sqlite_path}")
+            print(f"🔄 Using emergency SQLite fallback: {sqlite_path}")
             return sqlite_path
         
         if database_url:
@@ -209,14 +238,15 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Minimal database settings for memory efficiency (SQLite compatible)
+    # Optimized database settings for memory efficiency (<400MB)
     SQLALCHEMY_ENGINE_OPTIONS = {
         **Config.SQLALCHEMY_ENGINE_OPTIONS,
-        'pool_size': 2,           # Minimal for memory efficiency
-        'max_overflow': 3,       # Minimal overflow
-        'pool_timeout': 30,       # Shorter timeout
-        'pool_recycle': 900,      # Recycle every 15 minutes
+        'pool_size': 1,           # Single connection for memory efficiency
+        'max_overflow': 1,       # Minimal overflow
+        'pool_timeout': 20,       # Shorter timeout
+        'pool_recycle': 600,      # Recycle every 10 minutes
         'pool_pre_ping': True,     # Validate connections
+        'pool_reset_on_return': 'commit',  # Reset connection state
     }
     
     @classmethod
