@@ -51,17 +51,30 @@ class UserService:
     
     @staticmethod
     def authenticate_user(username, password):
-        """Authenticate user against Faculty table only"""
+        """Authenticate user against Faculty and Admin tables"""
         try:
-            # Check Faculty table for all users (admin, faculty, accounts)
+            # First check Faculty table for all users (admin, faculty, accounts)
             faculty = Faculty.query.filter_by(email=username).first()
             if faculty and faculty.check_password(password):
+                current_app.logger.info(f"Authentication successful for {username} from Faculty table")
                 return {
                     'success': True,
                     'message': 'Authentication successful',
                     'user': faculty
                 }
             
+            # Fallback: Check Admin table for backward compatibility
+            from app.models import Admin
+            admin = Admin.query.filter_by(email=username).first()
+            if admin and admin.check_password(password):
+                current_app.logger.info(f"Authentication successful for {username} from Admin table")
+                return {
+                    'success': True,
+                    'message': 'Authentication successful',
+                    'user': admin
+                }
+            
+            current_app.logger.warning(f"Authentication failed for {username}: User not found or invalid password")
             return {'success': False, 'message': 'Invalid credentials'}
             
         except Exception as e:

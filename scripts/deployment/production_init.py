@@ -22,6 +22,16 @@ def initialize_production():
         app = create_app()
         
         with app.app_context():
+            # Test database connection first
+            print("🔍 Testing database connection...")
+            try:
+                db.session.execute("SELECT 1")
+                print("✅ Database connection successful")
+            except Exception as db_error:
+                print(f"❌ Database connection failed: {str(db_error)}")
+                print(f"🔧 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
+                raise db_error
+            
             # Create all tables
             print("📋 Creating database tables...")
             db.create_all()

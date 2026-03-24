@@ -51,19 +51,24 @@ class Config:
             if database_url.startswith('postgres://'):
                 # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
                 database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            print(f"✅ Using DATABASE_URL: {database_url[:50]}...")
             return database_url
         
         # Check if we're in production environment
         if os.environ.get('FLASK_ENV') == 'production':
-            # In production, default to PostgreSQL if no DATABASE_URL is set
+            # In production, check for POSTGRESQL_URL
             postgres_url = os.environ.get('POSTGRESQL_URL')
             if postgres_url:
+                print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
                 return postgres_url
-            # Fallback to SQLite for local production testing
-            pass
+            
+            # CRITICAL: In production, we MUST have a database URL
+            raise ValueError("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found. Authentication will fail.")
         
-        # Default to SQLite for local development (use instance folder for Flask best practice)
-        return 'sqlite:///instance/edubot_management.db'
+        # Default to SQLite for local development only
+        sqlite_path = 'sqlite:///instance/edubot_management.db'
+        print(f"🔧 Using SQLite for development: {sqlite_path}")
+        return sqlite_path
     
     # Set the database URI using a function call
     SQLALCHEMY_DATABASE_URI = _get_database_uri()
