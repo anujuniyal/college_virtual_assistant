@@ -10,27 +10,32 @@ try:
     # Get the project root directory (app/config.py -> project root)
     project_root = os.path.dirname(os.path.dirname(__file__))
     
-    # Load base .env file first
+    # Load base .env file first (local development)
     dotenv_path = os.path.join(project_root, '.env')
-    load_dotenv(dotenv_path)
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
     
-    # Always try to load .env.render if it exists (for deployment)
-    # Allow override for DATABASE_URL to ensure Supabase is used in production
-    dotenv_render_path = os.path.join(project_root, '.env.render')
-    if os.path.exists(dotenv_render_path):
-        # Load with override=True for DATABASE_URL specifically
-        load_dotenv(dotenv_render_path, override=True)  # Override to ensure Supabase URL
-        print(f"Loaded render config from {dotenv_render_path}")
+    # Load .env.render ONLY for local development/testing, NOT on Render
+    # Render provides environment variables directly through render.yaml
+    is_render_deployment = os.environ.get('RENDER') == 'true' or os.path.exists('/etc/render')
     
-    # Load production-specific .env file if in production
-    if os.environ.get('FLASK_ENV') == 'production':
-        # Then load .env.production as fallback
+    if not is_render_deployment:
+        dotenv_render_path = os.path.join(project_root, '.env.render')
+        if os.path.exists(dotenv_render_path):
+            load_dotenv(dotenv_render_path, override=True)
+            print(f"Loaded render config from {dotenv_render_path}")
+    else:
+        print("🚀 Running on Render - using environment variables from render.yaml")
+    
+    # Load production-specific .env file if in production (local only)
+    if os.environ.get('FLASK_ENV') == 'production' and not is_render_deployment:
         dotenv_prod_path = os.path.join(project_root, '.env.production')
         if os.path.exists(dotenv_prod_path):
-            load_dotenv(dotenv_prod_path, override=False)  # Don't override existing vars
+            load_dotenv(dotenv_prod_path, override=False)
             print(f"Loaded production config from {dotenv_prod_path}")
         else:
             print("Warning: .env.production file not found")
+            
 except ImportError:
     # If python-dotenv is not available, continue without it
     pass
@@ -112,11 +117,17 @@ class Config:
         app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
         
         # Debug: Print all environment variables
+        is_render = os.environ.get('RENDER') == 'true' or os.path.exists('/etc/render')
         print("🔍 DEBUG: Environment variables:")
+        print(f"   Platform: {'Render' if is_render else 'Local'}")
         print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
         print(f"   DATABASE_URL: {os.environ.get('DATABASE_URL', 'NOT_SET')}")
         print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
         print(f"   Final Database URI: {database_uri}")
+        
+        # Warn if no database URL in production
+        if os.environ.get('FLASK_ENV') == 'production' and not os.environ.get('DATABASE_URL'):
+            app.logger.warning("⚠️  No DATABASE_URL found - check render.yaml configuration!")
     
     @staticmethod
     def _get_database_uri():
