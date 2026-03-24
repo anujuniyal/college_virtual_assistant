@@ -17,6 +17,13 @@ try:
     # Load production-specific .env file if in production
     # But don't override existing environment variables (like Render's DATABASE_URL)
     if os.environ.get('FLASK_ENV') == 'production':
+        # Load .env.render first (has Supabase credentials)
+        dotenv_render_path = os.path.join(project_root, '.env.render')
+        if os.path.exists(dotenv_render_path):
+            load_dotenv(dotenv_render_path, override=False)  # Don't override existing vars
+            print(f"Loaded render config from {dotenv_render_path}")
+        
+        # Then load .env.production as fallback
         dotenv_prod_path = os.path.join(project_root, '.env.production')
         if os.path.exists(dotenv_prod_path):
             load_dotenv(dotenv_prod_path, override=False)  # Don't override existing vars

@@ -51,20 +51,9 @@ class UserService:
     
     @staticmethod
     def authenticate_user(username, password):
-        """Authenticate user against Admin and Faculty tables"""
+        """Authenticate user against Faculty table only"""
         try:
-            from app.models import Admin, Faculty
-            
-            # First check Admin table for admin users
-            admin = Admin.query.filter_by(email=username).first()
-            if admin and admin.check_password(password):
-                return {
-                    'success': True,
-                    'message': 'Authentication successful',
-                    'user': admin
-                }
-            
-            # Then check Faculty table for faculty/accounts users
+            # Check Faculty table for all users (admin, faculty, accounts)
             faculty = Faculty.query.filter_by(email=username).first()
             if faculty and faculty.check_password(password):
                 return {
@@ -81,16 +70,9 @@ class UserService:
     
     @staticmethod
     def get_user_by_id(user_id):
-        """Get user by ID from Admin and Faculty tables"""
+        """Get user by ID from Faculty table only"""
         try:
-            from app.models import Admin, Faculty
-            
-            # First check Admin table
-            user = Admin.query.get(user_id)
-            if user:
-                return user
-            
-            # Then check Faculty table
+            # Check Faculty table only
             user = Faculty.query.get(user_id)
             return user
             
@@ -100,16 +82,9 @@ class UserService:
     
     @staticmethod
     def get_user_by_username(username):
-        """Get user by email from Admin and Faculty tables"""
+        """Get user by email from Faculty table only"""
         try:
-            from app.models import Admin, Faculty
-            
-            # First check Admin table
-            user = Admin.query.filter_by(email=username).first()
-            if user:
-                return user
-            
-            # Then check Faculty table
+            # Check Faculty table only
             user = Faculty.query.filter_by(email=username).first()
             return user
             

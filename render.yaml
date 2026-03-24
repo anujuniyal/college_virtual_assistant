@@ -13,6 +13,10 @@ services:
         fromDatabase:
           name: edubot-db
           property: connectionString
+      - key: DEFAULT_ADMIN_EMAIL
+        value: admin@edubot.com
+      - key: DEFAULT_ADMIN_PASSWORD
+        value: admin123
       - key: PYTHON_VERSION
         value: 3.10.0
       # Security settings
