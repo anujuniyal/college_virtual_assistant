@@ -3,17 +3,13 @@ WSGI Entry Point for Production
 """
 import os
 import sys
-from dotenv import load_dotenv
 from app import create_app
 
 # Add the project root to the Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Set production environment
+# Set production environment (Render provides env vars, no .env files needed)
 os.environ['FLASK_ENV'] = 'production'
 
 # Get configuration from environment

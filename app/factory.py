@@ -764,6 +764,11 @@ def initialize_services(app):
         except Exception as cleanup_error:
             app.logger.warning(f"Cleanup service failed (non-critical): {str(cleanup_error)}")
         
+        # Log worker information for debugging
+        import os
+        worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
+        app.logger.info(f"🔄 Worker {worker_id} initialized successfully")
+        
     except Exception as e:
         app.logger.error(f"Error initializing services: {str(e)}")
 
