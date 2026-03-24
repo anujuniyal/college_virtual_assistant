@@ -456,10 +456,13 @@ def register_core_routes(app):
         """Health check endpoint for monitoring"""
         from flask import jsonify
         try:
-            # Check database connection
+            # Quick database connection check
             from app.extensions import db
             from sqlalchemy import text
-            db.session.execute(text('SELECT 1'))
+            
+            # Use a simple, fast query
+            result = db.session.execute(text('SELECT 1 as health_check'))
+            result.fetchone()
             
             return jsonify({
                 'status': 'healthy',
@@ -467,10 +470,11 @@ def register_core_routes(app):
                 'timestamp': datetime.utcnow().isoformat()
             })
         except Exception as e:
+            # Log error but don't expose details in production
+            app.logger.error(f"Health check failed: {str(e)}")
             return jsonify({
                 'status': 'unhealthy',
                 'database': 'disconnected',
-                'error': str(e),
                 'timestamp': datetime.utcnow().isoformat()
             }), 500
 
@@ -740,21 +744,25 @@ def _ensure_schema(app):
 def initialize_services(app):
     """Initialize application services"""
     try:
-        # Initialize cleanup service
+        # Initialize cleanup service with error handling
         from app.services.cleanup_service import CleanupService
         
         cleanup_service = CleanupService()
-        # Use the correct method name
-        notifications_result = cleanup_service.cleanup_expired_notifications()
-        results_result = cleanup_service.cleanup_expired_results()
-        otps_result = cleanup_service.cleanup_expired_otps()
         
-        result = {
-            'notifications': notifications_result,
-            'results': results_result,
-            'otps': otps_result
-        }
-        app.logger.info(f"Cleanup on startup: {result}")
+        # Run cleanup in background to avoid blocking startup
+        try:
+            notifications_result = cleanup_service.cleanup_expired_notifications()
+            results_result = cleanup_service.cleanup_expired_results()
+            otps_result = cleanup_service.cleanup_expired_otps()
+            
+            result = {
+                'notifications': notifications_result,
+                'results': results_result,
+                'otps': otps_result
+            }
+            app.logger.info(f"Cleanup on startup: {result}")
+        except Exception as cleanup_error:
+            app.logger.warning(f"Cleanup service failed (non-critical): {str(cleanup_error)}")
         
     except Exception as e:
         app.logger.error(f"Error initializing services: {str(e)}")

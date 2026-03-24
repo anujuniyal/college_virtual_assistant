@@ -5,16 +5,12 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 wsgi:app"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --preload wsgi:app"
     envVars:
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
         value: postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres
-      - key: DEFAULT_ADMIN_EMAIL
-        value: admin@edubot.com
-      - key: DEFAULT_ADMIN_PASSWORD
-        value: admin123
       - key: PYTHON_VERSION
         value: 3.10.0
       # Security settings
