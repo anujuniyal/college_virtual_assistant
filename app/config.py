@@ -44,6 +44,12 @@ class Config:
     @staticmethod
     def _get_database_uri():
         """Determine database URI based on environment"""
+        # Debug: Print all environment variables
+        print("🔍 DEBUG: Environment variables:")
+        print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
+        print(f"   DATABASE_URL: {os.environ.get('DATABASE_URL', 'NOT_SET')}")
+        print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
+        
         # Check if explicitly set DATABASE_URL (Render provides this)
         database_url = os.environ.get('DATABASE_URL')
         if database_url:
@@ -63,6 +69,9 @@ class Config:
                 return postgres_url
             
             # CRITICAL: In production, we MUST have a database URL
+            print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
+            print("❌ This will cause authentication to fail!")
+            print("❌ Please check your Render environment variables!")
             raise ValueError("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found. Authentication will fail.")
         
         # Default to SQLite for local development only

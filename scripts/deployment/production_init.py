@@ -32,10 +32,43 @@ def initialize_production():
                 print(f"🔧 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
                 raise db_error
             
-            # Create all tables
-            print("📋 Creating database tables...")
-            db.create_all()
-            print("✅ Database tables created")
+            # Check if database is already populated
+            print("📋 Checking database state...")
+            try:
+                # Check if Faculty table exists and has data
+                faculty_count = db.session.query(Faculty).count()
+                print(f"📊 Faculty table found with {faculty_count} records")
+                
+                if faculty_count > 0:
+                    print("✅ Database already populated - skipping table creation")
+                    print("🔧 Only creating missing tables if any...")
+                    
+                    # Create only missing tables (safe operation)
+                    from sqlalchemy import inspect
+                    inspector = inspect(db.engine)
+                    existing_tables = inspector.get_table_names()
+                    
+                    # Get all expected tables from models
+                    all_models = [Faculty]  # Add your other models here
+                    expected_tables = [model.__tablename__ for model in all_models]
+                    
+                    missing_tables = [table for table in expected_tables if table not in existing_tables]
+                    
+                    if missing_tables:
+                        print(f"� Creating missing tables: {missing_tables}")
+                        db.create_all()  # This only creates missing tables
+                    else:
+                        print("✅ All tables already exist")
+                else:
+                    print("�📋 Database empty - creating all tables...")
+                    db.create_all()
+                    print("✅ Database tables created")
+                    
+            except Exception as check_error:
+                print(f"⚠️  Error checking database state: {str(check_error)}")
+                print("📋 Proceeding with table creation...")
+                db.create_all()
+                print("✅ Database tables created")
             
             # Check if default admin exists
             admin_email = os.environ.get('DEFAULT_ADMIN_EMAIL', 'admin@edubot.com')
