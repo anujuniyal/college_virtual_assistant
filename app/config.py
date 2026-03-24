@@ -41,11 +41,22 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SQLALCHEMY_DATABASE_URI = None  # Will be set dynamically
     
+    # SQLAlchemy engine optimizations for Supabase
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,  # Check connections before use
+        'pool_recycle': 300,     # Recycle connections every 5 minutes
+        'echo': False           # Set to True for SQL debugging
+    }
+    
     # Default Admin Credentials (from environment)
     DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME') or 'admin'
     DEFAULT_ADMIN_EMAIL = os.environ.get('DEFAULT_ADMIN_EMAIL') or 'admin@edubot.com'
     DEFAULT_ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD') or 'admin123'
     DEFAULT_ADMIN_ROLE = os.environ.get('DEFAULT_ADMIN_ROLE') or 'admin'
+    
+    # Real-time updates configuration for Supabase
+    SQLALCHEMY_RECORD_QUERIES = False  # Disable query recording for better performance
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = True  # Ensure auto-commit for real-time updates
     
     # Telegram Bot Configuration
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN') or ''
@@ -116,7 +127,19 @@ class Config:
             if database_url.startswith('postgres://'):
                 # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
                 database_url = database_url.replace('postgres://', 'postgresql://', 1)
-            print(f"✅ Using DATABASE_URL: {database_url[:50]}...")
+            
+            # Add Supabase-specific optimizations for production
+            if os.environ.get('FLASK_ENV') == 'production':
+                # Add connection pooling parameters for better performance
+                if '?' not in database_url:
+                    database_url += '?'
+                else:
+                    database_url += '&'
+                
+                # Supabase/PostgreSQL optimization parameters
+                database_url += 'sslmode=require&connect_timeout=10&application_name=edubot'
+            
+            print(f"✅ Using DATABASE_URL (Supabase): {database_url[:50]}...")
             return database_url
         
         # Check if we're in production environment
@@ -144,7 +167,15 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Ensure PostgreSQL is used in production
+    # Enhanced database settings for Supabase real-time performance
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        **Config.SQLALCHEMY_ENGINE_OPTIONS,
+        'pool_size': 10,          # Number of connections to maintain
+        'max_overflow': 20,       # Additional connections under load
+        'pool_timeout': 30,       # Timeout for getting connection from pool
+        'pool_recycle': 3600,     # Recycle connections every hour (Supabase limit)
+    }
+    
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)
@@ -169,7 +200,7 @@ class ProductionConfig(Config):
             app.logger.addHandler(file_handler)
             
             app.logger.setLevel(logging.INFO)
-            app.logger.info('EduBot Production Startup')
+            app.logger.info('EduBot Production Startup with Supabase')
     
     # Security settings
     SESSION_COOKIE_SECURE = True
