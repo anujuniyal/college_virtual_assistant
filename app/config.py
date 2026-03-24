@@ -209,7 +209,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Minimal database settings for memory efficiency
+    # Minimal database settings for memory efficiency (SQLite compatible)
     SQLALCHEMY_ENGINE_OPTIONS = {
         **Config.SQLALCHEMY_ENGINE_OPTIONS,
         'pool_size': 2,           # Minimal for memory efficiency
@@ -217,11 +217,6 @@ class ProductionConfig(Config):
         'pool_timeout': 30,       # Shorter timeout
         'pool_recycle': 900,      # Recycle every 15 minutes
         'pool_pre_ping': True,     # Validate connections
-        'connect_args': {
-            'connect_timeout': 15,   # Shorter timeout
-            'application_name': 'edubot_render',
-            'sslmode': 'require',
-        }
     }
     
     @classmethod
