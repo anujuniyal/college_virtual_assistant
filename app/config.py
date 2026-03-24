@@ -156,6 +156,13 @@ class Config:
         print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
         print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
         
+        # ALWAYS use fallback for now since environment variables aren't loading properly
+        if os.environ.get('FLASK_ENV') == 'production':
+            fallback_url = 'postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres'
+            fallback_url += '?sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
+            print(f"🔄 Using hardcoded Supabase URL: {fallback_url[:50]}...")
+            return fallback_url
+        
         if database_url:
             # Handle Render PostgreSQL URLs
             if database_url.startswith('postgres://'):
@@ -176,13 +183,6 @@ class Config:
             print(f"✅ Using DATABASE_URL (Supabase): {database_url[:50]}...")
             return database_url
         
-        # Fallback to hardcoded Supabase URL if Render doesn't set DATABASE_URL
-        if os.environ.get('FLASK_ENV') == 'production':
-            fallback_url = 'postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres'
-            fallback_url += '?sslmode=require&connect_timeout=10&application_name=edubot'
-            print(f"🔄 Using fallback Supabase URL: {fallback_url[:50]}...")
-            return fallback_url
-        
         # Check if we're in production environment
         if os.environ.get('FLASK_ENV') == 'production':
             # In production, check for POSTGRESQL_URL
@@ -197,7 +197,7 @@ class Config:
             print("❌ Please check your Render environment variables!")
             # Instead of raising error, use fallback
             fallback_url = 'postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres'
-            fallback_url += '?sslmode=require&connect_timeout=10&application_name=edubot'
+            fallback_url += '?sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
             print(f"🔄 Using emergency fallback: {fallback_url[:50]}...")
             return fallback_url
         
@@ -212,21 +212,18 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Enhanced database settings for Supabase with network resilience
+    # Minimal database settings for memory efficiency
     SQLALCHEMY_ENGINE_OPTIONS = {
         **Config.SQLALCHEMY_ENGINE_OPTIONS,
-        'pool_size': 5,           # Reduced for network stability
-        'max_overflow': 10,       # Additional connections under load
-        'pool_timeout': 60,       # Longer timeout for network issues
-        'pool_recycle': 1800,     # Recycle connections every 30 minutes
-        'pool_pre_ping': True,     # Validate connections before use
+        'pool_size': 2,           # Minimal for memory efficiency
+        'max_overflow': 3,       # Minimal overflow
+        'pool_timeout': 30,       # Shorter timeout
+        'pool_recycle': 900,      # Recycle every 15 minutes
+        'pool_pre_ping': True,     # Validate connections
         'connect_args': {
-            'connect_timeout': 30,   # Connection timeout
+            'connect_timeout': 15,   # Shorter timeout
             'application_name': 'edubot_render',
             'sslmode': 'require',
-            'sslcert': None,
-            'sslkey': None,
-            'sslrootcert': None,
         }
     }
     

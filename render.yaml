@@ -1,11 +1,11 @@
 services:
   # Web Service
   - type: web
-    name: edubot-college-assistant
+    name: college-virtual-assistant
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --max-requests 1000 --max-requests-jitter 100 wsgi:app"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 300 --max-requests 500 --max-requests-jitter 50 --limit-request-line 4094 --limit-request-field-size 8190 wsgi:app"
     envVars:
       - key: FLASK_ENV
         value: production
