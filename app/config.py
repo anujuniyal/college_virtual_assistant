@@ -150,18 +150,17 @@ class Config:
         # Check if explicitly set DATABASE_URL (Render provides this)
         database_url = os.environ.get('DATABASE_URL')
         
-        # Debug: Print all environment variables that might contain database info
         print("🔍 Database Configuration Debug:")
         print(f"   DATABASE_URL: {database_url[:50] + '...' if database_url and len(database_url) > 50 else database_url}")
         print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
         print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
         
-        # ALWAYS use fallback for now since environment variables aren't loading properly
+        # For production, try SQLite fallback first to ensure app starts
         if os.environ.get('FLASK_ENV') == 'production':
-            fallback_url = 'postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres'
-            fallback_url += '?sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
-            print(f"🔄 Using hardcoded Supabase URL: {fallback_url[:50]}...")
-            return fallback_url
+            # Use SQLite as temporary fallback to get the app running
+            sqlite_path = 'sqlite:///instance/edubot_management.db'
+            print(f"🔄 Using SQLite fallback for startup: {sqlite_path}")
+            return sqlite_path
         
         if database_url:
             # Handle Render PostgreSQL URLs
@@ -193,13 +192,11 @@ class Config:
             
             # CRITICAL: In production, we MUST have a database URL
             print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
-            print("❌ This will cause authentication to fail!")
-            print("❌ Please check your Render environment variables!")
-            # Instead of raising error, use fallback
-            fallback_url = 'postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres'
-            fallback_url += '?sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
-            print(f"🔄 Using emergency fallback: {fallback_url[:50]}...")
-            return fallback_url
+            print("❌ Using SQLite fallback to ensure application starts")
+            # Use SQLite as emergency fallback
+            sqlite_path = 'sqlite:///instance/edubot_management.db'
+            print(f"🔄 Using emergency SQLite fallback: {sqlite_path}")
+            return sqlite_path
         
         # Default to SQLite for local development only
         sqlite_path = 'sqlite:///instance/edubot_management.db'

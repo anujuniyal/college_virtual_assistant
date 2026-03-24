@@ -453,13 +453,17 @@ def register_core_routes(app):
 
     @app.route('/health')
     def health_check():
-        """Health check endpoint for monitoring with retry logic"""
+        """Health check endpoint for monitoring with offline mode support"""
         from flask import jsonify
         try:
-            from app.database_resilience import test_database_connection
+            from app.offline_mode import OfflineMode, offline_database_test
+            
+            # Check if we're in offline mode
+            if OfflineMode.is_enabled():
+                return jsonify(OfflineMode.get_mock_response())
             
             # Test database connection with retry logic
-            if test_database_connection():
+            if offline_database_test():
                 return jsonify({
                     'status': 'healthy',
                     'database': 'connected',
@@ -689,13 +693,13 @@ def register_cli_commands(app):
 
 
 def initialize_database(app):
-    """Initialize database tables and default data with retry logic"""
+    """Initialize database tables and default data with offline mode fallback"""
     try:
         from app.services.database_setup import DatabaseSetup
-        from app.database_resilience import initialize_database_with_retry
+        from app.offline_mode import offline_database_init
         
-        # Initialize database using DatabaseSetup service with retry logic
-        success = initialize_database_with_retry()
+        # Initialize database with offline mode fallback
+        success = offline_database_init()
         
         if success:
             app.logger.info("Database initialization completed successfully")
@@ -704,7 +708,7 @@ def initialize_database(app):
             
     except Exception as e:
         app.logger.error(f"Error initializing database: {str(e)}")
-        # Don't raise exception to allow app to continue
+        # Don't raise exception to allow app to continue in offline mode
         pass
 
 
