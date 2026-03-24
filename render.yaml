@@ -5,14 +5,14 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --max-requests 100 --max-requests-jitter 10 --limit-request-line 4094 --limit-request-field-size 8190 --preload wsgi:app"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --max-requests 100 --max-requests-jitter 10 --limit-request-line 4094 --limit-request-field-size 8190 --preload --worker-class sync wsgi:app"
     envVars:
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres
       - key: POSTGRESQL_URL
-        sync: false
+        value: postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres
       - key: PYTHON_VERSION
         value: 3.10.0
       # Security settings
@@ -69,6 +69,7 @@ services:
       # Logging
       - key: LOG_LEVEL
         value: INFO
+    # Health check configuration
     healthCheckPath: /health
     autoDeploy: true
     
