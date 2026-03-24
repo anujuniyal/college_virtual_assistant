@@ -50,7 +50,7 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: PUBLIC_BASE_URL
-        value: https://edubot-college-assistant.onrender.com
+        value: https://college-virtual-assistant.onrender.com
       # Rate limiting
       - key: RATE_LIMIT_RESULT_QUERIES
         value: 2
