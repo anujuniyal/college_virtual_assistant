@@ -115,11 +115,11 @@ def test_render_yaml():
             print("❌ Production environment not set")
             return False
         
-        # Check for verification script
-        if 'verify_supabase_deployment.py' in content:
-            print("✅ Verification script included")
+        # Check for simplified gunicorn start command
+        if 'gunicorn --bind 0.0.0.0:$PORT' in content:
+            print("✅ Simplified start command configured")
         else:
-            print("❌ Verification script not included")
+            print("❌ Simplified start command not found")
             return False
         
         print("✅ Render configuration verified")
