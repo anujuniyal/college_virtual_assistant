@@ -15,10 +15,25 @@ try:
     if os.path.exists(dotenv_path):
         load_dotenv(dotenv_path)
     
-    # Load .env.render ONLY for local development/testing, NOT on Render
-    # Render provides environment variables directly through render.yaml
-    is_render_deployment = os.environ.get('RENDER') == 'true' or os.path.exists('/etc/render')
+    # Check if running on Render (multiple detection methods)
+    is_render_deployment = (
+        os.environ.get('RENDER') == 'true' or 
+        os.environ.get('RENDER_SERVICE_ID') is not None or
+        os.environ.get('RENDER_SERVICE_NAME') is not None or
+        os.path.exists('/etc/render') or
+        'render.com' in os.environ.get('HOME', '')
+    )
     
+    # Debug environment detection
+    print("🔍 Environment Detection:")
+    print(f"   RENDER: {os.environ.get('RENDER', 'NOT_SET')}")
+    print(f"   RENDER_SERVICE_ID: {os.environ.get('RENDER_SERVICE_ID', 'NOT_SET')}")
+    print(f"   RENDER_SERVICE_NAME: {os.environ.get('RENDER_SERVICE_NAME', 'NOT_SET')}")
+    print(f"   HOME: {os.environ.get('HOME', 'NOT_SET')}")
+    print(f"   /etc/render exists: {os.path.exists('/etc/render')}")
+    print(f"   Is Render: {is_render_deployment}")
+    
+    # Load .env.render ONLY for local development/testing, NOT on Render
     if not is_render_deployment:
         dotenv_render_path = os.path.join(project_root, '.env.render')
         if os.path.exists(dotenv_render_path):
@@ -134,6 +149,13 @@ class Config:
         """Determine database URI based on environment"""
         # Check if explicitly set DATABASE_URL (Render provides this)
         database_url = os.environ.get('DATABASE_URL')
+        
+        # Debug: Print all environment variables that might contain database info
+        print("🔍 Database Configuration Debug:")
+        print(f"   DATABASE_URL: {database_url[:50] + '...' if database_url and len(database_url) > 50 else database_url}")
+        print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
+        print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
+        
         if database_url:
             # Handle Render PostgreSQL URLs
             if database_url.startswith('postgres://'):
@@ -158,7 +180,7 @@ class Config:
         if os.environ.get('FLASK_ENV') == 'production':
             fallback_url = 'postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres'
             fallback_url += '?sslmode=require&connect_timeout=10&application_name=edubot'
-            print(f"✅ Using fallback Supabase URL: {fallback_url[:50]}...")
+            print(f"🔄 Using fallback Supabase URL: {fallback_url[:50]}...")
             return fallback_url
         
         # Check if we're in production environment
