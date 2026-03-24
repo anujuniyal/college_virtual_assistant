@@ -453,22 +453,25 @@ def register_core_routes(app):
 
     @app.route('/health')
     def health_check():
-        """Health check endpoint for monitoring"""
+        """Health check endpoint for monitoring with retry logic"""
         from flask import jsonify
         try:
-            # Quick database connection check
-            from app.extensions import db
-            from sqlalchemy import text
+            from app.database_resilience import test_database_connection
             
-            # Use a simple, fast query
-            result = db.session.execute(text('SELECT 1 as health_check'))
-            result.fetchone()
-            
-            return jsonify({
-                'status': 'healthy',
-                'database': 'connected',
-                'timestamp': datetime.utcnow().isoformat()
-            })
+            # Test database connection with retry logic
+            if test_database_connection():
+                return jsonify({
+                    'status': 'healthy',
+                    'database': 'connected',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            else:
+                return jsonify({
+                    'status': 'unhealthy',
+                    'database': 'disconnected',
+                    'timestamp': datetime.utcnow().isoformat()
+                }), 500
+                
         except Exception as e:
             # Log error but don't expose details in production
             app.logger.error(f"Health check failed: {str(e)}")
@@ -686,18 +689,19 @@ def register_cli_commands(app):
 
 
 def initialize_database(app):
-    """Initialize database tables and default data"""
+    """Initialize database tables and default data with retry logic"""
     try:
         from app.services.database_setup import DatabaseSetup
+        from app.database_resilience import initialize_database_with_retry
         
-        # Initialize database using DatabaseSetup service
-        success = DatabaseSetup.initialize_database()
+        # Initialize database using DatabaseSetup service with retry logic
+        success = initialize_database_with_retry()
         
         if success:
             app.logger.info("Database initialization completed successfully")
         else:
-            app.logger.warning("Database initialization completed with warnings")
-        
+            app.logger.error("Database initialization failed after multiple attempts")
+            
     except Exception as e:
         app.logger.error(f"Error initializing database: {str(e)}")
         # Don't raise exception to allow app to continue

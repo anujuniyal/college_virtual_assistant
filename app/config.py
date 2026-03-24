@@ -170,8 +170,8 @@ class Config:
                 else:
                     database_url += '&'
                 
-                # Supabase/PostgreSQL optimization parameters
-                database_url += 'sslmode=require&connect_timeout=10&application_name=edubot'
+                # Supabase/PostgreSQL optimization parameters for network resilience
+                database_url += 'sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
             
             print(f"✅ Using DATABASE_URL (Supabase): {database_url[:50]}...")
             return database_url
@@ -212,13 +212,22 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Enhanced database settings for Supabase real-time performance
+    # Enhanced database settings for Supabase with network resilience
     SQLALCHEMY_ENGINE_OPTIONS = {
         **Config.SQLALCHEMY_ENGINE_OPTIONS,
-        'pool_size': 10,          # Number of connections to maintain
-        'max_overflow': 20,       # Additional connections under load
-        'pool_timeout': 30,       # Timeout for getting connection from pool
-        'pool_recycle': 3600,     # Recycle connections every hour (Supabase limit)
+        'pool_size': 5,           # Reduced for network stability
+        'max_overflow': 10,       # Additional connections under load
+        'pool_timeout': 60,       # Longer timeout for network issues
+        'pool_recycle': 1800,     # Recycle connections every 30 minutes
+        'pool_pre_ping': True,     # Validate connections before use
+        'connect_args': {
+            'connect_timeout': 30,   # Connection timeout
+            'application_name': 'edubot_render',
+            'sslmode': 'require',
+            'sslcert': None,
+            'sslkey': None,
+            'sslrootcert': None,
+        }
     }
     
     @classmethod
