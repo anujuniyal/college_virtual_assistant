@@ -39,48 +39,7 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     SQLALCHEMY_TRACK_MODIFICATIONS = True
-    
-    # Database configuration with automatic switching
-    @staticmethod
-    def _get_database_uri():
-        """Determine database URI based on environment"""
-        # Debug: Print all environment variables
-        print("🔍 DEBUG: Environment variables:")
-        print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
-        print(f"   DATABASE_URL: {os.environ.get('DATABASE_URL', 'NOT_SET')}")
-        print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
-        
-        # Check if explicitly set DATABASE_URL (Render provides this)
-        database_url = os.environ.get('DATABASE_URL')
-        if database_url:
-            # Handle Render PostgreSQL URLs
-            if database_url.startswith('postgres://'):
-                # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
-                database_url = database_url.replace('postgres://', 'postgresql://', 1)
-            print(f"✅ Using DATABASE_URL: {database_url[:50]}...")
-            return database_url
-        
-        # Check if we're in production environment
-        if os.environ.get('FLASK_ENV') == 'production':
-            # In production, check for POSTGRESQL_URL
-            postgres_url = os.environ.get('POSTGRESQL_URL')
-            if postgres_url:
-                print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
-                return postgres_url
-            
-            # CRITICAL: In production, we MUST have a database URL
-            print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
-            print("❌ This will cause authentication to fail!")
-            print("❌ Please check your Render environment variables!")
-            raise ValueError("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found. Authentication will fail.")
-        
-        # Default to SQLite for local development only
-        sqlite_path = 'sqlite:///instance/edubot_management.db'
-        print(f"🔧 Using SQLite for development: {sqlite_path}")
-        return sqlite_path
-    
-    # Set the database URI using a function call
-    SQLALCHEMY_DATABASE_URI = _get_database_uri()
+    SQLALCHEMY_DATABASE_URI = None  # Will be set dynamically
     
     # Default Admin Credentials (from environment)
     DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME') or 'admin'
@@ -136,7 +95,48 @@ class Config:
     @classmethod
     def init_app(cls, app):
         """Initialize app with base configuration"""
-        pass
+        # Set database URI dynamically based on environment
+        database_uri = cls._get_database_uri()
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+        
+        # Debug: Print all environment variables
+        print("🔍 DEBUG: Environment variables:")
+        print(f"   FLASK_ENV: {os.environ.get('FLASK_ENV', 'NOT_SET')}")
+        print(f"   DATABASE_URL: {os.environ.get('DATABASE_URL', 'NOT_SET')}")
+        print(f"   POSTGRESQL_URL: {os.environ.get('POSTGRESQL_URL', 'NOT_SET')}")
+        print(f"   Final Database URI: {database_uri}")
+    
+    @staticmethod
+    def _get_database_uri():
+        """Determine database URI based on environment"""
+        # Check if explicitly set DATABASE_URL (Render provides this)
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url:
+            # Handle Render PostgreSQL URLs
+            if database_url.startswith('postgres://'):
+                # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            print(f"✅ Using DATABASE_URL: {database_url[:50]}...")
+            return database_url
+        
+        # Check if we're in production environment
+        if os.environ.get('FLASK_ENV') == 'production':
+            # In production, check for POSTGRESQL_URL
+            postgres_url = os.environ.get('POSTGRESQL_URL')
+            if postgres_url:
+                print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
+                return postgres_url
+            
+            # CRITICAL: In production, we MUST have a database URL
+            print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
+            print("❌ This will cause authentication to fail!")
+            print("❌ Please check your Render environment variables!")
+            raise ValueError("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found. Authentication will fail.")
+        
+        # Default to SQLite for local development only
+        sqlite_path = 'sqlite:///instance/edubot_management.db'
+        print(f"🔧 Using SQLite for development: {sqlite_path}")
+        return sqlite_path
 
 
 class ProductionConfig(Config):
