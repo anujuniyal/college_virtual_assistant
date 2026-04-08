@@ -420,7 +420,6 @@ class Config:
 
                 return postgres_url
 
-            
 
             # CRITICAL: In production, we MUST have a database URL
 
@@ -432,24 +431,10 @@ class Config:
 
             sqlite_path = 'sqlite:///instance/edubot_management.db'
 
-            print(f"🔄 Using emergency SQLite fallback: {sqlite_path}")
-
-            return sqlite_path
-
-        
-
         # Default to SQLite for local development only
-
         sqlite_path = 'sqlite:///instance/edubot_management.db'
-
         print(f"🔧 Using SQLite for development: {sqlite_path}")
-
         return sqlite_path
-
-
-
-
-
 class ProductionConfig(Config):
 
     """Production configuration"""
