@@ -7,12 +7,12 @@ services:
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --max-requests 100 --max-requests-jitter 10 --limit-request-line 4094 --limit-request-field-size 8190 --preload --worker-class sync wsgi:app"
     envVars:
-      - key: FLASK_ENV
-        value: production
       - key: DATABASE_URL
         value: postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres
       - key: POSTGRESQL_URL
         value: postgresql://postgres:anujajuniyal007@db.sqzpzxcmhgkbvjfuxgsk.supabase.co:5432/postgres
+      - key: FLASK_ENV
+        value: production
       - key: PYTHON_VERSION
         value: 3.10.0
       # Security settings
@@ -24,7 +24,7 @@ services:
         value: true
       - key: SESSION_COOKIE_SAMESITE
         value: Strict
-      # Admin credentials (change these in production)
+      # Admin credentials
       - key: DEFAULT_ADMIN_USERNAME
         value: admin
       - key: DEFAULT_ADMIN_EMAIL
@@ -72,4 +72,3 @@ services:
     # Health check configuration
     healthCheckPath: /health
     autoDeploy: true
-    
