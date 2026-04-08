@@ -1539,7 +1539,7 @@ def toggle_bot():
             
             # Try the main bot script (student/visitor polling mode)
             bot_script = 'run_telegram_bot_polling.py'
-            bot_script_path = os.path.join(os.getcwd(), bot_script)
+            bot_script_path = os.path.join(os.getcwd(), 'scripts', 'bot', bot_script)
             
             if not os.path.exists(bot_script_path):
                 return jsonify({

@@ -403,7 +403,13 @@
             <!-- Footer -->
             <div class="login-footer">
                 <p>© 2024 EduBot Admin. All rights reserved.</p>
-                <p><a href="#">Forgot Password?</a> | <a href="#">Need Help?</a></p>
+                <p><a href="{{ url_for('forgot_password') }}">Forgot Password?</a> | <a href="{{ url_for('help_page') }}">Need Help?</a></p>
+                <p class="mt-2">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    <a href="{{ url_for('otp_login') }}" class="text-decoration-none">
+                        Login with OTP (Email Verification)
+                    </a>
+                </p>
             </div>
         </div>
     </div>

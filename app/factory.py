@@ -327,7 +327,7 @@ def register_core_routes(app):
                             })
                     
                     # Find and validate bot script
-                    bot_script_path = os.path.join(os.getcwd(), 'simple_telegram_bot.py')
+                    bot_script_path = os.path.join(os.getcwd(), 'scripts', 'bot', 'run_telegram_bot_polling.py')
                     
                     if not os.path.exists(bot_script_path):
                         return jsonify({

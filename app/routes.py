@@ -192,6 +192,177 @@ def register_routes(app):
         flash('You have been logged out', 'info')
         return redirect(url_for('login'))
     
+    @app.route('/send-otp', methods=['POST'])
+    def send_otp():
+        """Send OTP to email for login"""
+        email = request.form.get('email')
+        
+        if not email:
+            return jsonify({'success': False, 'message': 'Email is required'})
+        
+        # Check if email exists in Admin or Faculty tables
+        admin = Admin.query.filter_by(email=email).first()
+        faculty = Faculty.query.filter_by(email=email).first()
+        
+        if not admin and not faculty:
+            return jsonify({'success': False, 'message': 'Email not found in our system'})
+        
+        # Generate and send OTP
+        otp_code, email_sent = OTPService.generate_otp(email)
+        
+        if email_sent:
+            session['otp_email'] = email
+            return jsonify({
+                'success': True, 
+                'message': f'OTP sent to {email}',
+                'otp_code': otp_code  # Only for development, remove in production
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Failed to send OTP. Please try again.'})
+    
+    @app.route('/verify-otp', methods=['POST'])
+    def verify_otp():
+        """Verify OTP and login"""
+        email = request.form.get('email')
+        otp_code = request.form.get('otp')
+        
+        if not email or not otp_code:
+            return jsonify({'success': False, 'message': 'Email and OTP are required'})
+        
+        # Verify OTP
+        if not OTPService.verify_otp(email, otp_code):
+            return jsonify({'success': False, 'message': 'Invalid or expired OTP'})
+        
+        # Find user and login
+        admin = Admin.query.filter_by(email=email).first()
+        faculty = Faculty.query.filter_by(email=email).first()
+        
+        if admin:
+            login_user(admin, remember=True)
+            session['user_role'] = admin.role
+            session['user_name'] = admin.username
+            
+            # Redirect based on role
+            if admin.role == 'admin':
+                return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
+            elif admin.role == 'faculty':
+                return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
+            elif admin.role == 'accounts':
+                return jsonify({'success': True, 'redirect': url_for('accounts_dashboard')})
+            else:
+                return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
+        
+        elif faculty:
+            login_user(faculty, remember=True)
+            session['user_role'] = faculty.role
+            session['user_name'] = faculty.name
+            
+            # Redirect based on role
+            if faculty.role == 'admin':
+                return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
+            elif faculty.role == 'faculty':
+                return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
+            elif faculty.role == 'accounts':
+                return jsonify({'success': True, 'redirect': url_for('accounts_dashboard')})
+            else:
+                return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
+        
+        else:
+            return jsonify({'success': False, 'message': 'User not found'})
+    
+    @app.route('/otp-login')
+    def otp_login():
+        """OTP login page"""
+        return render_template('otp_login.html')
+    
+    @app.route('/forgot-password')
+    def forgot_password():
+        """Forgot password page"""
+        return render_template('forgot_password.html')
+    
+    @app.route('/reset-password', methods=['POST'])
+    def reset_password():
+        """Handle password reset request"""
+        email = request.form.get('email')
+        
+        if not email:
+            flash('Email is required', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        # Check if email exists in Admin or Faculty tables
+        admin = Admin.query.filter_by(email=email).first()
+        faculty = Faculty.query.filter_by(email=email).first()
+        
+        if not admin and not faculty:
+            flash('Email not found in our system', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        # Generate and send OTP for password reset
+        otp_code, email_sent = OTPService.generate_otp(email)
+        
+        if email_sent:
+            session['reset_email'] = email
+            flash(f'Password reset OTP sent to {email}', 'success')
+            return redirect(url_for('verify_reset_otp'))
+        else:
+            flash('Failed to send reset OTP. Please try again.', 'error')
+            return redirect(url_for('forgot_password'))
+    
+    @app.route('/verify-reset-otp')
+    def verify_reset_otp():
+        """Verify OTP for password reset"""
+        return render_template('verify_reset_otp.html')
+    
+    @app.route('/confirm-reset', methods=['POST'])
+    def confirm_reset():
+        """Confirm password reset with OTP"""
+        email = session.get('reset_email')
+        otp_code = request.form.get('otp')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not all([email, otp_code, new_password, confirm_password]):
+            flash('All fields are required', 'error')
+            return redirect(url_for('verify_reset_otp'))
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return redirect(url_for('verify_reset_otp'))
+        
+        if len(new_password) < 6:
+            flash('Password must be at least 6 characters long', 'error')
+            return redirect(url_for('verify_reset_otp'))
+        
+        # Verify OTP
+        if not OTPService.verify_otp(email, otp_code):
+            flash('Invalid or expired OTP', 'error')
+            return redirect(url_for('verify_reset_otp'))
+        
+        # Update password
+        admin = Admin.query.filter_by(email=email).first()
+        faculty = Faculty.query.filter_by(email=email).first()
+        
+        if admin:
+            admin.set_password(new_password)
+            db.session.commit()
+            flash('Password reset successful! Please login with your new password.', 'success')
+            return redirect(url_for('login'))
+        
+        elif faculty:
+            faculty.set_password(new_password)
+            db.session.commit()
+            flash('Password reset successful! Please login with your new password.', 'success')
+            return redirect(url_for('login'))
+        
+        else:
+            flash('User not found', 'error')
+            return redirect(url_for('login'))
+    
+    @app.route('/help')
+    def help_page():
+        """Help page"""
+        return render_template('help.html')
+    
     @app.route('/faculty/dashboard')
     @login_required
     def faculty_dashboard():

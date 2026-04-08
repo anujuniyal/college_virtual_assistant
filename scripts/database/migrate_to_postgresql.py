@@ -30,7 +30,7 @@ def check_dependencies():
 
 def check_sqlite_database():
     """Check if SQLite database exists and has data"""
-    sqlite_path = 'edubot_management.db'
+    sqlite_path = 'instance/college_assistant.db'
     
     if not os.path.exists(sqlite_path):
         print("❌ SQLite database not found")
@@ -113,7 +113,7 @@ def test_postgresql_connection(connection_string):
 
 def backup_sqlite_database():
     """Create a backup of the SQLite database"""
-    sqlite_path = 'edubot_management.db'
+    sqlite_path = 'instance/college_assistant.db'
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = f"{sqlite_path}.backup_{timestamp}"
     
