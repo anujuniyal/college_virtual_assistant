@@ -337,21 +337,6 @@ class Config:
                 else:
 
                     database_url += '&'
-
-                
-
-                # Supabase/PostgreSQL optimization parameters for network resilience
-
-                database_url += 'sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
-
-                
-
-                print(f"✅ Using DATABASE_URL (Supabase): {database_url[:50]}...")
-
-                return database_url
-
-            
-
             # Check for POSTGRESQL_URL as fallback
 
             postgres_url = os.environ.get('POSTGRESQL_URL')
@@ -396,7 +381,7 @@ class Config:
 
                 # Supabase/PostgreSQL optimization parameters for network resilience
 
-                database_url += 'sslmode=require&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
+                database_url += 'sslmode=disable&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
 
             
 
