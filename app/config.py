@@ -364,24 +364,6 @@ class Config:
 
                 print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
 
-                return postgres_url
-
-            
-
-            # CRITICAL: In production, we MUST have a database URL
-
-            print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
-
-            print("❌ Using SQLite fallback to ensure application starts")
-
-            # Use SQLite as emergency fallback ONLY
-
-            sqlite_path = 'sqlite:///instance/edubot_management.db'
-
-            print(f"🔄 Using emergency SQLite fallback: {sqlite_path}")
-
-            return sqlite_path
-
         
 
         if database_url:
