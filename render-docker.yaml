@@ -1,11 +1,11 @@
 services:
-  # Web Service with Neon Database
+  # Web Service with Neon Database - Docker Approach
   - type: web
     name: college-virtual-assistant
-    env: python
+    env: docker
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python start_render.py"
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
     envVars:
       # Neon Database Configuration
       - key: DATABASE_URL
