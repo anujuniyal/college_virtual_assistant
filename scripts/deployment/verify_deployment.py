@@ -85,39 +85,6 @@ def verify_authentication():
         print(f"❌ Authentication verification failed: {str(e)}")
         return False
 
-def verify_supabase_connection():
-    """Verify Supabase-specific connection"""
-    try:
-        print("\n🌐 Verifying Supabase connection...")
-        
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            print("❌ DATABASE_URL not set")
-            return False
-        
-        print(f"📡 Database URL: {database_url.split('@')[1] if '@' in database_url else 'Unknown'}")
-        
-        # Test connection with psycopg2 if available
-        try:
-            import psycopg2
-            conn = psycopg2.connect(database_url)
-            cursor = conn.cursor()
-            cursor.execute("SELECT version();")
-            version = cursor.fetchone()[0]
-            print(f"✅ Supabase PostgreSQL connected: {version.split(',')[0]}")
-            conn.close()
-            return True
-        except ImportError:
-            print("⚠️  psycopg2 not available, using SQLAlchemy test")
-            return verify_database_connection()
-        except Exception as e:
-            print(f"❌ Supabase connection failed: {str(e)}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Supabase verification failed: {str(e)}")
-        return False
-
 def main():
     """Main verification function"""
     print("🚀 Deployment Verification")
@@ -130,10 +97,6 @@ def main():
     
     # Verify database connection
     if not verify_database_connection():
-        all_passed = False
-    
-    # Verify Supabase connection
-    if not verify_supabase_connection():
         all_passed = False
     
     # Verify authentication

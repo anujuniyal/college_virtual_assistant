@@ -126,16 +126,11 @@ class Config:
 
     
 
-    # SQLAlchemy engine optimizations for Supabase
-
+    # SQLAlchemy engine optimizations for Neon
     SQLALCHEMY_ENGINE_OPTIONS = {
-
         'pool_pre_ping': True,  # Check connections before use
-
         'pool_recycle': 300,     # Recycle connections every 5 minutes
-
         'echo': False           # Set to True for SQL debugging
-
     }
 
     
@@ -152,10 +147,8 @@ class Config:
 
     
 
-    # Real-time updates configuration for Supabase
-
+    # Real-time updates configuration for Neon
     SQLALCHEMY_RECORD_QUERIES = False  # Disable query recording for better performance
-
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True  # Ensure auto-commit for real-time updates
 
     
@@ -296,6 +289,12 @@ class Config:
 
         """Determine database URI based on environment"""
 
+        # Prioritize Neon database for local development
+        neon_url = os.environ.get('NEON_DATABASE_URL')
+        if neon_url and neon_url != 'your_neon_connection_string_here':
+            print(f"✅ Using NEON_DATABASE_URL: {neon_url[:50]}...")
+            return neon_url
+        
         # Check if explicitly set DATABASE_URL (Render provides this)
 
         database_url = os.environ.get('DATABASE_URL')
@@ -312,7 +311,7 @@ class Config:
 
         
 
-        # For production, prioritize Supabase database
+        # For production, prioritize Neon database
 
         if os.environ.get('FLASK_ENV') == 'production':
 
@@ -328,7 +327,7 @@ class Config:
 
                 
 
-                # Add Supabase-specific optimizations for production
+                # Add Neon-specific optimizations for production
 
                 if '?' not in database_url:
 
@@ -363,7 +362,7 @@ class Config:
 
             
 
-            # Add Supabase-specific optimizations for production
+            # Add Neon-specific optimizations for production
 
             if os.environ.get('FLASK_ENV') == 'production':
 
@@ -379,13 +378,13 @@ class Config:
 
                 
 
-                # Supabase/PostgreSQL optimization parameters for network resilience
+                # Neon/PostgreSQL optimization parameters for network resilience
 
                 database_url += 'sslmode=disable&connect_timeout=30&application_name=edubot_render&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5'
 
             
 
-            print(f"✅ Using DATABASE_URL (Supabase): {database_url[:50]}...")
+            print(f"✅ Using DATABASE_URL (Neon): {database_url[:50]}...")
 
             return database_url
 
@@ -500,7 +499,7 @@ class ProductionConfig(Config):
 
             app.logger.setLevel(logging.INFO)
 
-            app.logger.info('EduBot Production Startup with Supabase')
+            app.logger.info('EduBot Production Startup with Neon')
 
     
 
