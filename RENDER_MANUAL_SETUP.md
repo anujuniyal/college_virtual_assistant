@@ -31,7 +31,7 @@ Add these environment variables one by one:
 - **MAIL_SERVER**: `smtp.gmail.com`
 - **MAIL_PORT**: `587`
 - **MAIL_USE_TLS**: `true`
-- **TELEGRAM_BOT_TOKEN**: `[your-bot-token]`
+- **TELEGRAM_BOT_TOKEN**: `7671092916:AAG4GMyeTli6V9rEF6GH9H_HliV4QRq8Guw`
 - **PUBLIC_BASE_URL**: `https://college-virtual-assistant.onrender.com`
 
 ## Step 3: Update Start Command
