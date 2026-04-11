@@ -1,80 +1,11 @@
 services:
-  # Web Service with Neon Database
+  # Web Service with Neon Database - Manual Environment Setup
   - type: web
     name: college-virtual-assistant
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python start_render.py"
-    envVars:
-      # Neon Database Configuration
-      - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_vVJ1xS3CwXIf@ep-small-tree-anl3swp3-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-      - key: POSTGRESQL_URL
-        value: postgresql://neondb_owner:npg_vVJ1xS3CwXIf@ep-small-tree-anl3swp3-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-      - key: NEON_DATABASE_URL
-        value: postgresql://neondb_owner:npg_vVJ1xS3CwXIf@ep-small-tree-anl3swp3-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-      # Flask Configuration
-      - key: FLASK_ENV
-        value: production
-      - key: PYTHON_VERSION
-        value: 3.10.0
-      # Security settings
-      - key: SECRET_KEY
-        generateValue: true
-      - key: SESSION_COOKIE_SECURE
-        value: true
-      - key: SESSION_COOKIE_HTTPONLY
-        value: true
-      - key: SESSION_COOKIE_SAMESITE
-        value: Strict
-      # Admin credentials
-      - key: DEFAULT_ADMIN_USERNAME
-        value: admin
-      - key: DEFAULT_ADMIN_EMAIL
-        value: admin@edubot.com
-      - key: DEFAULT_ADMIN_PASSWORD
-        value: admin123
-      - key: DEFAULT_ADMIN_ROLE
-        value: admin
-      - key: ADMIN_EMAIL
-        value: admin@edubot.com
-      # Email configuration
-      - key: MAIL_SERVER
-        value: smtp.gmail.com
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_USE_TLS
-        value: true
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: MAIL_DEFAULT_SENDER
-        sync: false
-      # Telegram configuration
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: PUBLIC_BASE_URL
-        value: https://college-virtual-assistant.onrender.com
-      # Rate limiting
-      - key: RATE_LIMIT_RESULT_QUERIES
-        value: 2
-      - key: RATE_LIMIT_FEE_QUERIES
-        value: 2
-      # Data expiry
-      - key: NOTIFICATION_EXPIRY_DAYS
-        value: 4
-      - key: RESULT_VISIBILITY_DAYS
-        value: 7
-      - key: OTP_EXPIRY_MINUTES
-        value: 10
-      # Static data
-      - key: POPULATE_STATIC_DATA
-        value: true
-      # Logging
-      - key: LOG_LEVEL
-        value: INFO
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --max-requests 1000 --max-requests-jitter 100 --limit-request-line 4094 --limit-request-field-size 8190 --preload --worker-class sync wsgi:app"
     # Health check configuration
     healthCheckPath: /health
     autoDeploy: true
