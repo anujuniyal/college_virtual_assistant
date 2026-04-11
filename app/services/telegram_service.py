@@ -136,8 +136,19 @@ class TelegramBotService:
             return f"whatsapp:+{mapping.phone_number}"
                 
         except Exception as e:
-            self.logger.error(f"Error in phone number mapping: {str(e)}")
-            return None
+            error_msg = str(e)
+            self.logger.error(f"Error in chatbot service: {error_msg}")
+                
+            # Provide specific error messages based on error type
+            if "timeout" in error_msg.lower():
+                response = "⏰ Service temporarily unavailable. Please try again in a few moments."
+            elif "connection" in error_msg.lower():
+                response = "🌐 Network issue detected. Please check your connection and try again."
+            elif "database" in error_msg.lower():
+                response = "💾 Database issue detected. Our team has been notified. Please try again shortly."
+            else:
+                response = f"⚠️ Service error: {error_msg[:100]}. Please try again or contact support."
+            return response
 
     def _normalize_phone(self, raw: str):
         """Normalize phone number with validation"""
@@ -361,8 +372,18 @@ class TelegramBotService:
                         self.logger.warning("Empty response from chatbot service for visitor")
                         response = "I'm sorry, I couldn't process your request. Please try again."
                 except Exception as e:
-                    self.logger.error(f"Error in chatbot service for visitor {validated_user_id}: {str(e)}")
-                    response = "I'm experiencing technical difficulties. Please try again later."
+                    error_msg = str(e)
+                    self.logger.error(f"Error in chatbot service for visitor {validated_user_id}: {error_msg}")
+                    
+                    # Provide specific error messages based on error type
+                    if "timeout" in error_msg.lower():
+                        response = "⏰ Service temporarily unavailable. Please try again in a few moments."
+                    elif "connection" in error_msg.lower():
+                        response = "🌐 Network issue detected. Please check your connection and try again."
+                    elif "database" in error_msg.lower():
+                        response = "💾 Database issue detected. Our team has been notified. Please try again shortly."
+                    else:
+                        response = f"⚠️ Service error: {error_msg[:100]}. Please try again or contact support."
 
                 return self.send_message(chat_id, response)
             
@@ -374,45 +395,18 @@ class TelegramBotService:
                     self.logger.warning("Empty response from chatbot service")
                     response = "I'm sorry, I couldn't process your request. Please try again."
             except Exception as e:
-                self.logger.error(f"Error in chatbot service: {str(e)}")
-                response = "I'm experiencing technical difficulties. Please try again later."
-
-            # If roll verification succeeded, ChatbotService will mark Session as verified.
-            # When that happens, permanently link Telegram ID to student for convenience.
-            try:
-                session_obj = Session.query.filter_by(phone_number=phone_number).first()
-                if session_obj and session_obj.verified and session_obj.student_id:
-                    # Use proper transaction handling
-                    from app.extensions import db
-                    from sqlalchemy.exc import IntegrityError
-                    
-                    try:
-                        # Get the student record
-                        student = Student.query.get(session_obj.student_id)
-                        if student:
-                            # Use the student's link_telegram_account method to update both Student and TelegramUserMapping tables
-                            success, message = student.link_telegram_account(str(validated_user_id))
-                            if success:
-                                self.logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
-                            else:
-                                self.logger.warning(f"Failed to link Telegram account: {message}")
-                        
-                        # Also update the TelegramUserMapping table as backup
-                        mapping = TelegramUserMapping.query.filter_by(telegram_user_id=str(validated_user_id)).with_for_update().first()
-                        if mapping:
-                            mapping.student_id = session_obj.student_id
-                            mapping.phone_number = phone_number.replace('whatsapp:+', '')
-                            mapping.verified = True
-                        db.session.commit()
-                        self.logger.info(f"Successfully finalized Telegram mapping for user {validated_user_id}")
-                    except IntegrityError as e:
-                        db.session.rollback()
-                        self.logger.warning(f"Integrity error finalizing Telegram mapping: {str(e)}")
-                    except Exception as e:
-                        db.session.rollback()
-                        self.logger.warning(f"Could not finalize Telegram mapping: {str(e)}")
-            except Exception as e:
-                self.logger.error(f"Database error in Telegram mapping finalization: {str(e)}")
+                error_msg = str(e)
+                self.logger.error(f"Error in chatbot service: {error_msg}")
+                
+                # Provide specific error messages based on error type
+                if "timeout" in error_msg.lower():
+                    response = "⏰ Service temporarily unavailable. Please try again in a few moments."
+                elif "connection" in error_msg.lower():
+                    response = "🌐 Network issue detected. Please check your connection and try again."
+                elif "database" in error_msg.lower():
+                    response = "💾 Database issue detected. Our team has been notified. Please try again shortly."
+                else:
+                    response = f"⚠️ Service error: {error_msg[:100]}. Please try again or contact support."
             
             # Send response back to Telegram
             return self.send_message(chat_id, response)
