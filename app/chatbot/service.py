@@ -259,18 +259,18 @@ class ChatbotService:
 🚀 **Available Services:**
 
 📋 **Academic:**
-1️⃣ Results - View your academic results
-2️⃣ Notices - Check latest notifications
+1. Results - View your academic results
+2. Notices - Check latest notifications
 
 💰 **Fee:**
-3️⃣ Fee Status - Check your fee status
+3. Fee Status - Check your fee status
 
 👨‍🏫 **Support:**
-4️⃣ Faculty - Search faculty information
-5️⃣ Complaint - File a complaint
+4. Faculty - Search faculty information
+5. Complaint - File a complaint
 
 📱 **Account:**
-6️⃣ Logout - End your session
+6. Logout - End your session
 
 {view_status}
 
@@ -349,12 +349,12 @@ Type 'help' for commands."""
 📋 **Visitor Service Mode**
 
 📌 **General Information:**
-1️⃣ Admission Process - Admission requirements and procedure
-2️⃣ Courses & Fees - Available courses and fee structure
-3️⃣ Faculty Details - Faculty directory and information
-4️⃣ Facilities - Campus facilities and infrastructure
-5️⃣ Contact Info - Reception and contact details
-6️⃣ Help - Show this menu
+1. Admission Process - Admission requirements and procedure
+2. Courses & Fees - Available courses and fee structure
+3. Faculty Details - Faculty directory and information
+4. Facilities - Campus facilities and infrastructure
+5. Contact Info - Reception and contact details
+6. Help - Show this menu
 
 📞 **Reception Contact:**
 📱 Phone: +91-12345-67890
@@ -428,18 +428,18 @@ Simply type a number (1-6) or keyword to get started!"""
         return f"""📋 **Available Services (Student Mode):**
 
 📋 **Academic:**
-1️⃣ Results - View your academic results
-2️⃣ Notices - Check latest notifications
+1. Results - View your academic results
+2. Notices - Check latest notifications
 
 💰 **Fee:**
-3️⃣ Fee Status - Check your fee status
+3. Fee Status - Check your fee status
 
 👨‍🏫 **Support:**
-4️⃣ Faculty - Search faculty information
-5️⃣ Complaint - File a complaint
+4. Faculty - Search faculty information
+5. Complaint - File a complaint
 
 📱 **Account:**
-6️⃣ Logout - End your session
+6. Logout - End your session
 
 {view_status}
 
@@ -479,12 +479,12 @@ Type `help` to see all available options
 • Age limit: As per university norms
 
 📝 **Application Process:**
-1️⃣ Fill online application form
-2️⃣ Upload required documents
-3️⃣ Pay application fee (₹500)
-4️⃣ Appear for counseling/interview
-5️⃣ Document verification
-6️⃣ Fee payment and admission confirmation
+1. Fill online application form
+2. Upload required documents
+3. Pay application fee (₹500)
+4. Appear for counseling/interview
+5. Document verification
+6. Fee payment and admission confirmation
 
 📄 **Required Documents:**
 • 10th and 12th mark sheets
