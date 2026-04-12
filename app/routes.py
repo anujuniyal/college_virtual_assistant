@@ -72,7 +72,7 @@ def register_routes(app):
                 elif admin.role == 'faculty':
                     return redirect(url_for('faculty_dashboard'))
                 elif admin.role == 'accounts':
-                    return redirect(url_for('accounts_dashboard'))
+                    return redirect(url_for('accounts.accounts_dashboard'))
                 else:
                     return redirect(url_for('admin_dashboard'))
             
@@ -90,7 +90,7 @@ def register_routes(app):
                 elif faculty.role == 'faculty':
                     return redirect(url_for('faculty_dashboard'))
                 elif faculty.role == 'accounts':
-                    return redirect(url_for('accounts_dashboard'))
+                    return redirect(url_for('accounts.accounts_dashboard'))
                 else:
                     return redirect(url_for('faculty_dashboard'))
             
@@ -107,7 +107,7 @@ def register_routes(app):
                 elif faculty_by_name.role == 'faculty':
                     return redirect(url_for('faculty_dashboard'))
                 elif faculty_by_name.role == 'accounts':
-                    return redirect(url_for('accounts_dashboard'))
+                    return redirect(url_for('accounts.accounts_dashboard'))
                 else:
                     return redirect(url_for('faculty_dashboard'))
             
@@ -139,7 +139,7 @@ def register_routes(app):
                 elif admin.role == 'faculty':
                     return redirect(url_for('faculty_dashboard'))
                 elif admin.role == 'accounts':
-                    return redirect(url_for('accounts_dashboard'))
+                    return redirect(url_for('accounts.accounts_dashboard'))
                 else:
                     return redirect(url_for('admin_dashboard'))
             
@@ -157,7 +157,7 @@ def register_routes(app):
                 elif faculty.role == 'faculty':
                     return redirect(url_for('faculty_dashboard'))
                 elif faculty.role == 'accounts':
-                    return redirect(url_for('accounts_dashboard'))
+                    return redirect(url_for('accounts.accounts_dashboard'))
                 else:
                     return redirect(url_for('faculty_dashboard'))
             
@@ -174,7 +174,7 @@ def register_routes(app):
                 elif faculty_by_name.role == 'faculty':
                     return redirect(url_for('faculty_dashboard'))
                 elif faculty_by_name.role == 'accounts':
-                    return redirect(url_for('accounts_dashboard'))
+                    return redirect(url_for('accounts.accounts_dashboard'))
                 else:
                     return redirect(url_for('faculty_dashboard'))
             
@@ -248,7 +248,7 @@ def register_routes(app):
             elif admin.role == 'faculty':
                 return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
             elif admin.role == 'accounts':
-                return jsonify({'success': True, 'redirect': url_for('accounts_dashboard')})
+                return jsonify({'success': True, 'redirect': url_for('accounts.accounts_dashboard')})
             else:
                 return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
         
@@ -263,7 +263,7 @@ def register_routes(app):
             elif faculty.role == 'faculty':
                 return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
             elif faculty.role == 'accounts':
-                return jsonify({'success': True, 'redirect': url_for('accounts_dashboard')})
+                return jsonify({'success': True, 'redirect': url_for('accounts.accounts_dashboard')})
             else:
                 return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
         

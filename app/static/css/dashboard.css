@@ -351,6 +351,33 @@
     }
 }
 
+/* Bootstrap Icons styling */
+.bi {
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.btn .bi {
+    font-size: 0.875rem;
+}
+
+/* Clickable summary cards */
+.summary-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.summary-card-link:hover .summary-card {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.summary-card-link:hover {
+    text-decoration: none;
+}
+
 /* Accessibility improvements */
 .nav-link:focus,
 .btn:focus,

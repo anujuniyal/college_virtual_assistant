@@ -59,6 +59,7 @@ def accounts_dashboard():
         # Get real statistics
         total_students = safe_execute(Student.query.count) or 0
         total_fee_records = safe_execute(FeeRecord.query.count) or 0
+        total_notifications = safe_execute(Notification.query.count) or 0
         
         # Calculate pending fees
         pending_count = 0
@@ -83,6 +84,7 @@ def accounts_dashboard():
         return render_template('accounts_dashboard.html',
                              total_students=total_students,
                              total_fee_records=total_fee_records,
+                             total_notifications=total_notifications,
                              total_pending=pending_count,
                              pending_amount=pending_amount,
                              collection_rate=collection_rate)
@@ -92,6 +94,7 @@ def accounts_dashboard():
         return render_template('accounts_dashboard.html',
                              total_students=0,
                              total_fee_records=0,
+                             total_notifications=0,
                              total_pending=0,
                              pending_amount=0,
                              collection_rate=0)
@@ -169,7 +172,7 @@ def students_fees_dashboard():
             student.fee_status = status
             students_with_fees.append(student)
         
-        return render_template('students_fees_standalone.html',
+        return render_template('students_fees_dashboard.html',
                              students=students_with_fees,
                              pagination=students_pagination,
                              page=page,
@@ -479,3 +482,28 @@ def edit_profile():
             flash(f'Error updating profile: {str(e)}', 'error')
     
     return render_template('edit_profile.html')
+
+@accounts_bp.route('/reports')
+@login_required
+@accounts_required()
+def reports():
+    """Generate and export financial reports"""
+    try:
+        # Get data for reports
+        total_students = safe_execute(Student.query.count) or 0
+        total_fee_records = safe_execute(FeeRecord.query.count) or 0
+        
+        # Calculate financial summary
+        fee_records = safe_execute(FeeRecord.query.all()) or []
+        total_collected = sum(record.paid_amount for record in fee_records) if fee_records else 0
+        total_pending = sum(record.balance for record in fee_records if record.balance > 0) if fee_records else 0
+        
+        return render_template('reports.html',
+                             total_students=total_students,
+                             total_fee_records=total_fee_records,
+                             total_collected=total_collected,
+                             total_pending=total_pending)
+    except Exception as e:
+        current_app.logger.error(f"Error loading reports: {str(e)}")
+        flash('Error loading reports.', 'error')
+        return redirect(url_for('accounts.accounts_dashboard'))
