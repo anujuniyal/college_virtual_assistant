@@ -55,7 +55,46 @@ def accounts_required(write_access=False):
 @accounts_required()
 def accounts_dashboard():
     """Accounts dashboard with financial access"""
-    return redirect(url_for('accounts.students_fees_dashboard'))
+    try:
+        # Get real statistics
+        total_students = safe_execute(Student.query.count) or 0
+        total_fee_records = safe_execute(FeeRecord.query.count) or 0
+        
+        # Calculate pending fees
+        pending_count = 0
+        pending_amount = 0
+        collection_rate = 0
+        
+        try:
+            fee_records = safe_execute(FeeRecord.query.all()) or []
+            for record in fee_records:
+                if record.balance > 0:
+                    pending_count += 1
+                    pending_amount += record.balance
+            
+            total_amount = sum(record.total_amount for record in fee_records) if fee_records else 0
+            paid_amount = sum(record.paid_amount for record in fee_records) if fee_records else 0
+            
+            if total_amount > 0:
+                collection_rate = round((paid_amount / total_amount) * 100, 1)
+        except Exception as e:
+            current_app.logger.error(f"Error calculating fee statistics: {str(e)}")
+        
+        return render_template('accounts_dashboard.html',
+                             total_students=total_students,
+                             total_fee_records=total_fee_records,
+                             total_pending=pending_count,
+                             pending_amount=pending_amount,
+                             collection_rate=collection_rate)
+    except Exception as e:
+        current_app.logger.error(f"Error loading accounts dashboard: {str(e)}")
+        flash('Error loading accounts dashboard.', 'error')
+        return render_template('accounts_dashboard.html',
+                             total_students=0,
+                             total_fee_records=0,
+                             total_pending=0,
+                             pending_amount=0,
+                             collection_rate=0)
 
 @accounts_bp.route('/students-fees')
 @login_required
@@ -260,6 +299,23 @@ def manage_accounts():
         return render_template('manage_accounts.html', 
                              students=[], 
                              faculty_members=[])
+
+@accounts_bp.route('/manage-notifications')
+@login_required
+@accounts_required()
+def manage_notifications():
+    """Manage notifications for accounts"""
+    try:
+        # Get notifications for accounts role
+        notifications = safe_execute(
+            lambda: Notification.query.order_by(Notification.created_at.desc()).limit(10).all()
+        ) or []
+        
+        return render_template('manage_notifications.html', notifications=notifications)
+    except Exception as e:
+        current_app.logger.error(f"Error loading notifications: {str(e)}")
+        flash('Error loading notifications.', 'error')
+        return render_template('manage_notifications.html', notifications=[])
 
 @accounts_bp.route('/billing')
 @login_required

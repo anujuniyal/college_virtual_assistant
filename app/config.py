@@ -120,6 +120,14 @@ class Config:
 
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
+    FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
+
+    SERVER_NAME = os.environ.get('SERVER_NAME', 'localhost:5000')
+
+    PREFERRED_URL_SCHEME = 'https' if os.environ.get('RENDER') else 'http'
+
+    APPLICATION_ROOT = '/'
+
     SQLALCHEMY_TRACK_MODIFICATIONS = True
 
     SQLALCHEMY_DATABASE_URI = None  # Will be set dynamically
