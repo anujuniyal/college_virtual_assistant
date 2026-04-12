@@ -38,7 +38,7 @@ services:
       - key: DEFAULT_ADMIN_ROLE
         value: admin
       - key: ADMIN_EMAIL
-        value: admin@edubot.com
+        value: uniyalanuj1@gmail.com
       # Email configuration
       - key: MAIL_SERVER
         value: smtp.gmail.com
@@ -47,11 +47,11 @@ services:
       - key: MAIL_USE_TLS
         value: true
       - key: MAIL_USERNAME
-        sync: false
+        value: anujjaj007@gmail.com
       - key: MAIL_PASSWORD
-        sync: false
+        value: rcaz qavc ugdd lwzt
       - key: MAIL_DEFAULT_SENDER
-        sync: false
+        value: anujjaj007@gmail.com
       # Telegram configuration
       - key: TELEGRAM_BOT_TOKEN
         sync: false

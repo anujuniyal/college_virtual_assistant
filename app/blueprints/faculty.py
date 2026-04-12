@@ -64,17 +64,17 @@ def faculty_dashboard():
     """Enhanced faculty dashboard with admin-like features"""
     try:
         # Get comprehensive statistics like admin
-        total_students = safe_execute(Student.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
         total_notifications = safe_execute(
             lambda: Notification.query.filter(
                 Notification.expires_at > datetime.utcnow()
             ).count()
         ) or 0
-        total_complaints = safe_execute(Complaint.query.count) or 0
+        total_complaints = safe_execute(lambda: Complaint.query.count()) or 0
         pending_complaints = safe_execute(
             lambda: Complaint.query.filter_by(status='pending').count()
         ) or 0
-        total_results = safe_execute(Result.query.count) or 0
+        total_results = safe_execute(lambda: Result.query.count()) or 0
         
         # Get faculty-specific info
         faculty_info = safe_execute(
@@ -288,17 +288,17 @@ def faculty_dashboard_data():
     """AJAX endpoint for faculty dashboard data refresh"""
     try:
         # Get fresh statistics
-        total_students = safe_execute(Student.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
         total_notifications = safe_execute(
             lambda: Notification.query.filter(
                 Notification.expires_at > datetime.utcnow()
             ).count()
         ) or 0
-        total_complaints = safe_execute(Complaint.query.count) or 0
+        total_complaints = safe_execute(lambda: Complaint.query.count()) or 0
         pending_complaints = safe_execute(
             lambda: Complaint.query.filter_by(status='pending').count()
         ) or 0
-        total_results = safe_execute(Result.query.count) or 0
+        total_results = safe_execute(lambda: Result.query.count()) or 0
         
         # Get recent notifications
         recent_notifications = safe_execute(
@@ -454,9 +454,9 @@ def analytics():
     """View analytics with faculty privileges"""
     try:
         # Get basic statistics
-        total_students = safe_execute(Student.query.count) or 0
-        total_results = safe_execute(Result.query.count) or 0
-        total_complaints = safe_execute(Complaint.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_results = safe_execute(lambda: Result.query.count()) or 0
+        total_complaints = safe_execute(lambda: Complaint.query.count()) or 0
         
         return render_template('faculty_analytics.html',
                              total_students=total_students,

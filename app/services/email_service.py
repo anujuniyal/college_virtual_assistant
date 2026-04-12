@@ -24,7 +24,7 @@ class EmailService:
             # Create message
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
-            msg['From'] = Config.MAIL_DEFAULT_SENDER
+            msg['From'] = current_app.config.get('MAIL_DEFAULT_SENDER')
             msg['To'] = to
             
             # Add text and HTML parts
@@ -52,12 +52,16 @@ class EmailService:
                         msg.attach(part)
             
             # Check if email configuration is complete
-            if not all([Config.MAIL_SERVER, Config.MAIL_USERNAME, Config.MAIL_PASSWORD]):
+            mail_server = current_app.config.get('MAIL_SERVER')
+            mail_username = current_app.config.get('MAIL_USERNAME')
+            mail_password = current_app.config.get('MAIL_PASSWORD')
+            
+            if not all([mail_server, mail_username, mail_password]):
                 current_app.logger.warning("Email configuration incomplete. Email would be sent to {}: {}".format(to, subject))
                 return True
             
             # Send email with proper SMTP configuration
-            server = smtplib.SMTP(Config.MAIL_SERVER, Config.MAIL_PORT)
+            server = smtplib.SMTP(mail_server, current_app.config.get('MAIL_PORT'))
             
             # Enable debug logging for troubleshooting
             server.set_debuglevel(1)
@@ -66,7 +70,7 @@ class EmailService:
             server.starttls()
             
             # Login with credentials
-            server.login(Config.MAIL_USERNAME, Config.MAIL_PASSWORD)
+            server.login(mail_username, mail_password)
             
             # Send message
             server.send_message(msg)

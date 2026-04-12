@@ -116,8 +116,8 @@ def _admin_dashboard():
     """Admin dashboard with full access"""
     try:
         # Get comprehensive statistics
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         
         # Auto-sync any missing Telegram mappings
         synced_count = _sync_telegram_mappings()
@@ -234,8 +234,8 @@ def _accounts_dashboard():
     """Accounts dashboard with financial access"""
     try:
         # Get accounts-specific statistics
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         
         return render_template('accounts_dashboard_edubot.html',
                              total_students=total_students,
@@ -253,8 +253,8 @@ def admin_dashboard_data():
     """AJAX endpoint for dashboard data refresh"""
     try:
         # Get fresh statistics
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         total_notifications = safe_execute(
             lambda: Notification.query.filter(
                 Notification.expires_at > datetime.utcnow()
