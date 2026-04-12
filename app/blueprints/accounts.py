@@ -375,3 +375,51 @@ def get_payment_history(student_id):
     except Exception as e:
         current_app.logger.error(f"Error getting payment history: {str(e)}")
         return jsonify({'success': False, 'message': 'Error loading payment history'}), 500
+
+@accounts_bp.route('/edit-profile', methods=['GET', 'POST'])
+@login_required
+@accounts_required()
+def edit_profile():
+    """Edit user profile"""
+    if request.method == 'POST':
+        try:
+            # Get current user
+            user = current_user
+            
+            # Update basic info
+            if hasattr(user, 'name'):
+                user.name = request.form.get('name', user.name)
+            if hasattr(user, 'email'):
+                user.email = request.form.get('email', user.email)
+            if hasattr(user, 'phone'):
+                user.phone = request.form.get('phone', user.phone)
+            
+            # Handle password change
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            if current_password and new_password:
+                if hasattr(user, 'check_password') and user.check_password(current_password):
+                    if new_password == confirm_password:
+                        if hasattr(user, 'set_password'):
+                            user.set_password(new_password)
+                        else:
+                            flash('Password change not supported for your account type', 'error')
+                            return redirect(url_for('accounts.edit_profile'))
+                    else:
+                        flash('New passwords do not match', 'error')
+                        return redirect(url_for('accounts.edit_profile'))
+                else:
+                    flash('Current password is incorrect', 'error')
+                    return redirect(url_for('accounts.edit_profile'))
+            
+            db.session.commit()
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('accounts.accounts_dashboard'))
+            
+        except Exception as e:
+            current_app.logger.error(f"Error updating profile: {str(e)}")
+            flash(f'Error updating profile: {str(e)}', 'error')
+    
+    return render_template('edit_profile.html')

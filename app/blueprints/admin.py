@@ -476,7 +476,45 @@ def add_faculty():
             
             db.session.add(faculty)
             db.session.commit()
-            flash('✅ Faculty added successfully!', 'success')
+            
+            # Send credentials email if requested
+            send_credentials = request.form.get('send_credentials') == '1'
+            if send_credentials and password:
+                try:
+                    from app.services.email_service import EmailService
+                    subject = "Your Faculty Login Credentials - College Virtual Assistant"
+                    body = f"""
+Dear {faculty.name},
+
+Your faculty account has been created successfully in the College Virtual Assistant system.
+
+Login Details:
+- Email: {faculty.email}
+- Password: {password}
+- Role: {faculty.role}
+
+You can now access the faculty dashboard using these credentials.
+
+Important:
+- Please change your password after first login
+- Keep your credentials secure
+- Contact admin if you face any issues
+
+Best regards,
+College Administration
+"""
+                    
+                    success = EmailService.send_email(faculty.email, subject, body)
+                    if success:
+                        flash('Faculty added successfully! Credentials sent to email.', 'success')
+                    else:
+                        flash('Faculty added successfully! (Email notification failed)', 'warning')
+                except Exception as e:
+                    current_app.logger.error(f"Error sending faculty credentials email: {str(e)}")
+                    flash('Faculty added successfully! (Email notification failed)', 'warning')
+            else:
+                flash('Faculty added successfully!', 'success')
+            
             return redirect(url_for('admin.manage_faculty'))
         except Exception as e:
             current_app.logger.error(f"Error adding faculty: {str(e)}")
