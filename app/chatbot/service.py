@@ -377,23 +377,23 @@ Simply type a number (1-6) or keyword to get started!"""
         # Get view counts status
         view_status = self._get_view_counts_status(student_id)
         
-        return f"""👋 Hello {name}! Welcome back!
+        return f"""Hello {name}! Welcome back!
 
-📚 **Available Services:**
+**Available Services:**
 
-📋 **Academic Services:**
-1️⃣ Results - View your academic results
-2️⃣ Notices - Check latest notifications
+**Academic Services:**
+1. Results - View your academic results
+2. Notices - Check latest notifications
 
-💰 **Fee Services:**
-3️⃣ Fee Status - Check your fee status and payment details
+**Fee Services:**
+3. Fee Status - Check your fee status and payment details
 
-👨‍🏫 **Faculty & Support:**
-4️⃣ Faculty - Search faculty information
-5️⃣ Complaint - File a complaint
+**Faculty & Support:**
+4. Faculty - Search faculty information
+5. Complaint - File a complaint
 
-📱 **Account:**
-6️⃣ Logout - End your session
+**Account:**
+6. Logout - End your session
 
 {view_status}
 
@@ -401,22 +401,22 @@ Simply type the number (1-6) to choose any service!"""
     
     def _show_help_visitor(self, phone_number: str) -> str:
         """Show help for visitors"""
-        return """📋 **Available Services (Visitor Mode)**
+        return """**Available Services (Visitor Mode)**
 
-📌 **General Information:**
-1️⃣ Admission Process - Admission requirements and procedure
-2️⃣ Courses & Fees - Available courses and fee structure
-3️⃣ Faculty Details - Faculty directory and information
-4️⃣ Facilities - Campus facilities and infrastructure
-5️⃣ Contact Info - Reception and contact details
-6️⃣ Help - Show this menu
+**General Information:**
+1. Admission Process - Admission requirements and procedure
+2. Courses & Fees - Available courses and fee structure
+3. Faculty Details - Faculty directory and information
+4. Facilities - Campus facilities and infrastructure
+5. Contact Info - Reception and contact details
+6. Help - Show this menu
 
-📞 **Reception Contact:**
-📱 Phone: +91-12345-67890
-📧 Email: info@college.edu
-🕐 Office Hours: 9:00 AM - 5:00 PM
+**Reception Contact:**
+Phone: +91-12345-67890
+Email: info@college.edu
+Office Hours: 9:00 AM - 5:00 PM
 
-🎓 **Students:** To access personalized services,
+**Students:** To access personalized services,
 Type: `EDU25001`
 
 Simply type a number (1-6) or keyword to get started!"""
