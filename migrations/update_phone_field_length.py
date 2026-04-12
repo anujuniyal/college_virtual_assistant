@@ -31,25 +31,41 @@ def migrate_phone_field_length():
             ALTER COLUMN phone TYPE VARCHAR(20);
             """
             
+            # Update phone column in visitor_queries table
+            alter_visitor_sql = """
+            ALTER TABLE visitor_queries 
+            ALTER COLUMN phone_number TYPE VARCHAR(20);
+            """
+            
             print("🔄 Updating phone field length from 15 to 20 characters...")
             
             # Execute the migration for students table
             db.session.execute(text(alter_sql))
-            print("✅ Updated students.phone field to VARCHAR(20)")
+            print(" Updated students.phone field to VARCHAR(20)")
             
             # Check if student_registrations table exists and update it
             try:
                 db.session.execute(text(alter_reg_sql))
-                print("✅ Updated student_registrations.phone field to VARCHAR(20)")
+                print("Updated student_registrations.phone field to VARCHAR(20)")
             except Exception as e:
                 if "does not exist" in str(e).lower():
-                    print("ℹ️ student_registrations table does not exist, skipping...")
+                    print("student_registrations table does not exist, skipping...")
                 else:
-                    print(f"⚠️ Error updating student_registrations: {e}")
+                    print(f"Error updating student_registrations: {e}")
+            
+            # Check if visitor_queries table exists and update it
+            try:
+                db.session.execute(text(alter_visitor_sql))
+                print("Updated visitor_queries.phone_number field to VARCHAR(20)")
+            except Exception as e:
+                if "does not exist" in str(e).lower():
+                    print("visitor_queries table does not exist, skipping...")
+                else:
+                    print(f"Error updating visitor_queries: {e}")
             
             # Commit the changes
             db.session.commit()
-            print("✅ Migration completed successfully!")
+            print(" Migration completed successfully!")
             
             # Verify the change
             verify_sql = """

@@ -530,7 +530,7 @@ class VisitorQuery(db.Model):
     query_type = db.Column(db.String(50), nullable=False)  # 'admission', 'course', 'fee', 'facilities', 'faculty', 'other'
     query_text = db.Column(db.Text, nullable=False)
     response_text = db.Column(db.Text, nullable=False)
-    phone_number = db.Column(db.String(15), nullable=True)  # Optional for anonymous visitors
+    phone_number = db.Column(db.String(20), nullable=True)  # Optional for anonymous visitors
     telegram_user_id = db.Column(db.String(32), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
