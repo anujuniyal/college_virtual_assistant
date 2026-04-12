@@ -11,7 +11,7 @@ services:
     autoDeploy: true
     # Environment Variables
     envVars:
-      # Email Configuration
+      # Email Configuration (sensitive values set in Render Dashboard)
       - key: MAIL_SERVER
         value: smtp.gmail.com
       - key: MAIL_PORT
@@ -19,9 +19,9 @@ services:
       - key: MAIL_USE_TLS
         value: true
       - key: MAIL_USERNAME
-        value: anujjaj007@gmail.com
+        sync: false  # Set in Render Dashboard
       - key: MAIL_PASSWORD
-        value: rcazqavcugddlwzt
+        sync: false  # Set in Render Dashboard (sensitive)
       - key: MAIL_DEFAULT_SENDER
         value: anujjaj007@gmail.com
       - key: ADMIN_EMAIL
