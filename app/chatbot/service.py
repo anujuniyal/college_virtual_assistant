@@ -92,14 +92,10 @@ class ChatbotService:
         normalized = message.strip()
         message_lower = normalized.lower()
 
-        # Check for registration (case-insensitive)
-        if message_lower.startswith('register') or message_lower.startswith('verify'):
-            return self._handle_registration(normalized, phone_number)
-        
-        # Check for roll number verification
-        roll_match = re.search(r'roll[:\s]*([A-Z0-9]+)', normalized, re.IGNORECASE)
+        # Check for roll number verification (direct roll number input)
+        roll_match = re.search(r'EDU\d{5}', normalized, re.IGNORECASE)
         if roll_match:
-            roll_number = roll_match.group(1).upper()
+            roll_number = roll_match.group(0).upper()
             return self._verify_student(roll_number, phone_number)
         
         # Handle commands
@@ -141,16 +137,13 @@ class ChatbotService:
     
     def _handle_registration(self, message: str, phone_number: str) -> str:
         """Handle student registration via roll number as pass key"""
-        # Extract roll number from message - handle both "register" and "verify" patterns
-        roll_match = re.search(r'(?:register|verify)\s+([A-Z0-9]+)', message, re.IGNORECASE)
-        if not roll_match:
-            roll_match = re.search(r'roll[:\s]*([A-Z0-9]+)', message, re.IGNORECASE)
-        
+        # Extract roll number from message - direct roll number pattern
+        roll_match = re.search(r'EDU\d{5}', message, re.IGNORECASE)
         if roll_match:
-            roll_number = roll_match.group(1).upper()
+            roll_number = roll_match.group(0).upper()
             return self._verify_student_by_roll_and_phone(roll_number, phone_number)
         
-        return "Please provide your roll number in format: 'register EDU20240051' or 'verify EDU20240051'"
+        return "Please provide your roll number in format: EDU25001"
     
     def _get_or_create_view_count(self, student_id: int, service_type: str) -> DailyViewCount:
         """Get or create daily view count record"""
@@ -369,7 +362,7 @@ Type 'help' for commands."""
 🕐 Office Hours: 9:00 AM - 5:00 PM
 
 🎓 **Students:** To access personalized services,
-Type: `register YOUR_ROLL_NUMBER`
+Type: `EDU25001`
 or
 Share your phone number using the button below
 📱 [Share Phone Number]
@@ -424,7 +417,7 @@ Simply type the number (1-6) to choose any service!"""
 🕐 Office Hours: 9:00 AM - 5:00 PM
 
 🎓 **Students:** To access personalized services,
-Type: `register YOUR_ROLL_NUMBER`
+Type: `EDU25001`
 
 Simply type a number (1-6) or keyword to get started!"""
     
@@ -847,7 +840,7 @@ Issued by: College Administration"""
 Your session has been ended for security.
 
 To access services again:
-• Verify your roll number: register EDU20240051
+• Verify your roll number: EDU25001
 
 Thank you for using College Virtual Assistant!"""
     
