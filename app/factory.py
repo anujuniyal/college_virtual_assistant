@@ -752,25 +752,35 @@ def _ensure_schema(app):
 def initialize_services(app):
     """Initialize application services"""
     try:
-        # Initialize cleanup service with error handling
-        from app.services.cleanup_service import CleanupService
+        # Check if running on Render to skip cleanup during startup
+        is_render = (
+            os.environ.get('RENDER') == 'true' or 
+            os.environ.get('RENDER_SERVICE_ID') is not None
+        )
         
-        cleanup_service = CleanupService()
-        
-        # Run cleanup in background to avoid blocking startup
-        try:
-            notifications_result = cleanup_service.cleanup_expired_notifications()
-            results_result = cleanup_service.cleanup_expired_results()
-            otps_result = cleanup_service.cleanup_expired_otps()
+        if not is_render:
+            # Initialize cleanup service with error handling (only for local/production non-Render)
+            from app.services.cleanup_service import CleanupService
             
-            result = {
-                'notifications': notifications_result,
-                'results': results_result,
-                'otps': otps_result
-            }
-            app.logger.info(f"Cleanup on startup: {result}")
-        except Exception as cleanup_error:
-            app.logger.warning(f"Cleanup service failed (non-critical): {str(cleanup_error)}")
+            cleanup_service = CleanupService()
+            
+            # Run cleanup in background to avoid blocking startup
+            try:
+                notifications_result = cleanup_service.cleanup_expired_notifications()
+                results_result = cleanup_service.cleanup_expired_results()
+                otps_result = cleanup_service.cleanup_expired_otps()
+                
+                result = {
+                    'notifications': notifications_result,
+                    'results': results_result,
+                    'otps': otps_result
+                }
+                app.logger.info(f"Cleanup on startup: {result}")
+            except Exception as cleanup_error:
+                app.logger.warning(f"Cleanup service failed (non-critical): {str(cleanup_error)}")
+        else:
+            # Skip cleanup on Render to prevent worker timeouts
+            app.logger.info("Skipping cleanup service on Render for faster startup")
         
         # Log worker information for debugging
         import os
