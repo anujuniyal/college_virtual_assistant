@@ -5,13 +5,13 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --max-requests 1000 --max-requests-jitter 100 --limit-request-line 4094 --limit-request-field-size 8190 --preload --worker-class sync wsgi:app"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 30 --max-requests 500 --max-requests-jitter 50 --limit-request-line 4094 --limit-request-field-size 8190 --worker-class sync wsgi:app"
     # Health check configuration
     healthCheckPath: /health
     autoDeploy: true
     # Environment Variables
     envVars:
-      # Email Configuration (sensitive values set in Render Dashboard)
+      # Email Configuration
       - key: MAIL_SERVER
         value: smtp.gmail.com
       - key: MAIL_PORT
@@ -19,9 +19,9 @@ services:
       - key: MAIL_USE_TLS
         value: true
       - key: MAIL_USERNAME
-        sync: false  # Set in Render Dashboard
+        value: anujjaj007@gmail.com
       - key: MAIL_PASSWORD
-        sync: false  # Set in Render Dashboard (sensitive)
+        value: rcazqavcugddlwzt
       - key: MAIL_DEFAULT_SENDER
         value: anujjaj007@gmail.com
       - key: ADMIN_EMAIL
