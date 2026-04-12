@@ -122,7 +122,7 @@ class Config:
 
     FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
 
-    SERVER_NAME = os.environ.get('SERVER_NAME', 'localhost:5000')
+    SERVER_NAME = os.environ.get('SERVER_NAME', None)
 
     PREFERRED_URL_SCHEME = 'https' if os.environ.get('RENDER') else 'http'
 
