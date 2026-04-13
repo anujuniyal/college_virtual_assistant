@@ -11,7 +11,7 @@ services:
     autoDeploy: true
     # Environment Variables
     envVars:
-      # Email Configuration
+      # Email Configuration - Resend API for Render compatibility
       - key: MAIL_SERVER
         value: smtp.gmail.com
       - key: MAIL_PORT
@@ -26,3 +26,6 @@ services:
         value: anujjaj007@gmail.com
       - key: ADMIN_EMAIL
         value: uniyalanuj1@gmail.com
+      # Resend API Configuration (for Render)
+      - key: RESEND_API_KEY
+        value: re_your_resend_api_key_here
