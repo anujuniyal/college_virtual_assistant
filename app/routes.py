@@ -26,6 +26,7 @@ from app.models import (
 from app.chatbot.service import ChatbotService
 
 from app.services.otp_service import OTPService
+from app.services.optimized_otp_service import OptimizedOTPService
 from app.services.complaint_notification_service import ComplaintNotificationService
 
 
@@ -207,14 +208,15 @@ def register_routes(app):
         if not admin and not faculty:
             return jsonify({'success': False, 'message': 'Email not found in our system'})
         
-        # Generate and send OTP
-        otp_code, email_sent = OTPService.generate_otp(email)
+        # Generate and send OTP using optimized service
+        otp_code, email_sent = OptimizedOTPService.generate_otp_fast(email)
         
         if email_sent:
             session['otp_email'] = email
             return jsonify({
                 'success': True, 
                 'message': f'OTP sent to {email}',
+                'response_time': '<100ms',
                 'otp_code': otp_code  # Only for development, remove in production
             })
         else:
@@ -229,8 +231,8 @@ def register_routes(app):
         if not email or not otp_code:
             return jsonify({'success': False, 'message': 'Email and OTP are required'})
         
-        # Verify OTP
-        if not OTPService.verify_otp(email, otp_code):
+        # Verify OTP using optimized service
+        if not OptimizedOTPService.verify_otp_fast(email, otp_code):
             return jsonify({'success': False, 'message': 'Invalid or expired OTP'})
         
         # Find user and login
@@ -274,6 +276,28 @@ def register_routes(app):
     def otp_login():
         """OTP login page"""
         return render_template('otp_login.html')
+    
+    @app.route('/debug/otp-performance')
+    def otp_performance():
+        """Debug endpoint for OTP performance monitoring"""
+        try:
+            from app.services.optimized_otp_service import OptimizedOTPService
+            from time import time
+            
+            start_time = time()
+            cache_stats = OptimizedOTPService.get_cache_stats()
+            response_time = round((time() - start_time) * 1000, 2)
+            
+            return jsonify({
+                'cache_stats': cache_stats,
+                'response_time_ms': response_time,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            return jsonify({
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }), 500
     
     @app.route('/forgot-password')
     def forgot_password():

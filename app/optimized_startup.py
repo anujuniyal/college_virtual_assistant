@@ -45,6 +45,13 @@ def initialize_services_async(app):
                 # Skip cleanup on Render to prevent worker timeouts
                 app.logger.info("Skipping cleanup service on Render for faster startup")
             
+            # Clean up OTP cache
+            try:
+                from app.services.optimized_otp_service import OptimizedOTPService
+                OptimizedOTPService.cleanup_cache()
+            except Exception as cache_error:
+                app.logger.warning(f"OTP cache cleanup failed: {str(cache_error)}")
+            
             # Log worker information for debugging
             worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
             app.logger.info(f"🔄 Async worker {worker_id} initialization completed")

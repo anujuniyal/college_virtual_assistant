@@ -47,7 +47,7 @@ class ResendEmailService:
                 f'{self.base_url}/emails',
                 headers=headers,
                 json=email_data,
-                timeout=30
+                timeout=10  # Reduced from 30s to 10s for faster response
             )
             
             if response.status_code == 200:
