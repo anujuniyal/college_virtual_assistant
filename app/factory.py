@@ -783,7 +783,6 @@ def initialize_services(app):
             app.logger.info("Skipping cleanup service on Render for faster startup")
         
         # Log worker information for debugging
-        import os
         worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
         app.logger.info(f"🔄 Worker {worker_id} initialized successfully")
         
