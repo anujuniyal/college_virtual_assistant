@@ -28,4 +28,4 @@ services:
         value: uniyalanuj1@gmail.com
       # Resend API Configuration (for Render)
       - key: RESEND_API_KEY
-        value: re_your_resend_api_key_here
+        value: re_GpW6xn9B_64LCSMbR9HZ7wMRmqVKQLHuj
