@@ -255,25 +255,34 @@ def register_core_routes(app):
                 'cpu_usage': None
             }
             
-            # Check for python processes that might be the bot
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'cpu_percent', 'memory_percent', 'create_time']):
-                try:
-                    if _is_bot_process(proc):
-                        bot_running = True
-                        uptime = time.time() - proc.info['create_time'] if proc.info.get('create_time') else 0
-                        
-                        bot_info.update({
-                            'status': 'online',
-                            'message': 'Bot is running',
-                            'pid': proc.info['pid'],
-                            'cpu_usage': round(proc.info['cpu_percent'], 2),
-                            'memory_usage': round(proc.info['memory_percent'], 2),
-                            'uptime': round(uptime, 2),
-                            'cmdline': ' '.join(proc.info['cmdline'] or [])[:100] + '...' if len(' '.join(proc.info['cmdline'] or [])) > 100 else ' '.join(proc.info['cmdline'] or [])
-                        })
-                        break
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
+            # Use safe psutil operation with timeout
+            from app.optimized_startup import safe_psutil_operation
+            
+            def check_bot_processes():
+                for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'cpu_percent', 'memory_percent', 'create_time']):
+                    try:
+                        if _is_bot_process(proc):
+                            bot_running = True
+                            uptime = time.time() - proc.info['create_time'] if proc.info.get('create_time') else 0
+                            
+                            bot_info.update({
+                                'status': 'online',
+                                'message': 'Bot is running',
+                                'pid': proc.info['pid'],
+                                'cpu_usage': round(proc.info['cpu_percent'], 2),
+                                'memory_usage': round(proc.info['memory_percent'], 2),
+                                'uptime': round(uptime, 2),
+                                'cmdline': ' '.join(proc.info['cmdline'] or [])[:100] + '...' if len(' '.join(proc.info['cmdline'] or [])) > 100 else ' '.join(proc.info['cmdline'] or [])
+                            })
+                            break
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+                return bot_info
+            
+            # Execute with timeout protection
+            result = safe_psutil_operation(check_bot_processes, timeout=5)
+            if result and 'error' not in result:
+                bot_info = result
             
             return jsonify(bot_info)
             
@@ -348,8 +357,13 @@ def register_core_routes(app):
                     
                     def start_bot():
                         try:
+                            from app.optimized_startup import safe_subprocess_call
+                            
+                            # Use safe subprocess call with timeout
                             env = os.environ.copy()
                             env['PYTHONPATH'] = os.getcwd()
+                            
+                            # Start process with non-blocking approach
                             process = subprocess.Popen([
                                 'python', bot_script_path
                             ], 
@@ -453,36 +467,30 @@ def register_core_routes(app):
 
     @app.route('/health')
     def health_check():
-        """Health check endpoint for monitoring with offline mode support"""
+        """Optimized health check endpoint for monitoring with timeout protection"""
         from flask import jsonify
         try:
-            from app.offline_mode import OfflineMode, offline_database_test
+            from app.health_optimization import optimized_health_check, get_worker_info
             
-            # Check if we're in offline mode
-            if OfflineMode.is_enabled():
-                return jsonify(OfflineMode.get_mock_response())
+            # Get optimized health check result
+            health_result = optimized_health_check()
             
-            # Test database connection with retry logic
-            if offline_database_test():
-                return jsonify({
-                    'status': 'healthy',
-                    'database': 'connected',
-                    'timestamp': datetime.utcnow().isoformat()
-                })
-            else:
-                return jsonify({
-                    'status': 'unhealthy',
-                    'database': 'disconnected',
-                    'timestamp': datetime.utcnow().isoformat()
-                }), 500
+            # Add worker information for debugging
+            worker_info = get_worker_info()
+            health_result.update(worker_info)
+            
+            # Return appropriate status code
+            status_code = 200 if health_result['status'] == 'healthy' else 500
+            return jsonify(health_result), status_code
                 
         except Exception as e:
             # Log error but don't expose details in production
             app.logger.error(f"Health check failed: {str(e)}")
             return jsonify({
-                'status': 'unhealthy',
-                'database': 'disconnected',
-                'timestamp': datetime.utcnow().isoformat()
+                'status': 'error',
+                'database': 'unknown',
+                'timestamp': datetime.utcnow().isoformat(),
+                'worker_id': os.environ.get('GUNICORN_WORKER_ID', 'master')
             }), 500
 
 
@@ -750,41 +758,17 @@ def _ensure_schema(app):
 
 
 def initialize_services(app):
-    """Initialize application services"""
+    """Initialize application services with optimized async startup"""
     try:
-        # Check if running on Render to skip cleanup during startup
-        is_render = (
-            os.environ.get('RENDER') == 'true' or 
-            os.environ.get('RENDER_SERVICE_ID') is not None
-        )
+        # Use optimized async initialization to prevent worker timeouts
+        from app.optimized_startup import initialize_services_async
         
-        if not is_render:
-            # Initialize cleanup service with error handling (only for local/production non-Render)
-            from app.services.cleanup_service import CleanupService
-            
-            cleanup_service = CleanupService()
-            
-            # Run cleanup in background to avoid blocking startup
-            try:
-                notifications_result = cleanup_service.cleanup_expired_notifications()
-                results_result = cleanup_service.cleanup_expired_results()
-                otps_result = cleanup_service.cleanup_expired_otps()
-                
-                result = {
-                    'notifications': notifications_result,
-                    'results': results_result,
-                    'otps': otps_result
-                }
-                app.logger.info(f"Cleanup on startup: {result}")
-            except Exception as cleanup_error:
-                app.logger.warning(f"Cleanup service failed (non-critical): {str(cleanup_error)}")
-        else:
-            # Skip cleanup on Render to prevent worker timeouts
-            app.logger.info("Skipping cleanup service on Render for faster startup")
+        # Initialize services asynchronously
+        initialize_services_async(app)
         
         # Log worker information for debugging
         worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
-        app.logger.info(f"🔄 Worker {worker_id} initialized successfully")
+        app.logger.info(f"🔄 Worker master initialized successfully")
         
     except Exception as e:
         app.logger.error(f"Error initializing services: {str(e)}")
