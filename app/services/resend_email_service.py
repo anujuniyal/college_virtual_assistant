@@ -1,7 +1,6 @@
 """
 Resend Email Service - API-based email provider compatible with Render
 """
-import os
 import requests
 from flask import current_app
 from typing import Optional
@@ -158,6 +157,7 @@ class EmailService:
             from email.mime.multipart import MIMEMultipart
             from email.mime.base import MIMEBase
             from email import encoders
+            import os
             
             # Create message
             msg = MIMEMultipart('alternative')
@@ -242,6 +242,7 @@ class EmailService:
             import smtplib
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
+            import os
             
             subject = "Weekly Analytics Report - College Virtual Assistant"
             
@@ -307,6 +308,9 @@ class EmailService:
             
             # Add CSV attachment if provided
             if csv_file_path and os.path.exists(csv_file_path):
+                from email.mime.base import MIMEBase
+                from email import encoders
+                
                 with open(csv_file_path, "rb") as attachment:
                     part = MIMEBase('application', 'octet-stream')
                     part.set_payload(attachment.read())
