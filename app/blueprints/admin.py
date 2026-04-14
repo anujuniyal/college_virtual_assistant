@@ -2304,7 +2304,7 @@ def send_weekly_report():
                     'message': f'Report generated but email failed: {str(e)}',
                     'file_path': csv_path,
                     'file_name': file_name
-                })
+                }), 500
         else:
             return jsonify({
                 'success': False,
