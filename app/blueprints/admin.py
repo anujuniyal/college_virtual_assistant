@@ -47,13 +47,13 @@ def admin_dashboard():
         # Get analytics data
         analytics = AnalyticsService.get_dashboard_analytics()
         
-        return render_template('admin/dashboard.html', 
+        return render_template('admin_dashboard.html', 
                            analytics=analytics,
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading admin dashboard: {str(e)}")
         flash('Error loading dashboard. Please try again.', 'error')
-        return render_template('admin/dashboard.html', 
+        return render_template('admin_dashboard.html', 
                            analytics={'total_queries': 0, 'unknown_queries': 0},
                            user=current_user)
 
