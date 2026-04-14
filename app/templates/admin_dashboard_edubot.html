@@ -170,7 +170,7 @@ console.log('toggleBot function defined in head');
             <i class="fas fa-edit"></i>
             <span class="submenu-text">Predefined Info</span>
         </a>
-        <a href="{{ url_for('admin.faq_management') }}" class="nav-link">
+        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
             <i class="fas fa-question"></i>
             <span class="submenu-text">FAQ Management</span>
         </a>
@@ -211,7 +211,7 @@ console.log('toggleBot function defined in head');
 </div>
 
 <div class="nav-item">
-    <a href="{{ url_for('admin.student_registrations') }}" class="nav-link {% if 'registration' in request.endpoint %}active{% endif %}">
+    <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if 'students' in request.endpoint %}active{% endif %}">
         <i class="fas fa-user-plus"></i>
         <span>Registrations</span>
     </a>
