@@ -47,6 +47,12 @@ def admin_dashboard():
         # Get analytics data
         analytics = AnalyticsService.get_dashboard_analytics()
         
+        # Add additional metrics for dashboard
+        analytics['total_students'] = Student.query.count() if Student else 0
+        analytics['total_faculty'] = Faculty.query.count() if Faculty else 0
+        analytics['active_notifications'] = Notification.query.filter_by(is_active=True).count() if Notification else 0
+        analytics['pending_complaints'] = Complaint.query.filter_by(status='pending').count() if Complaint else 0
+        
         return render_template('base_dashboard.html', 
                            analytics=analytics,
                            user=current_user)

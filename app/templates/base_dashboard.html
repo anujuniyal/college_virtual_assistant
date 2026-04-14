@@ -478,7 +478,41 @@
             
             <div class="sidebar-menu">
                 {% block sidebar_nav %}
-                <!-- Navigation will be inserted here based on role -->
+                <!-- Admin Navigation -->
+                {% if current_user.is_authenticated and current_user.__class__.__name__ == 'Admin' %}
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link active">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
+                        <i class="bi bi-people"></i>
+                        <span>Manage Students</span>
+                    </a>
+                    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
+                        <i class="bi bi-person-badge"></i>
+                        <span>Manage Faculty</span>
+                    </a>
+                    <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
+                        <i class="bi bi-bell"></i>
+                        <span>Notifications</span>
+                    </a>
+                    <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>Complaints</span>
+                    </a>
+                    <a href="{{ url_for('admin.manage_fee_records') }}" class="nav-link">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Fee Records</span>
+                    </a>
+                    <a href="{{ url_for('admin.get_analytics') }}" class="nav-link">
+                        <i class="bi bi-graph-up"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="{{ url_for('admin.send_weekly_report') }}" class="nav-link">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        <span>Weekly Report</span>
+                    </a>
+                {% endif %}
                 {% endblock %}
             </div>
         </nav>
@@ -544,7 +578,97 @@
             <!-- Dashboard Content -->
             <div class="dashboard-content">
                 {% block content %}
-                <!-- Content will be inserted here -->
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card students">
+                        <div class="card-icon students">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">Total Students</div>
+                            <div class="card-count">{{ analytics.total_students if analytics else 0 }}</div>
+                        </div>
+                    </div>
+                    <div class="summary-card faculty">
+                        <div class="card-icon faculty">
+                            <i class="bi bi-person-badge-fill"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">Total Faculty</div>
+                            <div class="card-count">{{ analytics.total_faculty if analytics else 0 }}</div>
+                        </div>
+                    </div>
+                    <div class="summary-card notifications">
+                        <div class="card-icon notifications">
+                            <i class="bi bi-bell-fill"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">Active Notifications</div>
+                            <div class="card-count">{{ analytics.active_notifications if analytics else 0 }}</div>
+                        </div>
+                    </div>
+                    <div class="summary-card complaints">
+                        <div class="card-icon complaints">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-title">Pending Issues</div>
+                            <div class="card-count">{{ analytics.pending_complaints if analytics else 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Quick Actions</h2>
+                    </div>
+                    <div class="quick-actions">
+                        <a href="{{ url_for('admin.manage_students') }}" class="quick-action-btn">
+                            <i class="bi bi-person-plus"></i>
+                            <span>Manage Students</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_faculty') }}" class="quick-action-btn">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Manage Faculty</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_notifications') }}" class="quick-action-btn">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_complaints') }}" class="quick-action-btn">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span>Complaints</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recent Activity</h2>
+                    </div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon success">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">System initialized successfully</div>
+                                <div class="activity-time">Just now</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon info">
+                                <i class="bi bi-info-circle-fill"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">Admin dashboard loaded</div>
+                                <div class="activity-time">Just now</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endblock %}
             </div>
         </main>
