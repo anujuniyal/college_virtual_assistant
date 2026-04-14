@@ -57,9 +57,9 @@ def accounts_dashboard():
     """Accounts dashboard with financial access"""
     try:
         # Get real statistics
-        total_students = safe_execute(Student.query.count) or 0
-        total_fee_records = safe_execute(FeeRecord.query.count) or 0
-        total_notifications = safe_execute(Notification.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_fee_records = safe_execute(lambda: FeeRecord.query.count()) or 0
+        total_notifications = safe_execute(lambda: Notification.query.count()) or 0
         
         # Calculate pending fees
         pending_count = 0
@@ -67,7 +67,7 @@ def accounts_dashboard():
         collection_rate = 0
         
         try:
-            fee_records = safe_execute(FeeRecord.query.all()) or []
+            fee_records = safe_execute(lambda: FeeRecord.query.all()) or []
             for record in fee_records:
                 if record.balance > 0:
                     pending_count += 1
@@ -327,8 +327,8 @@ def billing():
     """Billing and financial management"""
     try:
         # Get billing data
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         
         return render_template('billing.html',
                              total_students=total_students,
@@ -490,11 +490,11 @@ def reports():
     """Generate and export financial reports"""
     try:
         # Get data for reports
-        total_students = safe_execute(Student.query.count) or 0
-        total_fee_records = safe_execute(FeeRecord.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_fee_records = safe_execute(lambda: FeeRecord.query.count()) or 0
         
         # Calculate financial summary
-        fee_records = safe_execute(FeeRecord.query.all()) or []
+        fee_records = safe_execute(lambda: FeeRecord.query.all()) or []
         total_collected = sum(record.paid_amount for record in fee_records) if fee_records else 0
         total_pending = sum(record.balance for record in fee_records if record.balance > 0) if fee_records else 0
         

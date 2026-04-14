@@ -669,12 +669,12 @@ def analytics():
     """View analytics dashboard"""
     try:
         # Get basic statistics
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
-        total_notifications = safe_execute(Notification.query.count) or 0
-        total_complaints = safe_execute(Complaint.query.count) or 0
-        total_results = safe_execute(Result.query.count) or 0
-        total_fee_records = safe_execute(FeeRecord.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
+        total_notifications = safe_execute(lambda: Notification.query.count()) or 0
+        total_complaints = safe_execute(lambda: Complaint.query.count()) or 0
+        total_results = safe_execute(lambda: Result.query.count()) or 0
+        total_fee_records = safe_execute(lambda: FeeRecord.query.count()) or 0
         
         # Get real query data
         from datetime import datetime, timedelta
@@ -791,8 +791,8 @@ def college_accounts():
     """Manage college accounts and finances"""
     try:
         # Get accounts data
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         
         return render_template('manage_accounts.html',
                              total_students=total_students,
@@ -825,8 +825,8 @@ def performance_test():
     """Simple performance test page without navigation"""
     try:
         # Get basic metrics
-        total_students = safe_execute(Student.query.count) or 0
-        total_faculty = safe_execute(Faculty.query.count) or 0
+        total_students = safe_execute(lambda: Student.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         
         return render_template('performance_test.html',
                              total_students=total_students,
@@ -902,7 +902,7 @@ def manage_complaints():
         )
         
         # Get statistics
-        total_complaints = safe_execute(Complaint.query.count) or 0
+        total_complaints = safe_execute(lambda: Complaint.query.count()) or 0
         pending_complaints = safe_execute(
             lambda: Complaint.query.filter_by(status='pending').count()
         ) or 0

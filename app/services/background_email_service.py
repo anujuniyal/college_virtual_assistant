@@ -85,7 +85,7 @@ class BackgroundEmailService:
                 timeout=10
             )
             
-            if response.status_code == 200:
+            if response.status_code in [200, 201]:
                 logger.info(f"Email sent successfully via Brevo to {to}: {subject}")
                 return True
             else:
