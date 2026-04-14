@@ -32,7 +32,7 @@ def login():
             
             # Redirect based on user role
             if user_role == 'admin':
-                return redirect(url_for('admin.admin_dashboard_main'))
+                return redirect(url_for('admin.admin_dashboard'))
             elif user_role == 'faculty':
                 return redirect(url_for('faculty.faculty_dashboard'))
             elif user_role == 'accounts':
