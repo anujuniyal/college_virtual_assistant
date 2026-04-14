@@ -10,10 +10,17 @@ def initialize_services_async(app):
     """
     Initialize services asynchronously to prevent worker timeouts
     """
+    # Only initialize from master process to avoid multiple initializations
+    worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
+    
+    if worker_id != 'master':
+        app.logger.info(f"Skipping async initialization for worker {worker_id}")
+        return True
+    
     def async_init():
         try:
-            # Small delay to let the worker start properly
-            time.sleep(1)
+            # Longer delay to ensure master process is ready
+            time.sleep(2)
             
             # Check if running on Render to skip cleanup during startup
             is_render = (
@@ -52,14 +59,12 @@ def initialize_services_async(app):
             except Exception as cache_error:
                 app.logger.warning(f"OTP cache cleanup failed: {str(cache_error)}")
             
-            # Log worker information for debugging
-            worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
-            app.logger.info(f"🔄 Async worker {worker_id} initialization completed")
+            app.logger.info(f"🔄 Async master initialization completed")
             
         except Exception as e:
             app.logger.error(f"Error in async service initialization: {str(e)}")
     
-    # Start initialization in background thread
+    # Start initialization in background thread only from master process
     init_thread = threading.Thread(target=async_init, daemon=True)
     init_thread.start()
     
