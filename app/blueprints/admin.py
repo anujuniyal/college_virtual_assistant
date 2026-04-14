@@ -53,14 +53,18 @@ def admin_dashboard():
         analytics['active_notifications'] = Notification.query.filter_by(is_active=True).count() if Notification else 0
         analytics['pending_complaints'] = Complaint.query.filter_by(status='pending').count() if Complaint else 0
         
-        return render_template('base_dashboard.html', 
-                           analytics=analytics,
+        return render_template('admin_dashboard_edubot.html', 
+                           total_students=analytics.get('total_students', 0),
+                           total_faculty=analytics.get('total_faculty', 0),
+                           total_notifications=analytics.get('active_notifications', 0),
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading admin dashboard: {str(e)}")
         flash('Error loading dashboard. Please try again.', 'error')
-        return render_template('base_dashboard.html', 
-                           analytics={'total_queries': 0, 'unknown_queries': 0},
+        return render_template('admin_dashboard_edubot.html', 
+                           total_students=0,
+                           total_faculty=0,
+                           total_notifications=0,
                            user=current_user)
 
 
