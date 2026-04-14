@@ -61,17 +61,43 @@ def register():
         password = request.form.get('password')
         role = request.form.get('role', 'student')
         
+        # Validate form data
+        if role == 'student':
+            roll_number = request.form.get('roll_number', '').strip()
+            if not roll_number:
+                flash('Roll number is required for student registration', 'error')
+                return render_template('register.html')
+        
         # Check if user already exists in appropriate table
         if role == 'student':
-            existing_user = Student.query.filter_by(roll_number=request.form.get('roll_number', '')).first()
+            # Check for duplicate roll number
+            existing_user = Student.query.filter_by(roll_number=roll_number).first()
+            if existing_user:
+                flash(f'Student with roll number {roll_number} is already registered', 'error')
+                return render_template('register.html')
+            
+            # Check for duplicate email
+            existing_email = Student.query.filter_by(email=email).first()
+            if existing_email:
+                flash(f'Student with email {email} is already registered', 'error')
+                return render_template('register.html')
+            
+            # Check for duplicate name
+            existing_name = Student.query.filter_by(name=request.form.get('name', '')).first()
+            if existing_name:
+                flash(f'Student with name {request.form.get("name", "")} is already registered', 'error')
+                return render_template('register.html')
+                
         elif role == 'faculty':
             existing_user = Faculty.query.filter_by(email=email).first()
+            if existing_user:
+                flash(f'Faculty member with email {email} is already registered', 'error')
+                return render_template('register.html')
         else:
             existing_user = Faculty.query.filter_by(email=email).first()
-
-        if existing_user:
-            flash('User already exists with these details', 'error')
-            return render_template('register.html')
+            if existing_user:
+                flash(f'User with email {email} is already registered', 'error')
+                return render_template('register.html')
 
         # Create new user based on role
         if role == 'student':
