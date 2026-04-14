@@ -19,7 +19,6 @@ from app.models import (
     Faculty,
     Complaint,
     ChatbotQA,
-    ChatbotUnknown,
 )
 from app.services.weekly_report_service import WeeklyReportService
 
@@ -239,15 +238,7 @@ class ChatbotQAView(SecureModelView):
     can_export = True
 
 
-class ChatbotUnknownView(SecureModelView):
-    """Unknown queries view"""
-    column_list = ['query', 'phone_number', 'student_id', 'created_at', 'exported']
-    column_searchable_list = ['query', 'phone_number']
-    column_filters = ['exported']
-    can_create = False
-    can_edit = True
-    can_delete = True
-    can_export = True
+# ChatbotUnknownView removed - model doesn't exist
 
 
 class AdminModelView(SecureModelView):
@@ -292,7 +283,7 @@ def init_admin(app):
     admin.add_view(FeeRecordView(FeeRecord, db.session, name='Fee Records', category='Services'))
     admin.add_view(ComplaintView(Complaint, db.session, name='Complaints', category='Services'))
     admin.add_view(ChatbotQAView(ChatbotQA, db.session, name='Chatbot Q&A', category='Chatbot'))
-    admin.add_view(ChatbotUnknownView(ChatbotUnknown, db.session, name='Unknown Queries', category='Chatbot'))
+    # Note: ChatbotUnknown model doesn't exist - view removed
     
     # Add custom route for weekly report
     @app.route('/admin/generate-weekly-report')

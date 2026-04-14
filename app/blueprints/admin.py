@@ -2296,15 +2296,7 @@ def send_weekly_report():
                 'file_path': csv_path,
                 'file_name': file_name
             })
-                
-            except Exception as e:
-                current_app.logger.error(f"Error sending email: {str(e)}")
-                return jsonify({
-                    'success': False,
-                    'message': f'Report generated but email failed: {str(e)}',
-                    'file_path': csv_path,
-                    'file_name': file_name
-                }), 500
+            
         else:
             return jsonify({
                 'success': False,

@@ -21,7 +21,7 @@ class RealtimeSyncService:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.local_db_url = os.environ.get('LOCAL_DATABASE_URL', 'sqlite:///instance/edubot_management.db')
+        self.local_db_url = os.environ.get('NEON_DATABASE_URL') or os.environ.get('DATABASE_URL')
         self.production_db_url = os.environ.get('DATABASE_URL')
         self.sync_interval = int(os.environ.get('SYNC_INTERVAL_MINUTES', 5))  # Default 5 minutes
         self.last_sync_time = None

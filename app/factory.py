@@ -722,7 +722,7 @@ def initialize_database(app):
 
 def _ensure_schema(app):
     """
-    Ensure newer columns exist on existing SQLite DBs.
+    Ensure newer columns exist on existing database tables.
     This project doesn't ship migrations, so we do safe ALTER TABLEs.
     """
     from sqlalchemy import inspect, text
@@ -751,8 +751,9 @@ def _ensure_schema(app):
     if inspector.has_table('telegram_user_mappings'):
         if not has_column('telegram_user_mappings', 'verified'):
             db.session.execute(text("ALTER TABLE telegram_user_mappings ADD COLUMN verified BOOLEAN DEFAULT 0"))
-        # SQLite cannot ALTER COLUMN to drop NOT NULL; for older DBs, we tolerate NOT NULL by only creating mapping
-        # after we know the student. New DBs will have nullable student_id.
+        # Database compatibility: Handle existing schemas with different constraints
+        # For older DBs, we tolerate NOT NULL by only creating mapping after we know the student.
+        # New DBs will have nullable student_id.
 
     db.session.commit()
 

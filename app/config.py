@@ -135,10 +135,15 @@ class Config:
     
 
     # SQLAlchemy engine optimizations for Neon
+
     SQLALCHEMY_ENGINE_OPTIONS = {
+
         'pool_pre_ping': True,  # Check connections before use
+
         'pool_recycle': 300,     # Recycle connections every 5 minutes
+
         'echo': False           # Set to True for SQL debugging
+
     }
 
     
@@ -156,7 +161,9 @@ class Config:
     
 
     # Real-time updates configuration for Neon
+
     SQLALCHEMY_RECORD_QUERIES = False  # Disable query recording for better performance
+
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True  # Ensure auto-commit for real-time updates
 
     
@@ -298,11 +305,17 @@ class Config:
         """Determine database URI based on environment"""
 
         # Prioritize Neon database for local development
+
         neon_url = os.environ.get('NEON_DATABASE_URL')
+
         if neon_url and neon_url != 'your_neon_connection_string_here':
+
             print(f"✅ Using NEON_DATABASE_URL: {neon_url[:50]}...")
+
             return neon_url
+
         
+
         # Check if explicitly set DATABASE_URL (Render provides this)
 
         database_url = os.environ.get('DATABASE_URL')
@@ -319,44 +332,7 @@ class Config:
 
         
 
-        # For production, prioritize Neon database
-
-        if os.environ.get('FLASK_ENV') == 'production':
-
-            if database_url:
-
-                # Handle Render PostgreSQL URLs
-
-                if database_url.startswith('postgres://'):
-
-                    # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
-
-                    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-                
-
-                # Add Neon-specific optimizations for production
-
-                if '?' not in database_url:
-
-                    database_url += '?'
-
-                else:
-
-                    database_url += '&'
-            # Check for POSTGRESQL_URL as fallback
-
-            postgres_url = os.environ.get('POSTGRESQL_URL')
-
-            if postgres_url:
-
-                if postgres_url.startswith('postgres://'):
-
-                    postgres_url = postgres_url.replace('postgres://', 'postgresql://', 1)
-
-                print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
-
-        
+        # Handle DATABASE_URL if available
 
         if database_url:
 
@@ -406,27 +382,40 @@ class Config:
 
             postgres_url = os.environ.get('POSTGRESQL_URL')
 
+            
+
             if postgres_url:
+
+                if postgres_url.startswith('postgres://'):
+
+                    postgres_url = postgres_url.replace('postgres://', 'postgresql://', 1)
 
                 print(f"✅ Using POSTGRESQL_URL: {postgres_url[:50]}...")
 
                 return postgres_url
 
+            
 
             # CRITICAL: In production, we MUST have a database URL
-
             print("❌ PRODUCTION ERROR: No DATABASE_URL or POSTGRESQL_URL found!")
+            print("❌ Application cannot start without PostgreSQL database")
+            
+            # Fail fast - no SQLite fallback for production
+            raise RuntimeError("Production deployment requires DATABASE_URL or POSTGRESQL_URL environment variable")
 
-            print("❌ Using SQLite fallback to ensure application starts")
+        
 
-            # Use SQLite as emergency fallback
+        # Default to PostgreSQL for local development
+        print("❌ DEVELOPMENT ERROR: No database URL configured")
+        print("❌ Please set NEON_DATABASE_URL or DATABASE_URL environment variable")
+        
+        # Fail fast - no SQLite fallback
+        raise RuntimeError("Development requires NEON_DATABASE_URL or DATABASE_URL environment variable")
 
-            sqlite_path = 'sqlite:///instance/edubot_management.db'
 
-        # Default to SQLite for local development only
-        sqlite_path = 'sqlite:///instance/edubot_management.db'
-        print(f"🔧 Using SQLite for development: {sqlite_path}")
-        return sqlite_path
+
+
+
 class ProductionConfig(Config):
 
     """Production configuration"""
@@ -571,9 +560,9 @@ class TestingConfig(Config):
 
     
 
-    # Use in-memory database for testing
+    # Use PostgreSQL test database for testing
 
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or os.environ.get('DATABASE_URL')
 
     
 
@@ -598,4 +587,3 @@ config = {
     'default': DevelopmentConfig
 
 }
-
