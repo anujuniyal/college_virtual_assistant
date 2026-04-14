@@ -75,6 +75,52 @@ class WeeklyReportService:
         return csv_path
     
     @staticmethod
+    def _export_unknown_queries_csv_optimized() -> str:
+        """Export unknown queries to CSV with memory optimization"""
+        try:
+            # Ensure data directory exists
+            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+            os.makedirs(data_dir, exist_ok=True)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            csv_filename = f'faq_records_{timestamp}.csv'
+            csv_path = os.path.join(data_dir, csv_filename)
+            
+            # Use batched queries to avoid memory issues
+            batch_size = 1000
+            offset = 0
+            
+            with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['ID', 'Query', 'Phone Number', 'Student ID', 'Created At'])
+                
+                while True:
+                    # Get batch of records
+                    batch = db.session.query(FAQRecord).filter_by(processed=False).offset(offset).limit(batch_size).all()
+                    if not batch:
+                        break
+                    
+                    # Write batch to CSV
+                    for query in batch:
+                        writer.writerow([
+                            query.id,
+                            query.query,
+                            query.phone_number or '',
+                            query.student_id or '',
+                            query.created_at.isoformat()
+                        ])
+                    
+                    offset += batch_size
+                    # Clear session to free memory
+                    db.session.expunge_all()
+            
+            return csv_path
+        except Exception as e:
+            logger.error(f"Error exporting unknown queries CSV: {str(e)}")
+            return None
+    
+    @staticmethod
     def _get_weekly_report_data_optimized() -> dict:
         """Get weekly report data with memory optimization"""
         try:
