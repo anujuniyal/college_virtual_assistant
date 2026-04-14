@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Faculty Management
+                    </h5>
+                    {% if can_create %}
+                    <a href="{{ url_for('admin.create_faculty') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Add Faculty
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if faculty %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Phone</th>
+                                    <th>Consultation Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in faculty %}
+                                <tr>
+                                    <td>{{ member.name }}</td>
+                                    <td>{{ member.email }}</td>
+                                    <td>{{ member.department or 'N/A' }}</td>
+                                    <td>{{ member.phone or 'N/A' }}</td>
+                                    <td>{{ member.consultation_time or 'N/A' }}</td>
+                                    <td>
+                                        {% if can_edit %}
+                                        <button class="btn btn-sm btn-warning" onclick="editFaculty({{ member.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <button class="btn btn-sm btn-danger" onclick="deleteFaculty({{ member.id }}, '{{ member.name }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary Statistics -->
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Total Faculty</h6>
+                                    <h4>{{ faculty|length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">Departments</h6>
+                                    <h4>{{ faculty|map(attribute='department')|unique|list|length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">With Phone</h6>
+                                    <h4>{{ faculty|selectattr('phone')|list|length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h6 class="card-title">With Consultation</h6>
+                                    <h4>{{ faculty|selectattr('consultation_time')|list|length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chalkboard-teacher fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No faculty members found</h5>
+                        {% if can_create %}
+                        <p class="text-muted">Start by adding your first faculty member.</p>
+                        <a href="{{ url_for('admin.create_faculty') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Add First Faculty
+                        </a>
+                        {% else %}
+                        <p class="text-muted">Faculty members will appear here once they are added.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="facultyName"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteFaculty(id, name) {
+    document.getElementById('facultyName').textContent = name;
+    document.getElementById('deleteForm').action = '/admin/delete-faculty/' + id;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+{% if can_edit %}
+function editFaculty(id) {
+    // Edit functionality would go here if enabled
+    window.location.href = '/admin/edit-faculty/' + id;
+}
+{% endif %}
+</script>
+{% endblock %}

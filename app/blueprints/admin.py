@@ -117,6 +117,26 @@ def manage_students():
         return redirect(url_for('admin.admin_dashboard'))
 
 
+@admin_bp.route('/fee-records')
+@login_required
+@admin_required
+def manage_fee_records():
+    """Manage fee records (read-only)"""
+    try:
+        fee_records = FeeRecord.query.order_by(
+            FeeRecord.last_updated.desc()
+        ).all()
+        
+        return render_template('admin/fee_records.html', 
+                           fee_records=fee_records,
+                           read_only=True,
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error loading fee records: {str(e)}")
+        flash('Error loading fee records. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
 @admin_bp.route('/faculty')
 @login_required
 @admin_required
@@ -126,11 +146,75 @@ def manage_faculty():
         faculty = Faculty.query.all()
         return render_template('admin/faculty.html', 
                            faculty=faculty,
-                           user=current_user)
+                           user=current_user,
+                           can_create=True,
+                           can_edit=False)
     except Exception as e:
         current_app.logger.error(f"Error loading faculty: {str(e)}")
         flash('Error loading faculty. Please try again.', 'error')
         return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/create-faculty', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_faculty():
+    """Create new faculty"""
+    if request.method == 'GET':
+        return render_template('admin/create_faculty.html', user=current_user)
+    
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        department = request.form.get('department', '').strip()
+        phone = request.form.get('phone', '').strip()
+        consultation_time = request.form.get('consultation_time', '').strip()
+        
+        # Validate
+        if not name or not email:
+            flash('Name and email are required.', 'error')
+            return render_template('admin/create_faculty.html', user=current_user)
+        
+        # Create faculty
+        faculty = Faculty(
+            name=name,
+            email=email,
+            department=department,
+            phone=phone,
+            consultation_time=consultation_time,
+            role='faculty'
+        )
+        
+        db.session.add(faculty)
+        db.session.commit()
+        
+        flash('Faculty created successfully.', 'success')
+        return redirect(url_for('admin.manage_faculty'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating faculty: {str(e)}")
+        flash('Error creating faculty. Please try again.', 'error')
+        return render_template('admin/create_faculty.html', user=current_user)
+
+
+@admin_bp.route('/delete-faculty/<int:faculty_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_faculty(faculty_id):
+    """Delete faculty"""
+    try:
+        faculty = Faculty.query.get_or_404(faculty_id)
+        db.session.delete(faculty)
+        db.session.commit()
+        
+        flash('Faculty deleted successfully.', 'success')
+        return redirect(url_for('admin.manage_faculty'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting faculty: {str(e)}")
+        flash('Error deleting faculty. Please try again.', 'error')
+        return redirect(url_for('admin.manage_faculty'))
 
 
 @admin_bp.route('/notifications')
