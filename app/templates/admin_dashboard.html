@@ -15,7 +15,7 @@
                 <small>for Management</small>
             </div>
             <hr style="border-color: rgba(255,255,255,0.3);">
-            <a href="{{ url_for('admin.admin_dashboard_main') }}" class="active">
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="active">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             <a href="{{ url_for('admin.manage_students') }}">
@@ -24,19 +24,21 @@
             <a href="{{ url_for('admin.manage_faculty') }}">
                 <i class="bi bi-person-badge"></i> Manage Faculty
             </a>
-            <a href="{{ url_for('admin.admin_upload') }}">
+            <!-- Upload Database feature temporarily disabled -->
+            <!-- <a href="{{ url_for('admin.admin_upload') }}">
                 <i class="bi bi-upload"></i> Upload Database
-            </a>
+            </a> -->
             <a href="{{ url_for('admin.manage_complaints') }}">
                 <i class="bi bi-exclamation-triangle"></i> Manage Complaints
             </a>
             <a href="{{ url_for('admin.manage_fee_records') }}">
                 <i class="bi bi-shield-lock"></i> Fee Records
             </a>
-            <a href="{{ url_for('admin.notifications_dashboard') }}">
+            <a href="{{ url_for('admin.manage_notifications') }}">
                 <i class="bi bi-bell"></i> Notifications
             </a>
-            <a href="{{ url_for('admin.export_students') }}">
+            <!-- Export features temporarily disabled -->
+            <!-- <a href="{{ url_for('admin.export_students') }}">
                 <i class="bi bi-download"></i> Export Students
             </a>
             <a href="{{ url_for('admin.export_results') }}">
@@ -44,11 +46,11 @@
             </a>
             <a href="{{ url_for('admin.export_fee_records') }}">
                 <i class="bi bi-cash-coin"></i> Export Fees
-            </a>
-                <a href="{{ url_for('analytics') }}">
+            </a> -->
+                <a href="{{ url_for('admin.get_analytics') }}">
                     <i class="bi bi-graph-up"></i> Analytics
                 </a>
-                <a href="{{ url_for('generate_weekly_report') }}">
+                <a href="{{ url_for('admin.send_weekly_report') }}">
                     <i class="bi bi-file-earmark-spreadsheet"></i> Weekly Report
                 </a>
                 <hr style="border-color: rgba(255,255,255,0.3);">
