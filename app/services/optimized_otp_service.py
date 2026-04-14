@@ -4,6 +4,7 @@ Optimized OTP Service for Fast Login Performance
 import secrets
 import threading
 import time
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
@@ -11,6 +12,9 @@ from app.extensions import db
 from app.models import OTP
 from app.config import Config
 from flask import current_app
+
+# Set up logger for background thread operations
+logger = logging.getLogger(__name__)
 
 
 class OptimizedOTPService:
@@ -154,12 +158,12 @@ class OptimizedOTPService:
                 success = EmailService.send_email(email, subject, body)
                 
                 if success:
-                    current_app.logger.info(f"OTP email sent successfully to {email}")
+                    logger.info(f"OTP email sent successfully to {email}")
                 else:
-                    current_app.logger.warning(f"Failed to send OTP email to {email}")
+                    logger.warning(f"Failed to send OTP email to {email}")
                     
             except Exception as e:
-                current_app.logger.error(f"Async email sending failed: {str(e)}")
+                logger.error(f"Async email sending failed: {str(e)}")
         
         # Start email sending in background thread
         email_thread = threading.Thread(target=send_email, daemon=True)
@@ -181,7 +185,7 @@ class OptimizedOTPService:
                     db.session.commit()
                     
             except Exception as e:
-                current_app.logger.error(f"Async OTP marking failed: {str(e)}")
+                logger.error(f"Async OTP marking failed: {str(e)}")
         
         # Start database update in background thread
         db_thread = threading.Thread(target=mark_used, daemon=True)
