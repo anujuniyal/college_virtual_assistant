@@ -10,63 +10,30 @@ def initialize_services_async(app):
     """
     Initialize services asynchronously to prevent worker timeouts
     """
-    # Only initialize from master process to avoid multiple initializations
+    # DISABLED: Skip async initialization completely to prevent worker issues on Render
     worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
     
     if worker_id != 'master':
         app.logger.info(f"Skipping async initialization for worker {worker_id}")
         return True
     
-    def async_init():
-        try:
-            # Longer delay to ensure master process is ready
-            time.sleep(2)
-            
-            # Check if running on Render to skip cleanup during startup
-            is_render = (
-                os.environ.get('RENDER') == 'true' or 
-                os.environ.get('RENDER_SERVICE_ID') is not None
-            )
-            
-            if not is_render:
-                # Initialize cleanup service with error handling (only for local/production non-Render)
-                from app.services.cleanup_service import CleanupService
-                
-                cleanup_service = CleanupService()
-                
-                # Run cleanup with timeout protection
-                try:
-                    notifications_result = cleanup_service.cleanup_expired_notifications()
-                    results_result = cleanup_service.cleanup_expired_results()
-                    otps_result = cleanup_service.cleanup_expired_otps()
-                    
-                    result = {
-                        'notifications': notifications_result,
-                        'results': results_result,
-                        'otps': otps_result
-                    }
-                    app.logger.info(f"Async cleanup completed: {result}")
-                except Exception as cleanup_error:
-                    app.logger.warning(f"Async cleanup service failed (non-critical): {str(cleanup_error)}")
-            else:
-                # Skip cleanup on Render to prevent worker timeouts
-                app.logger.info("Skipping cleanup service on Render for faster startup")
-            
-            # Clean up OTP cache
-            try:
-                from app.services.optimized_otp_service import OptimizedOTPService
-                OptimizedOTPService.cleanup_cache()
-            except Exception as cache_error:
-                app.logger.warning(f"OTP cache cleanup failed: {str(cache_error)}")
-            
-            app.logger.info(f"🔄 Async master initialization completed")
-            
-        except Exception as e:
-            app.logger.error(f"Error in async service initialization: {str(e)}")
+    # Only run basic cleanup on Render to prevent timeouts
+    is_render = (
+        os.environ.get('RENDER') == 'true' or 
+        os.environ.get('RENDER_SERVICE_ID') is not None
+    )
     
-    # Start initialization in background thread only from master process
-    init_thread = threading.Thread(target=async_init, daemon=True)
-    init_thread.start()
+    if is_render:
+        app.logger.info("Skipping all async services on Render for maximum stability")
+        return True
+    
+    # For local development only
+    try:
+        from app.services.optimized_otp_service import OptimizedOTPService
+        OptimizedOTPService.cleanup_cache()
+        app.logger.info("OTP cache cleanup completed")
+    except Exception as e:
+        app.logger.warning(f"OTP cache cleanup failed: {str(e)}")
     
     return True
 
