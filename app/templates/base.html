@@ -167,7 +167,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin.admin_dashboard_main') if current_user.role == 'admin' else url_for('faculty.faculty_dashboard') }}">
+                        <a class="nav-link" href="{{ url_for('admin.admin_dashboard') if current_user.role == 'admin' else url_for('faculty.faculty_dashboard') }}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
