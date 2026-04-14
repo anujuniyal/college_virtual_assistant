@@ -74,7 +74,7 @@
                 <!-- Statistics Cards -->
                 <div class="row">
                     <div class="col-md-3">
-                        <a href="{{ url_for('students_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.manage_students') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ total_students }}</h3>
                                 <p><i class="bi bi-people-fill"></i> Total Students</p>
@@ -85,7 +85,7 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="{{ url_for('notifications_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.manage_notifications') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ total_notifications }}</h3>
                                 <p><i class="bi bi-bell-fill"></i> Notifications</p>
@@ -96,7 +96,7 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="{{ url_for('notifications_dashboard') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.manage_notifications') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ active_notifications }}</h3>
                                 <p><i class="bi bi-bell"></i> Active Notices</p>
@@ -107,7 +107,7 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="{{ url_for('manage_students') }}" class="stat-card-wrapper">
+                        <a href="{{ url_for('admin.manage_students') }}" class="stat-card-wrapper">
                             <div class="stat-card clickable-card">
                                 <h3>{{ pending_complaints }}</h3>
                                 <p><i class="bi bi-exclamation-triangle-fill"></i> Pending Issues</p>
@@ -126,17 +126,17 @@
                             <h5><i class="bi bi-lightning-fill"></i> Quick Actions</h5>
                             <div class="row">
                                 <div class="col-md-2">
-                                    <a href="{{ url_for('add_student') }}" class="btn btn-primary btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('admin.manage_students') }}" class="btn btn-primary btn-sm w-100 mb-2">
                                         <i class="bi bi-person-plus"></i> Add Student
                                     </a>
                                 </div>
                                 <div class="col-md-2">
-                                    <a href="{{ url_for('add_faculty') }}" class="btn btn-success btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('admin.create_faculty') }}" class="btn btn-success btn-sm w-100 mb-2">
                                         <i class="bi bi-person-plus-fill"></i> Add Faculty
                                     </a>
                                 </div>
                                 <div class="col-md-2">
-                                    <a href="{{ url_for('add_notification') }}" class="btn btn-warning btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('admin.create_notification') }}" class="btn btn-warning btn-sm w-100 mb-2">
                                         <i class="bi bi-bell-plus"></i> Add Notice
                                     </a>
                                 </div>
@@ -146,12 +146,12 @@
                                     </a>
                                 </div>
                                 <div class="col-md-2">
-                                    <a href="{{ url_for('manage_faculty') }}" class="btn btn-secondary btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('admin.manage_faculty') }}" class="btn btn-secondary btn-sm w-100 mb-2">
                                         <i class="bi bi-person-badge"></i> Manage Faculty
                                     </a>
                                 </div>
                                 <div class="col-md-2">
-                                    <a href="{{ url_for('manage_accounts') }}" class="btn btn-dark btn-sm w-100 mb-2">
+                                    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-dark btn-sm w-100 mb-2">
                                         <i class="bi bi-shield-lock"></i> Manage Accounts
                                     </a>
                                 </div>
