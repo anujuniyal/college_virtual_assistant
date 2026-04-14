@@ -41,6 +41,31 @@ class AnalyticsService:
         }
     
     @staticmethod
+    def get_dashboard_analytics() -> dict:
+        """Get dashboard analytics data"""
+        try:
+            return {
+                'total_queries': db.session.query(QueryLog).count(),
+                'unknown_queries': db.session.query(FAQRecord).count(),
+                'registered_students': db.session.query(Student).count(),
+                'result_queries_today': 0,
+                'fee_queries_today': 0,
+                'result_queries_week': 0,
+                'fee_queries_week': 0,
+            }
+        except Exception as e:
+            current_app.logger.error(f"Analytics error: {e}")
+            return {
+                'total_queries': 0,
+                'unknown_queries': 0,
+                'registered_students': 0,
+                'result_queries_today': 0,
+                'fee_queries_today': 0,
+                'result_queries_week': 0,
+                'fee_queries_week': 0,
+            }
+    
+    @staticmethod
     def get_analytics() -> dict:
         """Get analytics data"""
         try:
