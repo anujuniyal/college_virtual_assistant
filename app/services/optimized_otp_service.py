@@ -154,8 +154,8 @@ class OptimizedOTPService:
                 If you didn't request this OTP, please ignore this email.
                 """
                 
-                from app.services.email_service import EmailService
-                success = EmailService.send_email(email, subject, body)
+                from app.services.background_email_service import send_email_background
+                success = send_email_background(email, subject, body)
                 
                 if success:
                     logger.info(f"OTP email sent successfully to {email}")
@@ -174,15 +174,13 @@ class OptimizedOTPService:
         """Mark OTP as used in database asynchronously"""
         def mark_used():
             try:
-                otp = OTP.query.filter_by(
-                    email=email,
-                    otp_code=otp_code,
-                    used=False
-                ).order_by(OTP.created_at.desc()).first()
+                from app.services.background_database_service import mark_otp_used_background
+                success = mark_otp_used_background(email, otp_code)
                 
-                if otp:
-                    otp.used = True
-                    db.session.commit()
+                if success:
+                    logger.info(f"OTP marked as used in background for {email}")
+                else:
+                    logger.warning(f"Failed to mark OTP as used in background for {email}")
                     
             except Exception as e:
                 logger.error(f"Async OTP marking failed: {str(e)}")
