@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta
 
 from app.extensions import db
-from app.models import FAQRecord
+from app.models import FAQRecord, ChatbotQA
 from app.services.analytics_service import AnalyticsService
 from app.services.background_email_service import send_email_background
 from app.config import Config
