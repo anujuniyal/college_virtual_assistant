@@ -10,31 +10,25 @@ def initialize_services_async(app):
     """
     Initialize services asynchronously to prevent worker timeouts
     """
-    # DISABLED: Skip async initialization completely to prevent worker issues on Render
+    # MINIMAL: Skip all async services for maximum stability
     worker_id = os.environ.get('GUNICORN_WORKER_ID', 'master')
     
     if worker_id != 'master':
         app.logger.info(f"Skipping async initialization for worker {worker_id}")
         return True
     
-    # Only run basic cleanup on Render to prevent timeouts
+    # Skip all services on Render for maximum stability
     is_render = (
         os.environ.get('RENDER') == 'true' or 
         os.environ.get('RENDER_SERVICE_ID') is not None
     )
     
     if is_render:
-        app.logger.info("Skipping all async services on Render for maximum stability")
+        app.logger.info("Skipping ALL async services on Render for maximum stability")
         return True
     
-    # For local development only
-    try:
-        from app.services.optimized_otp_service import OptimizedOTPService
-        OptimizedOTPService.cleanup_cache()
-        app.logger.info("OTP cache cleanup completed")
-    except Exception as e:
-        app.logger.warning(f"OTP cache cleanup failed: {str(e)}")
-    
+    # Only for local development
+    app.logger.info("Services initialization skipped for production stability")
     return True
 
 def safe_subprocess_call(command, timeout=30):
