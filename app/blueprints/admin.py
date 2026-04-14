@@ -2288,20 +2288,14 @@ def send_weekly_report():
             file_name = os.path.basename(csv_path)
             
             # Weekly report is already sent by the background service
-            # No need to send again, just return success
+            # No need to send again, just return
+            
             return jsonify({
                 'success': True,
                 'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
                 'file_path': csv_path,
                 'file_name': file_name
             })
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
-                    'file_path': csv_path,
-                    'file_name': file_name
-                })
                 
             except Exception as e:
                 current_app.logger.error(f"Error sending email: {str(e)}")
