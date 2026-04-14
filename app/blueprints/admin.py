@@ -2287,22 +2287,14 @@ def send_weekly_report():
             # Get file info
             file_name = os.path.basename(csv_path)
             
-            # Send email with attachment
-            try:
-                EmailService.send_weekly_report(
-                    Config.ADMIN_EMAIL, 
-                    {
-                        'total_students': Student.query.count(),
-                        'total_faculty': Faculty.query.count(),
-                        'total_notifications': Notification.query.count(),
-                        'total_complaints': Complaint.query.count(),
-                        'total_queries': Student.query.count() + ChatbotQA.query.count(),
-                        'unknown_queries': db.session.query(FAQRecord).filter(FAQRecord.created_at >= datetime.utcnow() - timedelta(days=7)).count(),
-                        'top_unknown': [],
-                        'report_date': datetime.utcnow().strftime('%Y-%m-%d')
-                    },
-                    csv_path
-                )
+            # Weekly report is already sent by the background service
+            # No need to send again, just return success
+            return jsonify({
+                'success': True,
+                'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
+                'file_path': csv_path,
+                'file_name': file_name
+            })
                 
                 return jsonify({
                     'success': True,
