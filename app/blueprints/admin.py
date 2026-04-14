@@ -2269,7 +2269,7 @@ def format_time_ago(dt):
         days = diff.days
         return f"{days} day{'s' if days != 1 else ''} ago"
 
-# Weekly Report Route
+# Weekly Report Route - Fixed syntax
 @admin_bp.route('/send-weekly-report', methods=['POST'])
 @admin_required
 def send_weekly_report():
