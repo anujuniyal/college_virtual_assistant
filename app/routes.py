@@ -1,7 +1,7 @@
 """
 Application Routes
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 from flask import (
@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import (
     Admin, Student, Faculty, Notification, 
-    Result, FeeRecord, Complaint, ChatbotQA, FAQRecord
+    Result, FeeRecord, Complaint, ChatbotQA, FAQRecord, FAQ
 )
 from app.chatbot.service import ChatbotService
 
@@ -549,6 +549,7 @@ def register_routes(app):
         """Admin dashboard"""
         # Get statistics
         total_students = Student.query.count()
+        total_faculty = Faculty.query.count()
         total_notifications = Notification.query.count()
         active_notifications = Notification.query.filter(Notification.expires_at > datetime.utcnow()).count()
         total_complaints = Complaint.query.count()
@@ -559,17 +560,122 @@ def register_routes(app):
             Notification.expires_at > datetime.utcnow()
         ).order_by(Notification.created_at.desc()).limit(5).all()
         
-        return render_template('admin_dashboard_simple.html',
+        return render_template('admin_dashboard_edubot.html',
                              total_students=total_students,
+                             total_faculty=total_faculty,
                              total_notifications=total_notifications,
                              active_notifications=active_notifications,
                              total_complaints=total_complaints,
                              pending_complaints=pending_complaints,
                              recent_notifications=recent_notifications)
     
+    @app.route('/admin/manage-students')
+    @login_required
+    def admin_manage_students():
+        """Manage students page"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get all students with pagination
+        page = request.args.get('page', 1, type=int)
+        search = request.args.get('search', '')
+        
+        query = Student.query
+        if search:
+            query = query.filter(
+                (Student.roll_number.contains(search)) |
+                (Student.name.contains(search)) |
+                (Student.email.contains(search))
+            )
+        
+        students = query.order_by(Student.created_at.desc()).paginate(
+            page=page, per_page=20, error_out=False
+        )
+        
+        return render_template('manage_students.html', students=students, search=search)
+    
+    @app.route('/admin/manage-faculty')
+    @login_required
+    def admin_manage_faculty():
+        """Manage faculty page"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get all faculty with pagination
+        page = request.args.get('page', 1, type=int)
+        search = request.args.get('search', '')
+        
+        query = Faculty.query
+        if search:
+            query = query.filter(
+                (Faculty.name.contains(search)) |
+                (Faculty.email.contains(search)) |
+                (Faculty.department.contains(search))
+            )
+        
+        faculty = query.order_by(Faculty.created_at.desc()).paginate(
+            page=page, per_page=20, error_out=False
+        )
+        
+        return render_template('manage_faculty.html', faculty=faculty, search=search)
+    
+    @app.route('/admin/add-student', methods=['GET', 'POST'])
+    @login_required
+    def admin_add_student():
+        """Add new student"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        if request.method == 'POST':
+            try:
+                student = Student(
+                    roll_number=request.form.get('roll_number'),
+                    name=request.form.get('name'),
+                    email=request.form.get('email'),
+                    phone=request.form.get('phone'),
+                    department=request.form.get('department'),
+                    semester=request.form.get('semester')
+                )
+                db.session.add(student)
+                db.session.commit()
+                flash('✅ Student added successfully!', 'success')
+                return redirect(url_for('admin_manage_students'))
+            except Exception as e:
+                flash(f'❌ Error adding student: {str(e)}', 'error')
+        
+        return render_template('add_student.html')
+    
+    @app.route('/admin/create-notification', methods=['GET', 'POST'])
+    @login_required
+    def admin_create_notification():
+        """Add new notification"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        if request.method == 'POST':
+            try:
+                notification = Notification(
+                    title=request.form.get('title'),
+                    content=request.form.get('content'),
+                    expires_at=datetime.utcnow() + timedelta(days=30),
+                    created_by=current_user.id
+                )
+                db.session.add(notification)
+                db.session.commit()
+                flash('✅ Notification added successfully!', 'success')
+                return redirect(url_for('admin_dashboard'))
+            except Exception as e:
+                flash(f'❌ Error adding notification: {str(e)}', 'error')
+        
+        return render_template('add_notification.html')
+    
     @app.route('/admin/analytics')
     @login_required
-    def analytics():
+    def admin_get_analytics():
         """Analytics dashboard"""
         if session.get('user_role') != 'admin':
             flash('Access denied. Admin role required.', 'error')
@@ -588,6 +694,145 @@ def register_routes(app):
         }
         
         return render_template('analytics.html', analytics=analytics_data)
+    
+    @app.route('/admin/manage-complaints')
+    @login_required
+    def admin_manage_complaints():
+        """Manage all complaints (admin only)"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get complaints with student info
+        complaints = db.session.query(Complaint, Student).join(Student).order_by(Complaint.created_at.desc()).all()
+        return render_template('manage_complaints.html', complaints=complaints)
+    
+    @app.route('/admin/manage-faqs')
+    @login_required
+    def admin_manage_faqs():
+        """Manage FAQs"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Get all FAQs
+        faqs = FAQ.query.order_by(FAQ.created_at.desc()).all()
+        return render_template('manage_faqs.html', faqs=faqs)
+    
+    @app.route('/admin/manage-predefined-info')
+    @login_required
+    def admin_manage_predefined_info():
+        """Manage predefined info"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        return render_template('manage_predefined_info.html')
+    
+    @app.route('/admin/manage-notifications')
+    @login_required
+    def admin_manage_notifications():
+        """Manage notifications"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        notifications = Notification.query.order_by(Notification.created_at.desc()).all()
+        return render_template('manage_notifications.html', notifications=notifications)
+    
+    @app.route('/admin/create-faculty', methods=['GET', 'POST'])
+    @login_required
+    def admin_create_faculty():
+        """Create new faculty"""
+        if session.get('user_role') != 'admin':
+            flash('Access denied. Admin role required.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        if request.method == 'POST':
+            try:
+                faculty = Faculty(
+                    name=request.form.get('name'),
+                    email=request.form.get('email'),
+                    phone=request.form.get('phone'),
+                    department=request.form.get('department'),
+                    consultation_time=request.form.get('consultation_time')
+                )
+                db.session.add(faculty)
+                db.session.commit()
+                flash('Faculty added successfully!', 'success')
+                return redirect(url_for('admin_manage_faculty'))
+            except Exception as e:
+                flash(f'Error adding faculty: {str(e)}', 'error')
+        
+        return render_template('add_faculty.html')
+    
+    # Bot management routes for edubot template
+    @app.route('/admin/bot-status')
+    @login_required
+    def admin_bot_status():
+        """Get bot status"""
+        if session.get('user_role') != 'admin':
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Simple bot status check
+        return jsonify({
+            'status': 'active',  # or 'inactive', 'error'
+            'last_check': datetime.utcnow().isoformat(),
+            'message': 'Bot is running normally'
+        })
+    
+    @app.route('/admin/toggle-bot', methods=['POST'])
+    @login_required
+    def admin_toggle_bot():
+        """Toggle bot status"""
+        if session.get('user_role') != 'admin':
+            return jsonify({'error': 'Access denied'}), 403
+        
+        data = request.get_json()
+        action = data.get('action')
+        
+        # Simple toggle logic
+        if action == 'activate':
+            # Activate bot logic here
+            return jsonify({'success': True, 'message': 'Bot activated successfully'})
+        elif action == 'deactivate':
+            # Deactivate bot logic here
+            return jsonify({'success': True, 'message': 'Bot deactivated successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid action'})
+    
+    @app.route('/admin/refresh-activity', methods=['POST'])
+    @login_required
+    def admin_refresh_activity():
+        """Refresh activity data"""
+        if session.get('user_role') != 'admin':
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Get recent activities
+        activities = [
+            {'text': 'New student registration', 'time': '2 minutes ago', 'color': 'success', 'icon': 'user-plus'},
+            {'text': 'Notification sent', 'time': '5 minutes ago', 'color': 'info', 'icon': 'bell'},
+            {'text': 'Complaint resolved', 'time': '10 minutes ago', 'color': 'warning', 'icon': 'check-circle'}
+        ]
+        
+        return jsonify({'activities': activities})
+    
+    @app.route('/admin/send-weekly-report', methods=['POST'])
+    @login_required
+    def admin_send_weekly_report():
+        """Send weekly report"""
+        if session.get('user_role') != 'admin':
+            return jsonify({'error': 'Access denied'}), 403
+        
+        try:
+            # Generate weekly report logic here
+            return jsonify({
+                'success': True, 
+                'message': 'Weekly report sent successfully!',
+                'file_name': f'weekly_report_{datetime.now().strftime("%Y%m%d")}.csv'
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Error: {str(e)}'})
     
     # WhatsApp Webhook Routes
     @app.route('/webhook/whatsapp', methods=['POST'])

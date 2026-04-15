@@ -20,16 +20,16 @@
                     <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">
                         <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
-                    <a href="{{ url_for('admin.add_student') }}" class="nav-link">
+                    <a href="{{ url_for('add_student') }}" class="nav-link">
                         <i class="bi bi-person-plus"></i> Add Student
                     </a>
-                    <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
+                    <a href="{{ url_for('manage_students') }}" class="nav-link">
                         <i class="bi bi-people"></i> Manage Students
                     </a>
-                    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
+                    <a href="{{ url_for('manage_faculty') }}" class="nav-link">
                         <i class="bi bi-person-badge"></i> Manage Faculty
                     </a>
-                    <a href="{{ url_for('admin.add_notification') }}" class="nav-link">
+                    <a href="{{ url_for('add_notification') }}" class="nav-link">
                         <i class="bi bi-bell"></i> Send Notification
                     </a>
                     <a href="{{ url_for('manage_complaints') }}" class="nav-link">
@@ -70,7 +70,7 @@
             <div class="row mb-4">
                 <div class="col-md-3 mb-3">
                     <div class="stat-card-wrapper">
-                        <a href="{{ url_for('admin.manage_students') }}" class="stat-card-link">
+                        <a href="{{ url_for('manage_students') }}" class="stat-card-link">
                             <div class="stat-card">
                                 <div class="stat-icon">
                                     <i class="bi bi-people"></i>
@@ -86,7 +86,7 @@
                 
                 <div class="col-md-3 mb-3">
                     <div class="stat-card-wrapper">
-                        <a href="{{ url_for('admin.manage_faculty') }}" class="stat-card-link">
+                        <a href="{{ url_for('manage_faculty') }}" class="stat-card-link">
                             <div class="stat-card">
                                 <div class="stat-icon">
                                     <i class="bi bi-person-badge"></i>
@@ -102,7 +102,7 @@
                 
                 <div class="col-md-3 mb-3">
                     <div class="stat-card-wrapper">
-                        <a href="{{ url_for('admin.add_notification') }}" class="stat-card-link">
+                        <a href="{{ url_for('add_notification') }}" class="stat-card-link">
                             <div class="stat-card">
                                 <div class="stat-icon">
                                     <i class="bi bi-bell"></i>
@@ -142,10 +142,10 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{{ url_for('admin.add_student') }}" class="btn btn-outline-primary">
+                                <a href="{{ url_for('add_student') }}" class="btn btn-outline-primary">
                                     <i class="bi bi-person-plus"></i> Add Student
                                 </a>
-                                <a href="{{ url_for('admin.manage_students') }}" class="btn btn-outline-info">
+                                <a href="{{ url_for('manage_students') }}" class="btn btn-outline-info">
                                     <i class="bi bi-people"></i> Manage Students
                                 </a>
                             </div>

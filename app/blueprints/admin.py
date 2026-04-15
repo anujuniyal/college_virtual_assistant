@@ -71,8 +71,53 @@ def admin_dashboard():
 @admin_bp.route('/analytics')
 @login_required
 @admin_required
+def analytics_dashboard():
+    """Analytics dashboard page"""
+    try:
+        # Get analytics data
+        analytics = AnalyticsService.get_analytics()
+        
+        # Add additional metrics
+        analytics['total_students'] = Student.query.count() if Student else 0
+        analytics['total_faculty'] = Faculty.query.count() if Faculty else 0
+        analytics['total_notifications'] = Notification.query.count() if Notification else 0
+        
+        # Get recent notifications for activity feed
+        recent_notifications = Notification.query.order_by(
+            Notification.created_at.desc()
+        ).limit(10).all() if Notification else []
+        
+        # Get department statistics
+        department_stats = []
+        if Student:
+            from sqlalchemy import func
+            dept_counts = db.session.query(
+                Student.department, func.count(Student.id)
+            ).filter(
+                Student.department.isnot(None)
+            ).group_by(Student.department).all()
+            
+            department_stats = [{'department': dept, 'count': count} for dept, count in dept_counts]
+        
+        return render_template('analytics.html', 
+                           analytics=analytics,
+                           total_students=analytics.get('total_students', 0),
+                           total_faculty=analytics.get('total_faculty', 0),
+                           total_notifications=analytics.get('total_notifications', 0),
+                           department_stats=department_stats,
+                           recent_notifications=recent_notifications,
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error loading analytics dashboard: {str(e)}")
+        flash('Error loading analytics dashboard. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/analytics-data')
+@login_required
+@admin_required
 def get_analytics():
-    """Get analytics data for dashboard"""
+    """Get analytics data for dashboard (JSON API)"""
     try:
         # Get time period from request
         period = request.args.get('period', '7days')
@@ -117,7 +162,7 @@ def manage_students():
             page=page, per_page=per_page, error_out=False
         )
         
-        return render_template('students.html', 
+        return render_template('manage_students.html', 
                            students=students,
                            search=search,
                            user=current_user)
@@ -154,7 +199,7 @@ def manage_faculty():
     """Manage faculty"""
     try:
         faculty = Faculty.query.all()
-        return render_template('faculty.html', 
+        return render_template('admin/faculty.html', 
                            faculty=faculty,
                            user=current_user,
                            can_create=True,
@@ -227,6 +272,148 @@ def delete_faculty(faculty_id):
         return redirect(url_for('admin.manage_faculty'))
 
 
+@admin_bp.route('/add-student', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_student():
+    """Add new student"""
+    if request.method == 'GET':
+        return render_template('add_student.html', user=current_user)
+    
+    try:
+        # Get form data
+        roll_number = request.form.get('roll_number', '').strip()
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        department = request.form.get('department', '').strip()
+        semester = request.form.get('semester', type=int)
+        
+        # Validate
+        if not roll_number or not name or not phone:
+            flash('Roll number, name, and phone are required.', 'error')
+            return render_template('add_student.html', user=current_user)
+        
+        # Check if roll number already exists
+        existing_student = Student.query.filter_by(roll_number=roll_number).first()
+        if existing_student:
+            flash('Roll number already exists.', 'error')
+            return render_template('add_student.html', user=current_user)
+        
+        # Create student
+        student = Student(
+            roll_number=roll_number,
+            name=name,
+            email=email,
+            phone=phone,
+            department=department,
+            semester=semester
+        )
+        
+        db.session.add(student)
+        db.session.commit()
+        
+        flash('Student added successfully.', 'success')
+        return redirect(url_for('admin.manage_students'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error adding student: {str(e)}")
+        flash('Error adding student. Please try again.', 'error')
+        return render_template('add_student.html', user=current_user)
+
+
+@admin_bp.route('/edit-student/<int:student_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_student(student_id):
+    """Edit student"""
+    student = Student.query.get_or_404(student_id)
+    
+    if request.method == 'GET':
+        return render_template('edit_student.html', 
+                           student=student,
+                           user=current_user)
+    
+    try:
+        # Get form data
+        roll_number = request.form.get('roll_number', '').strip()
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        department = request.form.get('department', '').strip()
+        semester = request.form.get('semester', type=int)
+        
+        # Validate
+        if not roll_number or not name or not phone:
+            flash('Roll number, name, and phone are required.', 'error')
+            return render_template('edit_student.html', 
+                               student=student,
+                               user=current_user)
+        
+        # Check if roll number already exists (excluding current student)
+        existing_student = Student.query.filter(
+            Student.roll_number == roll_number,
+            Student.id != student_id
+        ).first()
+        if existing_student:
+            flash('Roll number already exists.', 'error')
+            return render_template('edit_student.html', 
+                               student=student,
+                               user=current_user)
+        
+        # Update student
+        student.roll_number = roll_number
+        student.name = name
+        student.email = email
+        student.phone = phone
+        student.department = department
+        student.semester = semester
+        
+        db.session.commit()
+        
+        flash('Student updated successfully.', 'success')
+        return redirect(url_for('admin.manage_students'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating student: {str(e)}")
+        flash('Error updating student. Please try again.', 'error')
+        return render_template('edit_student.html', 
+                           student=student,
+                           user=current_user)
+
+
+@admin_bp.route('/delete-student/<int:student_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_student(student_id):
+    """Delete student"""
+    try:
+        student = Student.query.get_or_404(student_id)
+        db.session.delete(student)
+        db.session.commit()
+        
+        flash('Student deleted successfully.', 'success')
+        return redirect(url_for('admin.manage_students'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting student: {str(e)}")
+        flash('Error deleting student. Please try again.', 'error')
+        return redirect(url_for('admin.manage_students'))
+
+
+@admin_bp.route('/upload')
+@login_required
+@admin_required
+def upload():
+    """Upload data page"""
+    try:
+        return render_template('admin_upload.html', user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error loading upload page: {str(e)}")
+        flash('Error loading upload page. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
 @admin_bp.route('/notifications')
 @login_required
 @admin_required
@@ -237,7 +424,7 @@ def manage_notifications():
             Notification.created_at.desc()
         ).all()
         
-        return render_template('notifications.html', 
+        return render_template('manage_notifications.html', 
                            notifications=notifications,
                            user=current_user)
     except Exception as e:
@@ -252,7 +439,7 @@ def manage_notifications():
 def create_notification():
     """Create new notification"""
     if request.method == 'GET':
-        return render_template('create_notification.html', user=current_user)
+        return render_template('add_notification.html', user=current_user)
     
     try:
         # Get form data
@@ -264,7 +451,7 @@ def create_notification():
         # Validate
         if not title or not content:
             flash('Title and content are required.', 'error')
-            return render_template('create_notification.html', user=current_user)
+            return render_template('add_notification.html', user=current_user)
         
         # Create notification
         notification = Notification(
@@ -284,7 +471,7 @@ def create_notification():
     except Exception as e:
         current_app.logger.error(f"Error creating notification: {str(e)}")
         flash('Error creating notification. Please try again.', 'error')
-        return render_template('create_notification.html', user=current_user)
+        return render_template('add_notification.html', user=current_user)
 
 
 @admin_bp.route('/delete-notification/<int:notification_id>', methods=['POST'])
@@ -663,3 +850,154 @@ def delete_faq(faq_id):
         current_app.logger.error(f"Error deleting FAQ: {str(e)}")
         flash('Error deleting FAQ. Please try again.', 'error')
         return redirect(url_for('admin.manage_faqs'))
+
+
+@admin_bp.route('/bot-status')
+@login_required
+@admin_required
+def bot_status():
+    """Get bot status"""
+    try:
+        # Check if bot token is configured
+        bot_token = current_app.config.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            return jsonify({
+                'status': 'inactive',
+                'message': 'Bot token not configured',
+                'last_check': datetime.utcnow().isoformat()
+            })
+        
+        # Check bot webhook status
+        import requests
+        webhook_url = f"https://api.telegram.org/bot{bot_token}/getWebhookInfo"
+        response = requests.get(webhook_url, timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('ok'):
+                webhook_info = result.get('result', {})
+                webhook_url_set = webhook_info.get('url', '')
+                
+                if webhook_url_set:
+                    return jsonify({
+                        'status': 'active',
+                        'message': 'Bot is running with webhook',
+                        'webhook_url': webhook_url_set,
+                        'last_check': datetime.utcnow().isoformat()
+                    })
+                else:
+                    return jsonify({
+                        'status': 'inactive',
+                        'message': 'Bot webhook not set',
+                        'last_check': datetime.utcnow().isoformat()
+                    })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': f"Bot API error: {result.get('description', 'Unknown error')}",
+                    'last_check': datetime.utcnow().isoformat()
+                })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f"HTTP error: {response.status_code}",
+                'last_check': datetime.utcnow().isoformat()
+            })
+            
+    except Exception as e:
+        current_app.logger.error(f"Error checking bot status: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f"Error checking bot status: {str(e)}",
+            'last_check': datetime.utcnow().isoformat()
+        }), 500
+
+
+@admin_bp.route('/toggle-bot', methods=['POST'])
+@login_required
+@admin_required
+def toggle_bot():
+    """Toggle bot status"""
+    try:
+        data = request.get_json()
+        action = data.get('action')
+        
+        if action not in ['activate', 'deactivate']:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid action. Use "activate" or "deactivate"'
+            }), 400
+        
+        bot_token = current_app.config.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            return jsonify({
+                'success': False,
+                'message': 'Bot token not configured'
+            }), 400
+        
+        import requests
+        
+        if action == 'activate':
+            # Set webhook to activate bot
+            webhook_url = current_app.config.get('PUBLIC_BASE_URL', 'http://localhost:5000')
+            if not webhook_url.endswith('/telegram/webhook'):
+                webhook_url = webhook_url.rstrip('/') + '/telegram/webhook'
+            
+            set_webhook_url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
+            data = {
+                'url': webhook_url,
+                'allowed_updates': ['message']
+            }
+            
+            response = requests.post(set_webhook_url, json=data, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('ok'):
+                    current_app.logger.info("Bot activated successfully")
+                    return jsonify({
+                        'success': True,
+                        'message': 'Bot activated successfully',
+                        'webhook_url': webhook_url
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f"Failed to activate bot: {result.get('description', 'Unknown error')}"
+                    })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f"HTTP error activating bot: {response.status_code}"
+                })
+        
+        elif action == 'deactivate':
+            # Delete webhook to deactivate bot
+            delete_webhook_url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
+            response = requests.post(delete_webhook_url, timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('ok'):
+                    current_app.logger.info("Bot deactivated successfully")
+                    return jsonify({
+                        'success': True,
+                        'message': 'Bot deactivated successfully'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f"Failed to deactivate bot: {result.get('description', 'Unknown error')}"
+                    })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f"HTTP error deactivating bot: {response.status_code}"
+                })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error toggling bot: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Error toggling bot: {str(e)}"
+        }), 500
