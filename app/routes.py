@@ -781,25 +781,7 @@ def register_routes(app):
             'message': 'Bot is running normally'
         })
     
-    @app.route('/admin/toggle-bot', methods=['POST'])
-    @login_required
-    def admin_toggle_bot():
-        """Toggle bot status"""
-        if session.get('user_role') != 'admin':
-            return jsonify({'error': 'Access denied'}), 403
-        
-        data = request.get_json()
-        action = data.get('action')
-        
-        # Simple toggle logic
-        if action == 'activate':
-            # Activate bot logic here
-            return jsonify({'success': True, 'message': 'Bot activated successfully'})
-        elif action == 'deactivate':
-            # Deactivate bot logic here
-            return jsonify({'success': True, 'message': 'Bot deactivated successfully'})
-        else:
-            return jsonify({'success': False, 'message': 'Invalid action'})
+    # Toggle bot route moved to admin blueprint to avoid conflicts
     
     @app.route('/admin/refresh-activity', methods=['POST'])
     @login_required
