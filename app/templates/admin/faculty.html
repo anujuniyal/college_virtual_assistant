@@ -41,12 +41,12 @@
                                     <td>{{ member.consultation_time or 'N/A' }}</td>
                                     <td>
                                         {% if can_edit %}
-                                        <button class="btn btn-sm btn-warning" onclick="editFaculty({{ member.id }})">
+                                        <button class="btn btn-sm btn-warning" onclick="editFaculty('{{ member.id }}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         {% endif %}
                                         
-                                        <button class="btn btn-sm btn-danger" onclick="deleteFaculty({{ member.id }}, '{{ member.name }}')">
+                                        <button class="btn btn-sm btn-danger" onclick="deleteFaculty('{{ member.id }}', '{{ member.name }}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -137,14 +137,16 @@
 <script>
 function deleteFaculty(id, name) {
     document.getElementById('facultyName').textContent = name;
-    document.getElementById('deleteForm').action = '/admin/delete-faculty/' + id;
+    var deleteUrl = "{{ url_for('admin.delete_faculty', faculty_id=0) }}".replace('0', id);
+    document.getElementById('deleteForm').action = deleteUrl;
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 
 {% if can_edit %}
 function editFaculty(id) {
     // Edit functionality would go here if enabled
-    window.location.href = '/admin/edit-faculty/' + id;
+    var editUrl = "{{ url_for('admin.edit_faculty', faculty_id=0) }}".replace('0', id);
+    window.location.href = editUrl;
 }
 {% endif %}
 </script>

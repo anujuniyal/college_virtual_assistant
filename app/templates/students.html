@@ -135,7 +135,7 @@
                                     {% if session.user_role == 'admin' %}
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-primary">
+                                            <a href="#" onclick="alert('Edit Student feature not implemented yet')" class="btn btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this student?')">
