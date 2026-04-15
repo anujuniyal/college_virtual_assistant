@@ -166,11 +166,11 @@ console.log('toggleBot function defined in head');
         <i class="fas fa-chevron-down ms-auto"></i>
     </a>
     <div class="submenu">
-        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
+        <a href="{{ url_for('admin.manage_predefined_info') }}" class="nav-link">
             <i class="fas fa-edit"></i>
             <span class="submenu-text">Predefined Info</span>
         </a>
-        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
+        <a href="{{ url_for('admin.manage_faqs') }}" class="nav-link">
             <i class="fas fa-question"></i>
             <span class="submenu-text">FAQ Management</span>
         </a>
@@ -188,7 +188,7 @@ console.log('toggleBot function defined in head');
             <i class="fas fa-plus"></i>
             <span class="submenu-text">Add Notification</span>
         </a>
-        <a href="{{ url_for('admin.view_notifications') }}" class="nav-link">
+        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
             <i class="fas fa-list"></i>
             <span class="submenu-text">View All</span>
         </a>
@@ -412,7 +412,7 @@ console.log('toggleBot function defined in head');
             </div>
             
             <div class="quick-actions">
-                <a href="{{ url_for('admin.add_student') }}" class="quick-action-btn mb-2">
+                <a href="{{ url_for('admin.manage_students') }}" class="quick-action-btn mb-2">
                     <i class="fas fa-user-plus"></i>
                     Add Student
                 </a>
@@ -422,7 +422,7 @@ console.log('toggleBot function defined in head');
                     Send Notification
                 </a>
                 
-                <a href="{{ url_for('admin.add_faculty') }}" class="quick-action-btn mb-2">
+                <a href="{{ url_for('admin.create_faculty') }}" class="quick-action-btn mb-2">
                     <i class="fas fa-chalkboard-teacher"></i>
                     Add Faculty
                 </a>

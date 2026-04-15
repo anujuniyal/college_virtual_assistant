@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from app.extensions import db
 from app.models import (
     Admin, Student, Faculty, Notification, Result, 
-    FeeRecord, Complaint, ChatbotQA, FAQRecord
+    FeeRecord, Complaint, ChatbotQA, FAQRecord, PredefinedInfo, FAQ
 )
 from app.services.analytics_service import AnalyticsService
 from app.services.weekly_report_service import WeeklyReportService
@@ -409,3 +409,257 @@ def send_weekly_report():
             'success': False,
             'message': f'Error generating weekly report: {str(e)}'
         }), 500
+
+
+# Predefined Info Routes
+@admin_bp.route('/predefined-info')
+@login_required
+@admin_required
+def manage_predefined_info():
+    """Manage predefined information"""
+    try:
+        predefined_info = PredefinedInfo.query.order_by(
+            PredefinedInfo.section, PredefinedInfo.title
+        ).all()
+        
+        return render_template('manage_predefined_info.html', 
+                           predefined_info=predefined_info,
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error loading predefined info: {str(e)}")
+        flash('Error loading predefined info. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/add-predefined-info', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_predefined_info():
+    """Add new predefined information"""
+    if request.method == 'GET':
+        return render_template('add_predefined_info.html', user=current_user)
+    
+    try:
+        # Get form data
+        section = request.form.get('section', '').strip()
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        category = request.form.get('category', '').strip()
+        
+        # Validate
+        if not section or not title or not content:
+            flash('Section, title, and content are required.', 'error')
+            return render_template('add_predefined_info.html', user=current_user)
+        
+        # Create predefined info
+        predefined_info = PredefinedInfo(
+            section=section,
+            title=title,
+            content=content,
+            category=category,
+            updated_by=current_user.id
+        )
+        
+        db.session.add(predefined_info)
+        db.session.commit()
+        
+        flash('Predefined information added successfully.', 'success')
+        return redirect(url_for('admin.manage_predefined_info'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error adding predefined info: {str(e)}")
+        flash('Error adding predefined information. Please try again.', 'error')
+        return render_template('add_predefined_info.html', user=current_user)
+
+
+@admin_bp.route('/edit-predefined-info/<int:info_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_predefined_info(info_id):
+    """Edit predefined information"""
+    predefined_info = PredefinedInfo.query.get_or_404(info_id)
+    
+    if request.method == 'GET':
+        return render_template('edit_predefined_info.html', 
+                           predefined_info=predefined_info,
+                           user=current_user)
+    
+    try:
+        # Get form data
+        section = request.form.get('section', '').strip()
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        category = request.form.get('category', '').strip()
+        
+        # Validate
+        if not section or not title or not content:
+            flash('Section, title, and content are required.', 'error')
+            return render_template('edit_predefined_info.html', 
+                               predefined_info=predefined_info,
+                               user=current_user)
+        
+        # Update predefined info
+        predefined_info.section = section
+        predefined_info.title = title
+        predefined_info.content = content
+        predefined_info.category = category
+        predefined_info.updated_by = current_user.id
+        predefined_info.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        flash('Predefined information updated successfully.', 'success')
+        return redirect(url_for('admin.manage_predefined_info'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating predefined info: {str(e)}")
+        flash('Error updating predefined information. Please try again.', 'error')
+        return render_template('edit_predefined_info.html', 
+                           predefined_info=predefined_info,
+                           user=current_user)
+
+
+@admin_bp.route('/delete-predefined-info/<int:info_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_predefined_info(info_id):
+    """Delete predefined information"""
+    try:
+        predefined_info = PredefinedInfo.query.get_or_404(info_id)
+        db.session.delete(predefined_info)
+        db.session.commit()
+        
+        flash('Predefined information deleted successfully.', 'success')
+        return redirect(url_for('admin.manage_predefined_info'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting predefined info: {str(e)}")
+        flash('Error deleting predefined information. Please try again.', 'error')
+        return redirect(url_for('admin.manage_predefined_info'))
+
+
+# FAQ Management Routes
+@admin_bp.route('/faqs')
+@login_required
+@admin_required
+def manage_faqs():
+    """Manage frequently asked questions"""
+    try:
+        faqs = FAQ.query.order_by(
+            FAQ.priority.desc(), FAQ.created_at.desc()
+        ).all()
+        
+        return render_template('manage_faqs.html', 
+                           faqs=faqs,
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error loading FAQs: {str(e)}")
+        flash('Error loading FAQs. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/add-faq', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_faq():
+    """Add new FAQ"""
+    if request.method == 'GET':
+        return render_template('add_faq.html', user=current_user)
+    
+    try:
+        # Get form data
+        question = request.form.get('question', '').strip()
+        answer = request.form.get('answer', '').strip()
+        category = request.form.get('category', '').strip()
+        priority = request.form.get('priority', 1, type=int)
+        
+        # Validate
+        if not question or not answer:
+            flash('Question and answer are required.', 'error')
+            return render_template('add_faq.html', user=current_user)
+        
+        # Create FAQ
+        faq = FAQ(
+            question=question,
+            answer=answer,
+            category=category,
+            priority=priority,
+            updated_by=current_user.id
+        )
+        
+        db.session.add(faq)
+        db.session.commit()
+        
+        flash('FAQ added successfully.', 'success')
+        return redirect(url_for('admin.manage_faqs'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error adding FAQ: {str(e)}")
+        flash('Error adding FAQ. Please try again.', 'error')
+        return render_template('add_faq.html', user=current_user)
+
+
+@admin_bp.route('/edit-faq/<int:faq_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_faq(faq_id):
+    """Edit FAQ"""
+    faq = FAQ.query.get_or_404(faq_id)
+    
+    if request.method == 'GET':
+        return render_template('edit_faq.html', 
+                           faq=faq,
+                           user=current_user)
+    
+    try:
+        # Get form data
+        question = request.form.get('question', '').strip()
+        answer = request.form.get('answer', '').strip()
+        category = request.form.get('category', '').strip()
+        priority = request.form.get('priority', 1, type=int)
+        
+        # Validate
+        if not question or not answer:
+            flash('Question and answer are required.', 'error')
+            return render_template('edit_faq.html', 
+                               faq=faq,
+                               user=current_user)
+        
+        # Update FAQ
+        faq.question = question
+        faq.answer = answer
+        faq.category = category
+        faq.priority = priority
+        faq.updated_by = current_user.id
+        faq.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        flash('FAQ updated successfully.', 'success')
+        return redirect(url_for('admin.manage_faqs'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating FAQ: {str(e)}")
+        flash('Error updating FAQ. Please try again.', 'error')
+        return render_template('edit_faq.html', 
+                           faq=faq,
+                           user=current_user)
+
+
+@admin_bp.route('/delete-faq/<int:faq_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_faq(faq_id):
+    """Delete FAQ"""
+    try:
+        faq = FAQ.query.get_or_404(faq_id)
+        db.session.delete(faq)
+        db.session.commit()
+        
+        flash('FAQ deleted successfully.', 'success')
+        return redirect(url_for('admin.manage_faqs'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting FAQ: {str(e)}")
+        flash('Error deleting FAQ. Please try again.', 'error')
+        return redirect(url_for('admin.manage_faqs'))
