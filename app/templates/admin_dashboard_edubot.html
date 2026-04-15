@@ -218,6 +218,13 @@ console.log('toggleBot function defined in head');
 </div>
 
 <div class="nav-item">
+    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link {% if 'faculty' in request.endpoint %}active{% endif %}">
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Faculty Management</span>
+    </a>
+</div>
+
+<div class="nav-item">
     <a href="{{ url_for('admin.get_analytics') }}" class="nav-link {% if 'analytics' in request.endpoint %}active{% endif %}">
         <i class="fas fa-chart-line"></i>
         <span>Analytics</span>
@@ -425,6 +432,11 @@ console.log('toggleBot function defined in head');
                 <a href="{{ url_for('admin.create_faculty') }}" class="quick-action-btn mb-2">
                     <i class="fas fa-chalkboard-teacher"></i>
                     Add Faculty
+                </a>
+                
+                <a href="{{ url_for('admin.manage_faculty') }}" class="quick-action-btn mb-2">
+                    <i class="fas fa-users"></i>
+                    Manage Faculty
                 </a>
                 
                 <a href="{{ url_for('admin.manage_complaints') }}" class="quick-action-btn mb-2">
