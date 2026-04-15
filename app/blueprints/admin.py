@@ -78,7 +78,7 @@ def get_analytics():
         period = request.args.get('period', '7days')
         
         # Get analytics data
-        analytics = AnalyticsService.get_analytics_data(period)
+        analytics = AnalyticsService.get_analytics(period)
         
         return jsonify({
             'success': True,

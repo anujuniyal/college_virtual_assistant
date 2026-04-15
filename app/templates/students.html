@@ -28,7 +28,7 @@
                     <i class="bi bi-people"></i> Students
                 </a>
                 {% if session.user_role == 'admin' %}
-                <a href="{{ url_for('admin.add_student') if session.user_role == 'admin' else '#' }}">
+                <a href="#" onclick="alert('Add Student feature not implemented yet')" if session.user_role == 'admin' else '#'">
                     <i class="bi bi-person-plus"></i> Add Student
                 </a>
                 <a href="{{ url_for('admin.manage_students') }}">
