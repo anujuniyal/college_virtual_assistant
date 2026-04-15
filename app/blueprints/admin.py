@@ -117,7 +117,7 @@ def manage_students():
             page=page, per_page=per_page, error_out=False
         )
         
-        return render_template('admin/students.html', 
+        return render_template('students.html', 
                            students=students,
                            search=search,
                            user=current_user)
@@ -154,7 +154,7 @@ def manage_faculty():
     """Manage faculty"""
     try:
         faculty = Faculty.query.all()
-        return render_template('admin/faculty.html', 
+        return render_template('faculty.html', 
                            faculty=faculty,
                            user=current_user,
                            can_create=True,
@@ -237,7 +237,7 @@ def manage_notifications():
             Notification.created_at.desc()
         ).all()
         
-        return render_template('admin/notifications.html', 
+        return render_template('notifications.html', 
                            notifications=notifications,
                            user=current_user)
     except Exception as e:
@@ -252,7 +252,7 @@ def manage_notifications():
 def create_notification():
     """Create new notification"""
     if request.method == 'GET':
-        return render_template('admin/create_notification.html', user=current_user)
+        return render_template('create_notification.html', user=current_user)
     
     try:
         # Get form data
@@ -264,7 +264,7 @@ def create_notification():
         # Validate
         if not title or not content:
             flash('Title and content are required.', 'error')
-            return render_template('admin/create_notification.html', user=current_user)
+            return render_template('create_notification.html', user=current_user)
         
         # Create notification
         notification = Notification(
@@ -284,7 +284,7 @@ def create_notification():
     except Exception as e:
         current_app.logger.error(f"Error creating notification: {str(e)}")
         flash('Error creating notification. Please try again.', 'error')
-        return render_template('admin/create_notification.html', user=current_user)
+        return render_template('create_notification.html', user=current_user)
 
 
 @admin_bp.route('/delete-notification/<int:notification_id>', methods=['POST'])
@@ -316,7 +316,7 @@ def manage_complaints():
             Complaint.created_at.desc()
         ).all()
         
-        return render_template('admin/complaints.html', 
+        return render_template('manage_complaints.html', 
                            complaints=complaints,
                            user=current_user)
     except Exception as e:

@@ -21,25 +21,25 @@
                     <small>for Management</small>
                 </div>
                 <hr style="border-color: rgba(255,255,255,0.3);">
-                <a href="{{ url_for('admin_dashboard') if session.user_role == 'admin' else (url_for('faculty_dashboard') if session.user_role == 'faculty' else url_for('accounts_dashboard')) }}">
+                <a href="{{ url_for('admin.admin_dashboard') if session.user_role == 'admin' else (url_for('faculty.dashboard') if session.user_role == 'faculty' else '#') }}">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
-                <a href="{{ url_for('students_dashboard') }}" class="active">
+                <a href="{{ url_for('admin.manage_students') }}" class="active">
                     <i class="bi bi-people"></i> Students
                 </a>
                 {% if session.user_role == 'admin' %}
-                <a href="{{ url_for('add_student') }}">
+                <a href="{{ url_for('admin.add_student') if session.user_role == 'admin' else '#' }}">
                     <i class="bi bi-person-plus"></i> Add Student
                 </a>
-                <a href="{{ url_for('manage_students') }}">
+                <a href="{{ url_for('admin.manage_students') }}">
                     <i class="bi bi-gear"></i> Manage Students
                 </a>
                 {% endif %}
-                <a href="{{ url_for('notifications_dashboard') }}">
+                <a href="{{ url_for('admin.manage_notifications') }}">
                     <i class="bi bi-bell"></i> Notifications
                 </a>
                 {% if session.user_role in ['admin', 'faculty'] %}
-                <a href="{{ url_for('export_students') }}">
+                <a href="{{ url_for('admin.export_students') if session.user_role == 'admin' else '#' }}">
                     <i class="bi bi-download"></i> Export Students
                 </a>
                 {% endif %}

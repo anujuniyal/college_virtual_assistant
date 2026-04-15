@@ -21,14 +21,14 @@
                     <small>for Management</small>
                 </div>
                 <hr style="border-color: rgba(255,255,255,0.3);">
-                <a href="{{ url_for('admin_dashboard') if session.user_role == 'admin' else (url_for('faculty_dashboard') if session.user_role == 'faculty' else url_for('accounts_dashboard')) }}">
+                <a href="{{ url_for('admin.admin_dashboard') if session.user_role == 'admin' else (url_for('faculty.dashboard') if session.user_role == 'faculty' else '#') }}">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
-                <a href="{{ url_for('notifications_dashboard') }}" class="active">
+                <a href="{{ url_for('admin.manage_notifications') }}" class="active">
                     <i class="bi bi-bell-fill"></i> Notifications
                 </a>
                 {% if session.user_role == 'admin' %}
-                <a href="{{ url_for('add_notification') }}">
+                <a href="{{ url_for('admin.create_notification') }}">
                     <i class="bi bi-plus-circle"></i> Add Notification
                 </a>
                 {% endif %}
