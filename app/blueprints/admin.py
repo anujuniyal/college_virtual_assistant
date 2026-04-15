@@ -943,16 +943,24 @@ def toggle_bot():
             if not webhook_url.endswith('/telegram/webhook'):
                 webhook_url = webhook_url.rstrip('/') + '/telegram/webhook'
             
+            current_app.logger.info(f"Attempting to activate bot with webhook: {webhook_url}")
+            current_app.logger.info(f"Bot token configured: {'Yes' if bot_token else 'No'}")
+            
             set_webhook_url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
             data = {
                 'url': webhook_url,
                 'allowed_updates': ['message']
             }
             
+            current_app.logger.info(f"Sending webhook request to: {set_webhook_url}")
             response = requests.post(set_webhook_url, json=data, timeout=10)
+            current_app.logger.info(f"Webhook response status: {response.status_code}")
+            current_app.logger.info(f"Webhook response body: {response.text}")
             
-            if response.status_code == 200:
+            try:
                 result = response.json()
+                current_app.logger.info(f"Telegram API response: {result}")
+                
                 if result.get('ok'):
                     current_app.logger.info("Bot activated successfully")
                     return jsonify({
@@ -961,14 +969,33 @@ def toggle_bot():
                         'webhook_url': webhook_url
                     })
                 else:
+                    error_msg = result.get('description', 'Unknown error')
+                    error_code = result.get('error_code', 'N/A')
+                    current_app.logger.error(f"Telegram API error: {error_msg} (Code: {error_code})")
                     return jsonify({
                         'success': False,
-                        'message': f"Failed to activate bot: {result.get('description', 'Unknown error')}"
+                        'message': f"Failed to activate bot: {error_msg}",
+                        'error_code': error_code
                     })
-            else:
+            except ValueError as e:
+                current_app.logger.error(f"Invalid JSON response from Telegram: {e}")
                 return jsonify({
                     'success': False,
-                    'message': f"HTTP error activating bot: {response.status_code}"
+                    'message': 'Invalid response from Telegram API'
+                })
+            except Exception as e:
+                current_app.logger.error(f"Unexpected error processing response: {e}")
+                return jsonify({
+                    'success': False,
+                    'message': f"Error processing bot activation: {str(e)}"
+                })
+            
+            if response.status_code != 200:
+                current_app.logger.error(f"HTTP error {response.status_code}: {response.text}")
+                return jsonify({
+                    'success': False,
+                    'message': f"HTTP error activating bot: {response.status_code}",
+                    'response_text': response.text
                 })
         
         elif action == 'deactivate':
