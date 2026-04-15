@@ -66,7 +66,7 @@ class AnalyticsService:
             }
     
     @staticmethod
-    def get_analytics() -> dict:
+    def get_analytics(period='7days') -> dict:
         """Get analytics data"""
         try:
             # Get visitor queries count

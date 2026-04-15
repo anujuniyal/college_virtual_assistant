@@ -39,7 +39,7 @@
                     <i class="bi bi-bell"></i> Notifications
                 </a>
                 {% if session.user_role in ['admin', 'faculty'] %}
-                <a href="{{ url_for('admin.export_students') if session.user_role == 'admin' else '#' }}">
+                <a href="#" onclick="alert('Export Students feature not implemented yet')" if session.user_role == 'admin' else '#'">
                     <i class="bi bi-download"></i> Export Students
                 </a>
                 {% endif %}
