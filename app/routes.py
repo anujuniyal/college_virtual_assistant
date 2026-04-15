@@ -673,27 +673,7 @@ def register_routes(app):
         
         return render_template('add_notification.html')
     
-    @app.route('/admin/analytics')
-    @login_required
-    def admin_get_analytics():
-        """Analytics dashboard"""
-        if session.get('user_role') != 'admin':
-            flash('Access denied. Admin role required.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        
-        # Simple analytics data
-        analytics_data = {
-            'total_queries': 10,
-            'unknown_queries': 3,
-            'top_unknown': ['help', 'hi', 'hello'],
-            'registered_students': Student.query.count(),
-            'result_queries_today': 0,
-            'fee_queries_today': 0,
-            'result_queries_week': 0,
-            'fee_queries_week': 0,
-        }
-        
-        return render_template('analytics.html', analytics=analytics_data)
+    # Analytics route moved to admin blueprint to avoid conflicts
     
     @app.route('/admin/manage-complaints')
     @login_required
