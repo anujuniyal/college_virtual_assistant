@@ -46,16 +46,34 @@ def admin_dashboard():
     
     try:
         # Get dashboard metrics
-        total_students = Student.query.count() if Student else 0
-        total_faculty = Faculty.query.count() if Faculty else 0
-        active_notifications = Notification.query.count() if Notification else 0
+        total_students = db.session.query(Student).count() if Student else 0
+        total_faculty = db.session.query(Faculty).count() if Faculty else 0
+        active_notifications = db.session.query(Notification).count() if Notification else 0
+        
+        # Get recent activities for dashboard
+        recent_activities = []
+        
+        # Get recent notifications
+        recent_notifications = db.session.query(Notification).order_by(
+            Notification.created_at.desc()
+        ).limit(3).all() if Notification else []
+        
+        # Get recent student registrations
+        recent_students = db.session.query(Student).order_by(
+            Student.created_at.desc()
+        ).limit(2).all() if Student else []
+        
+        # Get recent complaints
+        recent_complaints = db.session.query(Complaint).order_by(
+            Complaint.created_at.desc()
+        ).limit(2).all() if Complaint else []
         
         # Get complaint statistics
         if Complaint:
-            total_complaints = Complaint.query.count()
-            pending_complaints = Complaint.query.filter_by(status='pending').count()
-            investigating_complaints = Complaint.query.filter_by(status='investigating').count()
-            resolved_complaints = Complaint.query.filter_by(status='resolved').count()
+            total_complaints = db.session.query(Complaint).count()
+            pending_complaints = db.session.query(Complaint).filter_by(status='pending').count()
+            investigating_complaints = db.session.query(Complaint).filter_by(status='investigating').count()
+            resolved_complaints = db.session.query(Complaint).filter_by(status='resolved').count()
         else:
             total_complaints = pending_complaints = investigating_complaints = resolved_complaints = 0
         
@@ -67,6 +85,8 @@ def admin_dashboard():
                            pending_complaints=pending_complaints,
                            investigating_complaints=investigating_complaints,
                            resolved_complaints=resolved_complaints,
+                           recent_activities=recent_activities,
+                           recent_notifications=recent_notifications,
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading admin dashboard: {str(e)}")
@@ -79,6 +99,8 @@ def admin_dashboard():
                            pending_complaints=0,
                            investigating_complaints=0,
                            resolved_complaints=0,
+                           recent_activities=[],
+                           recent_notifications=[],
                            user=current_user)
 
 
@@ -96,7 +118,7 @@ def refresh_activity():
         activities = []
         
         # Get recent notifications
-        recent_notifications = Notification.query.order_by(
+        recent_notifications = db.session.query(Notification).order_by(
             Notification.created_at.desc()
         ).limit(5).all() if Notification else []
         
@@ -110,7 +132,7 @@ def refresh_activity():
             })
         
         # Get recent student registrations if any
-        recent_students = Student.query.order_by(
+        recent_students = db.session.query(Student).order_by(
             Student.created_at.desc()
         ).limit(3).all() if Student else []
         
@@ -123,7 +145,7 @@ def refresh_activity():
             })
         
         # Get recent complaints
-        recent_complaints = Complaint.query.order_by(
+        recent_complaints = db.session.query(Complaint).order_by(
             Complaint.created_at.desc()
         ).limit(3).all() if Complaint else []
         
@@ -138,10 +160,10 @@ def refresh_activity():
         return jsonify({
             'success': True,
             'activities': activities[:10],  # Limit to 10 most recent
-            'total_complaints': Complaint.query.count() if Complaint else 0,
-            'pending_complaints': Complaint.query.filter_by(status='pending').count() if Complaint else 0,
-            'investigating_complaints': Complaint.query.filter_by(status='investigating').count() if Complaint else 0,
-            'resolved_complaints': Complaint.query.filter_by(status='resolved').count() if Complaint else 0
+            'total_complaints': db.session.query(Complaint).count() if Complaint else 0,
+            'pending_complaints': db.session.query(Complaint).filter_by(status='pending').count() if Complaint else 0,
+            'investigating_complaints': db.session.query(Complaint).filter_by(status='investigating').count() if Complaint else 0,
+            'resolved_complaints': db.session.query(Complaint).filter_by(status='resolved').count() if Complaint else 0
         })
         
     except Exception as e:
