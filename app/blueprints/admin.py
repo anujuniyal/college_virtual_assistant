@@ -1161,7 +1161,7 @@ def manage_faqs():
         selected_priority = request.args.get('priority', '')
         
         # Build query
-        query = FAQ.query
+        query = FAQRecord.query
         
         # Apply search filter
         if search:
@@ -1176,16 +1176,16 @@ def manage_faqs():
         
         # Apply priority filter
         if selected_priority:
-            query = query.filter(FAQ.priority == int(selected_priority))
+            query = query.filter(FAQRecord.id == int(selected_priority))
         
         # Get paginated results
         faq_pagination = query.order_by(
-            FAQ.priority.desc(), FAQ.created_at.desc()
+            FAQRecord.id.desc(), FAQRecord.created_at.desc()
         ).paginate(page=page, per_page=per_page, error_out=False)
         
         # Get statistics
-        total_faqs = FAQ.query.count()
-        active_faqs = FAQ.query.filter_by(is_active=True).count()
+        total_faqs = FAQRecord.query.count()
+        active_faqs = FAQRecord.query.filter_by(is_active=True).count()
         total_views = db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0
         
         return render_template('manage_faqs.html', 
@@ -1326,7 +1326,7 @@ def add_faq():
 @admin_required
 def edit_faq(faq_id):
     """Edit FAQ"""
-    faq = FAQ.query.get_or_404(faq_id)
+    faq = FAQRecord.query.get_or_404(faq_id)
     
     if request.method == 'GET':
         return render_template('edit_faq.html', 
@@ -1374,7 +1374,7 @@ def edit_faq(faq_id):
 def delete_faq(faq_id):
     """Delete FAQ"""
     try:
-        faq = FAQ.query.get_or_404(faq_id)
+        faq = FAQRecord.query.get_or_404(faq_id)
         db.session.delete(faq)
         db.session.commit()
         
@@ -1794,20 +1794,20 @@ def notifications_stats():
         }), 500
 
 
-@admin_bp.route('/faqs-stats', methods=['GET'])
+@admin_bp.route('/faq-records-stats', methods=['GET'])
 @login_required
 @admin_required
-def faqs_stats():
+def faq_records_stats():
     """Get real-time FAQ statistics"""
     try:
         stats = {
-            'total_faqs': FAQ.query.count(),
-            'active_faqs': FAQ.query.filter_by(is_active=True).count(),
-            'inactive_faqs': FAQ.query.filter_by(is_active=False).count(),
+            'total_faqs': FAQRecord.query.count(),
+            'active_faqs': FAQRecord.query.filter_by(is_active=True).count(),
+            'inactive_faqs': FAQRecord.query.filter_by(is_active=False).count(),
             'total_views': db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0,
-            'high_priority': FAQ.query.filter_by(priority=3).count(),
-            'medium_priority': FAQ.query.filter_by(priority=2).count(),
-            'low_priority': FAQ.query.filter_by(priority=1).count()
+            'high_priority': FAQRecord.query.filter_by(priority=3).count(),
+            'medium_priority': FAQRecord.query.filter_by(priority=2).count(),
+            'low_priority': FAQRecord.query.filter_by(priority=1).count()
         }
         
         return jsonify({
@@ -1836,7 +1836,7 @@ def refresh_faqs():
         selected_priority = request.json.get('priority', '')
         
         # Build query
-        query = FAQ.query
+        query = FAQRecord.query
         
         # Apply filters
         if search:
@@ -1849,11 +1849,11 @@ def refresh_faqs():
             query = query.filter(FAQ.category == selected_category)
         
         if selected_priority:
-            query = query.filter(FAQ.priority == int(selected_priority))
+            query = query.filter(FAQRecord.id == int(selected_priority))
         
         # Get paginated results
         faq_pagination = query.order_by(
-            FAQ.priority.desc(), FAQ.created_at.desc()
+            FAQRecord.id.desc(), FAQRecord.created_at.desc()
         ).paginate(page=page, per_page=10, error_out=False)
         
         # Format FAQ data for JSON response
@@ -1897,7 +1897,7 @@ def refresh_faqs():
 def toggle_faq_status(faq_id):
     """Toggle FAQ active/inactive status"""
     try:
-        faq = FAQ.query.get_or_404(faq_id)
+        faq = FAQRecord.query.get_or_404(faq_id)
         faq.is_active = not faq.is_active
         faq.updated_at = datetime.utcnow()
         db.session.commit()

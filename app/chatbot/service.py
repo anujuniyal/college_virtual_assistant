@@ -250,16 +250,51 @@ class ChatbotService:
                 current_app.logger.info(f"About to link Telegram account - Student: {student.name}, Telegram ID: {telegram_user_id}")
                 current_app.logger.info(f"Student current telegram_user_id: {student.telegram_user_id}")
                 current_app.logger.info(f"Student current telegram_verified: {student.telegram_verified}")
-                success, message = student.link_telegram_account(telegram_user_id)
-                current_app.logger.info(f"link_telegram_account returned: success={success}, message={message}")
-                if success:
-                    current_app.logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
-                    current_app.logger.info(f"Student telegram_user_id after linking: {student.telegram_user_id}")
-                    current_app.logger.info(f"Student telegram_verified after linking: {student.telegram_verified}")
+                
+                # Directly update student record to ensure it works
+                student.telegram_user_id = telegram_user_id
+                student.telegram_verified = True
+                
+                # Also update the TelegramUserMapping table
+                # First try to find existing mapping by telegram_user_id (most reliable)
+                existing_mapping = TelegramUserMapping.query.filter_by(
+                    telegram_user_id=telegram_user_id
+                ).with_for_update().first()
+                
+                if not existing_mapping:
+                    # If no mapping exists by telegram_user_id, try by phone_number as fallback
+                    existing_mapping = TelegramUserMapping.query.filter_by(
+                        phone_number=student.phone
+                    ).with_for_update().first()
+                    if existing_mapping:
+                        # Update the existing mapping with correct telegram_user_id
+                        existing_mapping.telegram_user_id = telegram_user_id
+                
+                if not existing_mapping:
+                    # Create new mapping if none exists
+                    mapping = TelegramUserMapping(
+                        telegram_user_id=telegram_user_id,
+                        student_id=student.id,
+                        phone_number=student.phone,
+                        verified=True
+                    )
+                    db.session.add(mapping)
                 else:
-                    current_app.logger.warning(f"Failed to link Telegram account: {message}")
+                    # Update existing mapping
+                    existing_mapping.student_id = student.id
+                    existing_mapping.phone_number = student.phone
+                    existing_mapping.verified = True
+                
+                # Commit all changes in one transaction
+                db.session.commit()
+                
+                current_app.logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
+                current_app.logger.info(f"Student telegram_user_id after linking: {student.telegram_user_id}")
+                current_app.logger.info(f"Student telegram_verified after linking: {student.telegram_verified}")
+                
             except Exception as e:
                 current_app.logger.error(f"Error linking Telegram account: {str(e)}")
+                db.session.rollback()
         
         db.session.commit()
         

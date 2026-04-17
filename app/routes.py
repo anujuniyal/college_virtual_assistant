@@ -399,6 +399,43 @@ def register_routes(app):
         
         return render_template('notifications.html', notifications=notifications)
     
+    @app.route('/api/notifications-realtime')
+    @login_required
+    def notifications_realtime():
+        """API endpoint for real-time notifications data"""
+        try:
+            # Get all notifications with author info
+            notifications_data = db.session.query(Notification, Admin).outerjoin(Admin, Notification.created_by == Admin.id).order_by(Notification.created_at.desc()).all()
+            
+            notifications_list = []
+            for notification, admin in notifications_data:
+                notifications_list.append({
+                    'id': notification.id,
+                    'title': notification.title,
+                    'content': notification.content,
+                    'link_url': notification.link_url,
+                    'file_url': notification.file_url,
+                    'priority': notification.priority,
+                    'created_at': notification.created_at.isoformat() if notification.created_at else None,
+                    'expires_at': notification.expires_at.isoformat() if notification.expires_at else None,
+                    'created_by_name': admin.name if admin else 'System',
+                    'notification_type': notification.notification_type
+                })
+            
+            return jsonify({
+                'success': True,
+                'notifications': notifications_list,
+                'count': len(notifications_list)
+            })
+            
+        except Exception as e:
+            current_app.logger.error(f"Error fetching real-time notifications: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': 'Error loading notifications',
+                'notifications': []
+            }), 500
+    
     @app.route('/students')
     @login_required
     def students_dashboard():
@@ -698,7 +735,7 @@ def register_routes(app):
             return redirect(url_for('admin_dashboard'))
         
         # Get all FAQs
-        faqs = FAQ.query.order_by(FAQ.created_at.desc()).all()
+        faqs = FAQRecord.query.order_by(FAQRecord.created_at.desc()).all()
         return render_template('manage_faqs.html', faqs=faqs)
     
     @app.route('/admin/manage-predefined-info')
@@ -1262,7 +1299,7 @@ def register_routes(app):
         page = request.args.get('page', 1, type=int)
         
         # Build query
-        query = FAQ.query
+        query = FAQRecord.query
         
         if search:
             query = query.filter(FAQ.question.ilike(f'%{search}%'))
@@ -1271,11 +1308,11 @@ def register_routes(app):
             query = query.filter(FAQ.category == selected_category)
         
         if selected_priority:
-            query = query.filter(FAQ.priority == int(selected_priority))
+            query = query.filter(FAQRecord.id == int(selected_priority))
         
         # Pagination
         per_page = 10
-        faqs = query.order_by(FAQ.priority.desc(), FAQ.created_at.desc()).paginate(
+        faqs = query.order_by(FAQRecord.id.desc(), FAQRecord.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
         
@@ -1325,7 +1362,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        faq = FAQ.query.get_or_404(faq_id)
+        faq = FAQRecord.query.get_or_404(faq_id)
         
         if request.method == 'POST':
             try:
@@ -1351,7 +1388,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        faq = FAQ.query.get_or_404(faq_id)
+        faq = FAQRecord.query.get_or_404(faq_id)
         
         try:
             db.session.delete(faq)
@@ -1371,7 +1408,7 @@ def register_routes(app):
             return redirect(url_for('admin_dashboard'))
         
         # Get all FAQ records for display
-        faqs = FAQ.query.order_by(FAQ.created_at.desc()).all()
+        faqs = FAQRecord.query.order_by(FAQRecord.created_at.desc()).all()
         
         return render_template('faq_records.html', faqs=faqs)
         
