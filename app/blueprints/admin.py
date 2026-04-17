@@ -1254,6 +1254,15 @@ def toggle_bot():
         if action == 'activate':
             # Set webhook to activate bot
             webhook_url = current_app.config.get('PUBLIC_BASE_URL', 'https://localhost:5000')
+            
+            # Fix port for Render compatibility (only ports 80, 88, 443, 8443 allowed)
+            if webhook_url.startswith('https://') and ':5000' in webhook_url:
+                # Replace port 5000 with 443 for HTTPS (Render standard)
+                webhook_url = webhook_url.replace(':5000', ':443')
+            elif webhook_url.startswith('http://') and ':5000' in webhook_url:
+                # Replace port 5000 with 80 for HTTP (fallback)
+                webhook_url = webhook_url.replace(':5000', ':80')
+            
             if not webhook_url.endswith('/telegram/webhook'):
                 webhook_url = webhook_url.rstrip('/') + '/telegram/webhook'
             
