@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app.extensions import db
+from datetime import datetime
 from app.models import (
     Admin, Student, Faculty, Notification, Result, 
     FeeRecord, Complaint, ChatbotQA, FAQRecord, PredefinedInfo, FAQ
@@ -680,7 +681,7 @@ def manage_notifications():
         status_filter = request.args.get('status', '')
         
         # Build query
-        query = Notification.query
+        query = db.session.query(Notification)
         
         # Apply search filter
         if search:
@@ -1375,7 +1376,7 @@ def edit_faq(faq_id):
 def delete_faq(faq_id):
     """Delete FAQ"""
     try:
-        faq = FAQRecord.query.get_or_404(faq_id)
+        faq = db.session.query(FAQRecord).get_or_404(faq_id)
         db.session.delete(faq)
         db.session.commit()
         
@@ -1706,7 +1707,7 @@ def view_notifications():
         status_filter = request.args.get('status', '')
         
         # Build query
-        query = Notification.query
+        query = db.session.query(Notification)
         
         # Apply search filter
         if search:
@@ -1804,9 +1805,9 @@ def faq_records_stats():
     """Get real-time FAQ statistics"""
     try:
         stats = {
-            'total_faqs': FAQRecord.query.count(),
-            'active_faqs': FAQRecord.query.filter_by(processed=True).count(),
-            'inactive_faqs': FAQRecord.query.filter_by(processed=False).count(),
+            'total_faqs': db.session.query(FAQRecord).count(),
+            'active_faqs': db.session.query(FAQRecord).filter_by(processed=True).count(),
+            'inactive_faqs': db.session.query(FAQRecord).filter_by(processed=False).count(),
             'total_views': 0,  # FAQRecord doesn't have view_count field
             'high_priority': 0,  # FAQRecord doesn't have priority field
             'medium_priority': 0,  # FAQRecord doesn't have priority field
@@ -1900,7 +1901,7 @@ def refresh_faqs():
 def toggle_faq_status(faq_id):
     """Toggle FAQ active/inactive status"""
     try:
-        faq = FAQRecord.query.get_or_404(faq_id)
+        faq = db.session.query(FAQRecord).get_or_404(faq_id)
         faq.is_active = not faq.is_active
         faq.updated_at = datetime.utcnow()
         db.session.commit()

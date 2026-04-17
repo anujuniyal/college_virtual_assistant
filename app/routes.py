@@ -19,6 +19,7 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
+from datetime import datetime
 from app.models import (
     Admin, Student, Faculty, Notification, 
     Result, FeeRecord, Complaint, ChatbotQA, FAQRecord, FAQ
@@ -1228,7 +1229,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        complaint = Complaint.query.get_or_404(complaint_id)
+        complaint = Complaintdb.session.query(complaint_id)
         new_status = request.form.get('status')
         old_status = complaint.status
         
@@ -1258,7 +1259,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        complaint = Complaint.query.get_or_404(complaint_id)
+        complaint = Complaintdb.session.query(complaint_id)
         try:
             db.session.delete(complaint)
             db.session.commit()
@@ -1299,10 +1300,10 @@ def register_routes(app):
         page = request.args.get('page', 1, type=int)
         
         # Build query
-        query = FAQRecord.query
+        query = db.session.query(FAQRecord)
         
         if search:
-            query = query.filter(FAQRecord.query.ilike(f'%{search}%'))
+            query = query.filter(db.session.query(FAQRecord).ilike(f'%{search}%'))
         
         if selected_category:
             query = query.filter(FAQ.category == selected_category)
