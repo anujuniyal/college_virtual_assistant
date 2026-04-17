@@ -673,6 +673,8 @@ def upload():
 @admin_required
 def manage_notifications():
     """Manage notifications"""
+    from datetime import datetime
+    
     try:
         # Get pagination parameters
         page = request.args.get('page', 1, type=int)
@@ -702,7 +704,6 @@ def manage_notifications():
         ).paginate(page=page, per_page=per_page, error_out=False)
         
         # Get statistics
-        from datetime import datetime
         total_notifications = db.session.query(Notification).count()
         active_notifications = db.session.query(Notification).filter(
             Notification.expires_at > datetime.utcnow()
