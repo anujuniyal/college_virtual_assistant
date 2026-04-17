@@ -570,7 +570,7 @@ def register_routes(app):
                 writer = csv.writer(csvfile)
                 writer.writerow(['Report Type', 'Count', 'Generated At'])
                 writer.writerow(['Total Students', Student.query.count(), datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
-                writer.writerow(['Total Notifications', Notification.query.count(), datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+                writer.writerow(['Total Notifications', db.session.query(Notification).count(), datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 writer.writerow(['Total Results', Result.query.count(), datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 writer.writerow(['Total Fee Records', FeeRecord.query.count(), datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 writer.writerow(['Pending Payments', FeeRecord.query.filter(FeeRecord.balance_amount > 0).count(), datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
@@ -589,13 +589,13 @@ def register_routes(app):
         # Get statistics
         total_students = Student.query.count()
         total_faculty = Faculty.query.count()
-        total_notifications = Notification.query.count()
-        active_notifications = Notification.query.filter(Notification.expires_at > datetime.utcnow()).count()
+        total_notifications = db.session.query(Notification).count()
+        active_notifications = db.session.query(Notification).filter(Notification.expires_at > datetime.utcnow()).count()
         total_complaints = Complaint.query.count()
         pending_complaints = Complaint.query.filter_by(status='pending').count()
         
         # Recent notifications
-        recent_notifications = Notification.query.filter(
+        recent_notifications = db.session.query(Notification).filter(
             Notification.expires_at > datetime.utcnow()
         ).order_by(Notification.created_at.desc()).limit(5).all()
         
@@ -735,7 +735,7 @@ def register_routes(app):
             return redirect(url_for('admin_dashboard'))
         
         # Get all FAQs
-        faqs = FAQRecord.query.order_by(FAQRecord.created_at.desc()).all()
+        faqs = db.session.query(FAQRecord).order_by(FAQRecord.created_at.desc()).all()
         return render_template('manage_faqs.html', faqs=faqs)
     
     @app.route('/admin/manage-predefined-info')
@@ -756,7 +756,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        notifications = Notification.query.order_by(Notification.created_at.desc()).all()
+        notifications = db.session.query(Notification).order_by(Notification.created_at.desc()).all()
         return render_template('manage_notifications.html', notifications=notifications)
     
     @app.route('/admin/create-faculty', methods=['GET', 'POST'])
@@ -867,7 +867,7 @@ def register_routes(app):
     @login_required
     def get_notifications():
         """Get all notifications"""
-        notifications = Notification.query.order_by(Notification.created_at.desc()).all()
+        notifications = db.session.query(Notification).order_by(Notification.created_at.desc()).all()
         return jsonify([{
             'id': n.id,
             'title': n.title,
@@ -1277,8 +1277,8 @@ def register_routes(app):
             return redirect(url_for('admin_dashboard'))
         
         # Get only complaint-related notifications
-        complaint_notifications = Notification.query.filter_by(notification_type='complaint').order_by(Notification.created_at.desc()).all()
-        complaint_updates = Notification.query.filter_by(notification_type='complaint_update').order_by(Notification.created_at.desc()).all()
+        complaint_notifications = db.session.query(Notification).filter_by(notification_type='complaint').order_by(Notification.created_at.desc()).all()
+        complaint_updates = db.session.query(Notification).filter_by(notification_type='complaint_update').order_by(Notification.created_at.desc()).all()
         
         return render_template('complaint_messages.html', 
                              complaint_notifications=complaint_notifications,
@@ -1362,7 +1362,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        faq = FAQRecord.query.get_or_404(faq_id)
+        faq = db.session.query(FAQRecord).get_or_404(faq_id)
         
         if request.method == 'POST':
             try:
@@ -1388,7 +1388,7 @@ def register_routes(app):
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        faq = FAQRecord.query.get_or_404(faq_id)
+        faq = db.session.query(FAQRecord).get_or_404(faq_id)
         
         try:
             db.session.delete(faq)
@@ -1408,11 +1408,11 @@ def register_routes(app):
             return redirect(url_for('admin_dashboard'))
         
         # Get all FAQ records for display
-        faqs = FAQRecord.query.order_by(FAQRecord.created_at.desc()).all()
+        faqs = db.session.query(FAQRecord).order_by(FAQRecord.created_at.desc()).all()
         
         return render_template('faq_records.html', faqs=faqs)
         
-        notification = Notification.query.get_or_404(notification_id)
+        notification = db.session.query(Notification).get_or_404(notification_id)
         
         if request.method == 'POST':
             try:
@@ -1502,7 +1502,7 @@ def get_complaint_faq_answer():
             flash('Access denied. Admin role required.', 'error')
             return redirect(url_for('admin_dashboard'))
         
-        notification = Notification.query.get_or_404(notification_id)
+        notification = db.session.query(Notification).get_or_404(notification_id)
         try:
             db.session.delete(notification)
             db.session.commit()

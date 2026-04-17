@@ -701,11 +701,12 @@ def manage_notifications():
         ).paginate(page=page, per_page=per_page, error_out=False)
         
         # Get statistics
-        total_notifications = Notification.query.count()
-        active_notifications = Notification.query.filter(
+        from datetime import datetime
+        total_notifications = db.session.query(Notification).count()
+        active_notifications = db.session.query(Notification).filter(
             Notification.expires_at > datetime.utcnow()
         ).count()
-        expired_notifications = Notification.query.filter(
+        expired_notifications = db.session.query(Notification).filter(
             Notification.expires_at <= datetime.utcnow()
         ).count()
         
@@ -1726,11 +1727,12 @@ def view_notifications():
         ).paginate(page=page, per_page=per_page, error_out=False)
         
         # Get statistics
-        total_notifications = Notification.query.count()
-        active_notifications = Notification.query.filter(
+        from datetime import datetime
+        total_notifications = db.session.query(Notification).count()
+        active_notifications = db.session.query(Notification).filter(
             Notification.expires_at > datetime.utcnow()
         ).count()
-        expired_notifications = Notification.query.filter(
+        expired_notifications = db.session.query(Notification).filter(
             Notification.expires_at <= datetime.utcnow()
         ).count()
         
@@ -1771,12 +1773,13 @@ def view_notification_detail(notification_id):
 def notifications_stats():
     """Get real-time notification statistics"""
     try:
+        from datetime import datetime
         stats = {
-            'total_notifications': Notification.query.count(),
-            'active_notifications': Notification.query.filter(
+            'total_notifications': db.session.query(Notification).count(),
+            'active_notifications': db.session.query(Notification).filter(
                 Notification.expires_at > datetime.utcnow()
             ).count(),
-            'expired_notifications': Notification.query.filter(
+            'expired_notifications': db.session.query(Notification).filter(
                 Notification.expires_at <= datetime.utcnow()
             ).count()
         }
