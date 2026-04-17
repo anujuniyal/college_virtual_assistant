@@ -1255,6 +1255,22 @@ def toggle_bot():
             # Set webhook to activate bot
             webhook_url = current_app.config.get('PUBLIC_BASE_URL', 'https://localhost:5000')
             
+            # Detect and fix reserved/local IP addresses for Render
+            if ('127.0.0.1' in webhook_url or 'localhost' in webhook_url or 
+                webhook_url.startswith('https://localhost:') or webhook_url.startswith('http://localhost:')):
+                
+                # Try to get actual Render URL from request headers
+                host_url = request.host_url if hasattr(request, 'host_url') else None
+                if host_url and ('onrender.com' in host_url or 'render.com' in host_url):
+                    # Use the actual request URL
+                    webhook_url = host_url.rstrip('/')
+                    current_app.logger.info(f"Using request host URL: {webhook_url}")
+                else:
+                    # Use hardcoded Render service URL as fallback
+                    render_service_url = 'https://college-virtual-assistant.onrender.com'
+                    webhook_url = render_service_url
+                    current_app.logger.warning(f"Detected local URL, using Render fallback: {webhook_url}")
+            
             # Fix port for Render compatibility (only ports 80, 88, 443, 8443 allowed)
             if webhook_url.startswith('https://') and ':5000' in webhook_url:
                 # Replace port 5000 with 443 for HTTPS (Render standard)
