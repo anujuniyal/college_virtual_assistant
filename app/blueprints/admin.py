@@ -595,6 +595,20 @@ def delete_student(student_id):
     """Delete student"""
     try:
         student = Student.query.get_or_404(student_id)
+        
+        # Handle all foreign key constraints manually before deletion
+        from app.models import DailyViewCount, Complaint, QueryLog, TelegramUserMapping, Result, FeeRecord, FAQRecord, Session
+        
+        # Delete all related records to avoid foreign key constraint violations
+        db.session.query(Session).filter_by(student_id=student_id).delete()
+        db.session.query(DailyViewCount).filter_by(student_id=student_id).delete()
+        db.session.query(Complaint).filter_by(student_id=student_id).delete()
+        db.session.query(QueryLog).filter_by(student_id=student_id).delete()
+        db.session.query(TelegramUserMapping).filter_by(student_id=student_id).delete()
+        db.session.query(Result).filter_by(student_id=student_id).delete()
+        db.session.query(FeeRecord).filter_by(student_id=student_id).delete()
+        db.session.query(FAQRecord).filter_by(student_id=student_id).delete()
+        
         db.session.delete(student)
         db.session.commit()
         
