@@ -247,9 +247,15 @@ class ChatbotService:
             # Extract Telegram user ID from visitor phone number
             telegram_user_id = telegram_phone.replace('whatsapp:+visitor_', '')
             try:
+                current_app.logger.info(f"About to link Telegram account - Student: {student.name}, Telegram ID: {telegram_user_id}")
+                current_app.logger.info(f"Student current telegram_user_id: {student.telegram_user_id}")
+                current_app.logger.info(f"Student current telegram_verified: {student.telegram_verified}")
                 success, message = student.link_telegram_account(telegram_user_id)
+                current_app.logger.info(f"link_telegram_account returned: success={success}, message={message}")
                 if success:
                     current_app.logger.info(f"Successfully linked Telegram account for student {student.name} ({student.roll_number})")
+                    current_app.logger.info(f"Student telegram_user_id after linking: {student.telegram_user_id}")
+                    current_app.logger.info(f"Student telegram_verified after linking: {student.telegram_verified}")
                 else:
                     current_app.logger.warning(f"Failed to link Telegram account: {message}")
             except Exception as e:
