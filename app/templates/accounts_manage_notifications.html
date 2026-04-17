@@ -3,77 +3,7 @@
 {% block title %}Manage Notifications - EduBot Accounts{% endblock %}
 
 {% block sidebar_nav %}
-<!-- Admin Navigation -->
-<div class="nav-item">
-    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-    </a>
-</div>
-<div class="nav-item">
-    <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
-        <i class="fas fa-user-graduate"></i>
-        <span>Students</span>
-    </a>
-</div>
-<div class="nav-item">
-    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
-        <i class="fas fa-chalkboard-teacher"></i>
-        <span>Faculty</span>
-    </a>
-</div>
-<div class="nav-item">
-    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
-        <i class="fas fa-info-circle"></i>
-        <span>College Info</span>
-        <i class="fas fa-chevron-down ms-auto"></i>
-    </a>
-    <div class="submenu">
-        <a href="{{ url_for('admin.manage_predefined_info') }}" class="nav-link">
-            <i class="fas fa-edit"></i>
-            <span class="submenu-text">Predefined Info</span>
-        </a>
-        <a href="{{ url_for('admin.manage_faqs') }}" class="nav-link">
-            <i class="fas fa-question"></i>
-            <span class="submenu-text">FAQ Management</span>
-        </a>
-    </div>
-</div>
-<div class="nav-item">
-    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
-        <i class="fas fa-bell"></i>
-        <span>Notifications</span>
-        <i class="fas fa-chevron-down ms-auto"></i>
-    </a>
-    <div class="submenu">
-        <a href="{{ url_for('admin.create_notification') }}" class="nav-link">
-            <i class="fas fa-plus"></i>
-            <span class="submenu-text">Add Notification</span>
-        </a>
-        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link active">
-            <i class="fas fa-list"></i>
-            <span class="submenu-text">View All</span>
-        </a>
-    </div>
-</div>
-<div class="nav-item">
-    <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span>Complaints</span>
-    </a>
-</div>
-<div class="nav-item">
-    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link">
-        <i class="fas fa-users-cog"></i>
-        <span>Accounts</span>
-    </a>
-</div>
-<div class="nav-item">
-    <a href="{{ url_for('auth.logout') }}" class="nav-link">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-    </a>
-</div>
+<!-- Use main dashboard sidebar navigation -->
 {% endblock %}
 
 {% block page_title %}Manage Notifications{% endblock %}
@@ -83,9 +13,6 @@
 <div class="dashboard-section">
     <div class="section-header">
         <h2 class="section-title"><i class="bi bi-bell"></i> Recent Notifications</h2>
-        <a href="{{ url_for('admin.create_notification') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Add Notification
-        </a>
     </div>
     
     {% if notifications %}
@@ -141,9 +68,6 @@
             <i class="bi bi-bell-slash fa-3x text-muted mb-3"></i>
             <h5 class="text-muted">No Notifications Found</h5>
             <p class="text-muted">No notifications have been created yet.</p>
-            <a href="{{ url_for('admin.create_notification') }}" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Create First Notification
-            </a>
         </div>
     {% endif %}
 </div>
@@ -154,21 +78,13 @@
         <h2 class="section-title"><i class="bi bi-lightning"></i> Quick Actions</h2>
     </div>
     <div class="quick-actions">
-        <a href="{{ url_for('admin.create_notification') }}" class="quick-action-btn">
-            <i class="fas fa-plus"></i>
-            <span>Add Notification</span>
-        </a>
-        <a href="{{ url_for('admin.admin_dashboard') }}" class="quick-action-btn">
+        <a href="{{ url_for('accounts.accounts_dashboard') }}" class="quick-action-btn">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
-        <a href="{{ url_for('admin.manage_faculty') }}" class="quick-action-btn">
-            <i class="fas fa-chalkboard-teacher"></i>
-            <span>Manage Faculty</span>
-        </a>
-        <a href="{{ url_for('admin.manage_students') }}" class="quick-action-btn">
+        <a href="{{ url_for('accounts.students_fees_simple') }}" class="quick-action-btn">
             <i class="fas fa-user-graduate"></i>
-            <span>Manage Students</span>
+            <span>Students & Fees</span>
         </a>
     </div>
 </div>

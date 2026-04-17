@@ -23,35 +23,37 @@
             <!-- Filters -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="input-group">
-                                <i class="fas fa-search input-icon"></i>
-                                <input type="text" class="form-control" name="search" 
-                                       value="{{ search }}" placeholder="Search information...">
+                    <form method="GET" action="{{ url_for('admin.manage_predefined_info') }}" id="filterForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <i class="fas fa-search input-icon"></i>
+                                    <input type="text" class="form-control" name="search" 
+                                           value="{{ search }}" placeholder="Search information..." id="searchInput">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-control" name="section" id="sectionSelect">
+                                    <option value="">All Sections</option>
+                                    {% for section in sections %}
+                                    <option value="{{ section[0] }}" {% if selected_section == section[0] %}selected{% endif %}>
+                                        {{ section[1] }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-filter me-2"></i>Filter
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="{{ url_for('admin.manage_predefined_info') }}" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-times me-2"></i>Clear
+                                </a>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-control" name="section">
-                                <option value="">All Sections</option>
-                                {% for section in sections %}
-                                <option value="{{ section[0] }}" {% if selected_section == section[0] %}selected{% endif %}>
-                                    {{ section[0].title() }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-filter me-2"></i>Filter
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('admin.manage_predefined_info') }}" class="btn btn-outline-secondary w-100">
-                                <i class="fas fa-times me-2"></i>Clear
-                            </a>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
 
@@ -114,12 +116,12 @@
                                             <div class="btn-group btn-group-sm" role="group">
                                                 <a href="{{ url_for('admin.edit_predefined_info', info_id=info.id) }}" 
                                                    class="btn btn-outline-primary" title="Edit">
-                                                    <i class="fas fa-edit"></i>
+                                                    <i class="fas fa-edit me-1"></i>Edit
                                                 </a>
                                                 <form method="POST" action="{{ url_for('admin.delete_predefined_info', info_id=info.id) }}" 
                                                       class="d-inline" onsubmit="return confirm('Are you sure you want to delete this information?')">
                                                     <button type="submit" class="btn btn-outline-danger" title="Delete">
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="fas fa-trash me-1"></i>Delete
                                                     </button>
                                                 </form>
                                             </div>
@@ -191,4 +193,19 @@
         </div>
     </div>
 </div>
+
+<script>
+// Real-time search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+        document.getElementById('filterForm').submit();
+    }, 500);
+});
+
+// Real-time section filter
+document.getElementById('sectionSelect').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+</script>
 {% endblock %}

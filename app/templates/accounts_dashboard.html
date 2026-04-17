@@ -23,6 +23,18 @@
     </a>
 </div>
 <div class="nav-item">
+    <a href="{{ url_for('accounts.billing') }}" class="nav-link">
+        <i class="bi bi-file-invoice-dollar"></i>
+        <span>Billing</span>
+    </a>
+</div>
+<div class="nav-item">
+    <a href="{{ url_for('accounts.reports') }}" class="nav-link">
+        <i class="bi bi-chart-bar"></i>
+        <span>Reports</span>
+    </a>
+</div>
+<div class="nav-item">
     <a href="{{ url_for('accounts.edit_profile') }}" class="nav-link">
         <i class="bi bi-person-gear"></i>
         <span>Edit Profile</span>
@@ -41,6 +53,7 @@
 {% block content %}
 <!-- Summary Cards -->
 <div class="summary-cards">
+    {% if current_user.role == 'accounts' %}
     <a href="{{ url_for('accounts.students_fees_dashboard') }}" class="summary-card-link">
         <div class="summary-card">
             <div class="card-icon">
@@ -53,6 +66,7 @@
             </small>
         </div>
     </a>
+    {% endif %}
     
     <a href="{{ url_for('accounts.manage_notifications') }}" class="summary-card-link">
         <div class="summary-card notifications">
@@ -63,6 +77,32 @@
             <div class="card-count">{{ total_notifications or 0 }}</div>
             <small class="text-muted d-block mt-2">
                 <i class="bi bi-arrow-right"></i> Click to manage notifications
+            </small>
+        </div>
+    </a>
+    
+    <a href="{{ url_for('accounts.billing') }}" class="summary-card-link">
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="bi bi-file-invoice-dollar"></i>
+            </div>
+            <div class="card-title">Billing</div>
+            <div class="card-count">Finance</div>
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-arrow-right"></i> Click to manage billing
+            </small>
+        </div>
+    </a>
+    
+    <a href="{{ url_for('accounts.reports') }}" class="summary-card-link">
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="bi bi-chart-bar"></i>
+            </div>
+            <div class="card-title">Reports</div>
+            <div class="card-count">Analytics</div>
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-arrow-right"></i> Click to view reports
             </small>
         </div>
     </a>
@@ -87,13 +127,23 @@
         <h2 class="section-title"><i class="bi bi-lightning-fill"></i> Quick Actions</h2>
     </div>
     <div class="quick-actions">
+        {% if current_user.role == 'accounts' %}
         <a href="{{ url_for('accounts.students_fees_dashboard') }}" class="quick-action-btn">
             <i class="bi bi-cash-coin"></i>
             <span>Manage Fee Records</span>
         </a>
+        {% endif %}
         <a href="{{ url_for('accounts.manage_notifications') }}" class="quick-action-btn">
             <i class="bi bi-bell"></i>
             <span>Send Notifications</span>
+        </a>
+        <a href="{{ url_for('accounts.billing') }}" class="quick-action-btn">
+            <i class="bi bi-file-invoice-dollar"></i>
+            <span>Billing</span>
+        </a>
+        <a href="{{ url_for('accounts.reports') }}" class="quick-action-btn">
+            <i class="bi bi-chart-bar"></i>
+            <span>Reports</span>
         </a>
         <a href="{{ url_for('accounts.edit_profile') }}" class="quick-action-btn">
             <i class="bi bi-person-gear"></i>

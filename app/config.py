@@ -171,6 +171,9 @@ class Config:
     # Telegram Bot Configuration
 
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN') or ''
+    
+    # Public Base URL for Telegram Webhooks (HTTPS required)
+    PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'https://localhost:5000')
 
     
 

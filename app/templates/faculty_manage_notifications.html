@@ -62,7 +62,7 @@
     <div class="section-header">
         <h3 class="section-title">Manage Notifications</h3>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('notification.send_notification') }}" class="btn btn-sm btn-primary">
+            <a href="{{ url_for('faculty.send_notification') }}" class="btn btn-sm btn-primary">
                 <i class="fas fa-plus"></i> Add New
             </a>
             <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-sm btn-outline-info">
@@ -135,10 +135,10 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{{ url_for('notification.edit_notification', notification_id=notification.id) }}" class="btn btn-outline-primary">
+                                    <a href="{{ url_for('faculty.edit_notification', notification_id=notification.id) }}" class="btn btn-outline-primary">
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
-                                    <form method="POST" action="{{ url_for('notification.delete_notification', notification_id=notification.id) }}" style="display: inline;" 
+                                    <form method="POST" action="{{ url_for('faculty.delete_notification', notification_id=notification.id) }}" style="display: inline;" 
                                           onsubmit="return confirm('Are you sure you want to delete this notification?');">
                                         <button type="submit" class="btn btn-outline-danger">
                                             <i class="fas fa-trash"></i> Delete
@@ -156,7 +156,7 @@
                 <i class="fas fa-bell fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">No Notifications Found</h5>
                 <p class="text-muted">No notifications have been created yet.</p>
-                <a href="{{ url_for('notification.send_notification') }}" class="btn btn-primary">
+                <a href="{{ url_for('faculty.send_notification') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Create First Notification
                 </a>
             </div>

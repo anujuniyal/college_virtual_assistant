@@ -61,6 +61,12 @@ def accounts_dashboard():
         total_fee_records = safe_execute(lambda: FeeRecord.query.count()) or 0
         total_notifications = safe_execute(lambda: Notification.query.count()) or 0
         
+        # Only show fee records to accounts users, not to admin/faculty
+        user_role = get_user_role()
+        if user_role != 'accounts':
+            total_fee_records = 0
+            total_notifications = safe_execute(lambda: Notification.query.count()) or 0
+        
         # Calculate pending fees
         pending_count = 0
         pending_amount = 0
@@ -98,6 +104,134 @@ def accounts_dashboard():
                              total_pending=0,
                              pending_amount=0,
                              collection_rate=0)
+
+@accounts_bp.route('/students-fees-simple')
+@login_required
+@accounts_required()
+def students_fees_simple():
+    """Simplified students fee records view with direct return to role dashboard"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        search = request.args.get('search', '').strip()
+        fee_status = request.args.get('fee_status', '').strip()
+        semester = request.args.get('semester', '').strip()
+        
+        # Build query
+        query = Student.query
+        
+        # Apply search filter
+        if search:
+            query = query.filter(
+                db.or_(
+                    Student.name.ilike(f'%{search}%'),
+                    Student.roll_number.ilike(f'%{search}%'),
+                    Student.email.ilike(f'%{search}%'),
+                    Student.department.ilike(f'%{search}%')
+                )
+            )
+        
+        # Apply filters
+        if semester:
+            query = query.filter(Student.semester == int(semester))
+        
+        # Get students with pagination
+        students_pagination = safe_execute(
+            lambda: query.order_by(Student.name)
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
+        
+        students = students_pagination.items if students_pagination else []
+        
+        # Calculate fee status for each student
+        students_with_fees = []
+        fully_paid_count = 0
+        partial_payment_count = 0
+        unpaid_count = 0
+        
+        for student in students:
+            # Get latest fee record
+            latest_fee = safe_execute(
+                lambda: FeeRecord.query.filter_by(student_id=student.id)
+                .order_by(FeeRecord.last_updated.desc())
+                .first()
+            )
+            
+            # Determine fee status
+            status = 'no_record'
+            if latest_fee:
+                if latest_fee.balance <= 0:
+                    status = 'paid'
+                    fully_paid_count += 1
+                elif latest_fee.paid_amount > 0:
+                    status = 'partial'
+                    partial_payment_count += 1
+                else:
+                    status = 'unpaid'
+                    unpaid_count += 1
+            
+            # Apply fee status filter
+            if fee_status and status != fee_status:
+                continue
+            
+            student.latest_fee = latest_fee
+            student.fee_status = status
+            students_with_fees.append(student)
+        
+        # Determine role-based return URL and title
+        user_role = get_user_role()
+        if user_role == 'admin':
+            return_url = url_for('admin.admin_dashboard')
+            role_title = 'Admin'
+        elif user_role == 'faculty':
+            return_url = url_for('faculty.faculty_dashboard')
+            role_title = 'Faculty'
+        else:
+            return_url = url_for('accounts.accounts_dashboard')
+            role_title = 'Accounts'
+        
+        # Allow edit only for accounts role
+        allow_edit = (user_role == 'accounts')
+        
+        return render_template('students_fees_simple.html',
+                             students=students_with_fees,
+                             pagination=students_pagination,
+                             page=page,
+                             total_students=len(students_with_fees),
+                             fully_paid_count=fully_paid_count,
+                             partial_payment_count=partial_payment_count,
+                             unpaid_count=unpaid_count,
+                             return_url=return_url,
+                             role_title=role_title,
+                             allow_edit=allow_edit)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading students fees simple view: {str(e)}")
+        flash('Error loading students fees view.', 'error')
+        
+        # Determine role-based return URL even on error
+        user_role = get_user_role()
+        if user_role == 'admin':
+            return_url = url_for('admin.admin_dashboard')
+            role_title = 'Admin'
+        elif user_role == 'faculty':
+            return_url = url_for('faculty.faculty_dashboard')
+            role_title = 'Faculty'
+        else:
+            return_url = url_for('accounts.accounts_dashboard')
+            role_title = 'Accounts'
+        
+        return render_template('students_fees_simple.html',
+                             students=[],
+                             pagination=None,
+                             page=1,
+                             total_students=0,
+                             fully_paid_count=0,
+                             partial_payment_count=0,
+                             unpaid_count=0,
+                             return_url=return_url,
+                             role_title=role_title,
+                             allow_edit=False)
 
 @accounts_bp.route('/students-fees')
 @login_required
@@ -172,14 +306,22 @@ def students_fees_dashboard():
             student.fee_status = status
             students_with_fees.append(student)
         
-        return render_template('students_fees_dashboard.html',
-                             students=students_with_fees,
-                             pagination=students_pagination,
-                             page=page,
-                             total_students=len(students_with_fees),
-                             fully_paid_count=fully_paid_count,
-                             partial_payment_count=partial_payment_count,
-                             unpaid_count=unpaid_count)
+        # Use read-only template for admin/faculty users, full template for accounts users
+        if get_user_role() == 'accounts':
+            return render_template('students_fees_dashboard.html',
+                                 students=students_with_fees,
+                                 pagination=students_pagination,
+                                 page=page,
+                                 total_students=len(students_with_fees),
+                                 fully_paid_count=fully_paid_count,
+                                 partial_payment_count=partial_payment_count,
+                                 unpaid_count=unpaid_count)
+        else:
+            return render_template('students_fees_readonly.html',
+                                 students=students_with_fees,
+                                 pagination=students_pagination,
+                                 page=page,
+                                 user=current_user)
     
     except Exception as e:
         current_app.logger.error(f"Error loading students fees dashboard: {str(e)}")
@@ -314,11 +456,12 @@ def manage_notifications():
             lambda: Notification.query.order_by(Notification.created_at.desc()).limit(10).all()
         ) or []
         
-        return render_template('manage_notifications.html', notifications=notifications)
+        return render_template('accounts_manage_notifications.html', notifications=notifications)
     except Exception as e:
         current_app.logger.error(f"Error loading notifications: {str(e)}")
         flash('Error loading notifications.', 'error')
-        return render_template('manage_notifications.html', notifications=[])
+        return render_template('accounts_manage_notifications.html', notifications=[])
+
 
 @accounts_bp.route('/billing')
 @login_required
@@ -330,12 +473,22 @@ def billing():
         total_students = safe_execute(lambda: Student.query.count()) or 0
         total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
         
+        # Calculate financial data from fee records
+        fee_records = safe_execute(lambda: FeeRecord.query.all()) or []
+        total_collected = sum(record.paid_amount for record in fee_records) if fee_records else 0
+        total_pending = sum(record.balance for record in fee_records if record.balance > 0) if fee_records else 0
+        total_revenue = sum(record.total_amount for record in fee_records) if fee_records else 0
+        
         return render_template('billing.html',
                              total_students=total_students,
-                             total_faculty=total_faculty)
+                             total_faculty=total_faculty,
+                             total_collected=total_collected,
+                             total_pending=total_pending,
+                             total_revenue=total_revenue)
     except Exception as e:
+        current_app.logger.error(f"Error loading billing: {str(e)}")
         flash('Error loading billing.', 'error')
-        return redirect(url_for('accounts.manage_accounts'))
+        return redirect(url_for('accounts.accounts_dashboard'))
 
 @accounts_bp.route('/student/<int:student_id>/update-fee', methods=['POST'])
 @login_required

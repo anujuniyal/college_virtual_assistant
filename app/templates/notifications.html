@@ -70,7 +70,7 @@
                                 <div class="d-flex align-items-center mb-2">
                                     <h5 class="mb-0 me-3">{{ notification.title }}</h5>
                                     <small class="text-muted">
-                                        <i class="bi bi-person-circle"></i> {{ admin.username if admin else 'System' }}
+                                        <i class="bi bi-person-circle"></i> {{ current_user.name if current_user else 'System' }}
                                     </small>
                                 </div>
                                 

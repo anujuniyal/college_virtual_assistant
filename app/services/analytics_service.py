@@ -44,17 +44,43 @@ class AnalyticsService:
     def get_dashboard_analytics() -> dict:
         """Get dashboard analytics data"""
         try:
-            return {
-                'total_queries': db.session.query(QueryLog).count(),
-                'unknown_queries': db.session.query(FAQRecord).count(),
-                'registered_students': db.session.query(Student).count(),
+            # Initialize default values
+            analytics_data = {
+                'total_queries': 0,
+                'unknown_queries': 0,
+                'registered_students': 0,
                 'result_queries_today': 0,
                 'fee_queries_today': 0,
                 'result_queries_week': 0,
                 'fee_queries_week': 0,
             }
+            
+            # Get query logs count with error handling
+            try:
+                analytics_data['total_queries'] = db.session.query(QueryLog).count()
+            except Exception as e:
+                current_app.logger.warning(f"QueryLog query failed in dashboard: {e}")
+                analytics_data['total_queries'] = 0
+            
+            # Get FAQ records count with error handling
+            try:
+                analytics_data['unknown_queries'] = db.session.query(FAQRecord).count()
+            except Exception as e:
+                current_app.logger.warning(f"FAQRecord query failed in dashboard: {e}")
+                analytics_data['unknown_queries'] = 0
+            
+            # Get student count with error handling
+            try:
+                analytics_data['registered_students'] = db.session.query(Student).count()
+            except Exception as e:
+                current_app.logger.warning(f"Student query failed in dashboard: {e}")
+                analytics_data['registered_students'] = 0
+            
+            return analytics_data
+            
         except Exception as e:
-            current_app.logger.error(f"Analytics error: {e}")
+            current_app.logger.error(f"Dashboard analytics error: {e}")
+            # Return default values if there's an error
             return {
                 'total_queries': 0,
                 'unknown_queries': 0,
@@ -69,27 +95,48 @@ class AnalyticsService:
     def get_analytics(period='7days') -> dict:
         """Get analytics data"""
         try:
-            # Get visitor queries count
-            try:
-                unknown_queries = db.session.query(VisitorQuery).count() or 0
-                unknown_queries_week = db.session.query(VisitorQuery).filter(
-                    VisitorQuery.created_at >= datetime.utcnow() - timedelta(days=7)
-                ).count() or 0
-            except Exception as e:
-                current_app.logger.warning(f"VisitorQuery query failed: {e}")
-                unknown_queries = 0
-                unknown_queries_week = 0
-            
-            return {
-                'total_queries': db.session.query(QueryLog).count(),  # Real query count from database
-                'unknown_queries': unknown_queries,  
+            # Initialize default values
+            analytics_data = {
+                'total_queries': 0,
+                'unknown_queries': 0,
                 'top_unknown': [],
-                'registered_students': db.session.query(Student).count(),
+                'registered_students': 0,
                 'result_queries_today': 0,
                 'fee_queries_today': 0,
                 'result_queries_week': 0,
                 'fee_queries_week': 0,
             }
+            
+            # Get query logs count with error handling
+            try:
+                analytics_data['total_queries'] = db.session.query(QueryLog).count()
+            except Exception as e:
+                current_app.logger.warning(f"QueryLog query failed: {e}")
+                analytics_data['total_queries'] = 0
+            
+            # Get FAQ records count with error handling (unknown queries)
+            try:
+                analytics_data['unknown_queries'] = db.session.query(FAQRecord).count()
+            except Exception as e:
+                current_app.logger.warning(f"FAQRecord query failed: {e}")
+                analytics_data['unknown_queries'] = 0
+            
+            # Get student count with error handling
+            try:
+                analytics_data['registered_students'] = db.session.query(Student).count()
+            except Exception as e:
+                current_app.logger.warning(f"Student query failed: {e}")
+                analytics_data['registered_students'] = 0
+            
+            # Calculate success rate
+            if analytics_data['total_queries'] > 0:
+                answered_queries = analytics_data['total_queries'] - analytics_data['unknown_queries']
+                analytics_data['success_rate'] = round((answered_queries / analytics_data['total_queries']) * 100)
+            else:
+                analytics_data['success_rate'] = 0
+            
+            return analytics_data
+            
         except Exception as e:
             current_app.logger.error(f"Analytics error: {e}")
             # Return default values if there's an error
@@ -102,4 +149,5 @@ class AnalyticsService:
                 'fee_queries_today': 0,
                 'result_queries_week': 0,
                 'fee_queries_week': 0,
+                'success_rate': 0,
             }

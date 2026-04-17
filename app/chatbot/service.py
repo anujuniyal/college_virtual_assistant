@@ -19,6 +19,7 @@ from app.models import (
     Session,
     DailyViewCount,
     VisitorQuery,
+    PredefinedInfo,
 )
 from app.services.analytics_service import AnalyticsService
 from app.services.complaint_notification_service import ComplaintNotificationService
@@ -72,6 +73,19 @@ class ChatbotService:
             '5': self._complaint_instructions,
             '6': self._logout_student,
         }
+    
+    def _get_predefined_info(self, section: str, title: str = None) -> str:
+        """Get predefined info from database"""
+        query = PredefinedInfo.query.filter_by(section=section, is_active=True)
+        
+        if title:
+            query = query.filter_by(title=title)
+        else:
+            # If no title specified, get the most recent for this section
+            query = query.order_by(PredefinedInfo.updated_at.desc())
+        
+        info = query.first()
+        return info.content if info else None
     
     def process_message(self, message: str, phone_number: str) -> str:
         """Process incoming WhatsApp message"""
@@ -471,6 +485,11 @@ Type `help` to see all available options
     
     def _admission_info(self, phone_number: str) -> str:
         """Admission information"""
+        content = self._get_predefined_info('admission', 'Admission Process')
+        if content:
+            return content
+        
+        # Fallback to static content if no predefined info found
         return """📚 **ADMISSION PROCESS**
 
 📋 **Eligibility Criteria:**
@@ -516,6 +535,11 @@ Issued by: Admission Department"""
     
     def _course_info(self, phone_number: str) -> str:
         """Course information with fees"""
+        content = self._get_predefined_info('courses', 'Courses & Fee Structure')
+        if content:
+            return content
+        
+        # Fallback to static content if no predefined info found
         return """📖 **COURSES & FEE STRUCTURE**
 
 🎓 **UNDERGRADUATE PROGRAMS (4 Years):**
@@ -572,6 +596,11 @@ Issued by: Academic Department"""
     
     def _fee_structure(self, phone_number: str) -> str:
         """General fee structure"""
+        content = self._get_predefined_info('fees', 'General Fee Structure')
+        if content:
+            return content
+        
+        # Fallback to static content if no predefined info found
         return """💰 FEE STRUCTURE (General)
 
 B.Tech: ₹1,50,000/year
@@ -589,6 +618,11 @@ Issued by: Accounts Section"""
     
     def _facilities_info(self, phone_number: str) -> str:
         """Facilities information"""
+        content = self._get_predefined_info('facilities', 'College Facilities')
+        if content:
+            return content
+        
+        # Fallback to static content if no predefined info found
         return """🏫 COLLEGE FACILITIES
 
 • Library with 50,000+ books
@@ -633,6 +667,11 @@ Issued by: College Admin"""
     
     def _contact_info(self, phone_number: str) -> str:
         """Contact information and reception details"""
+        content = self._get_predefined_info('contact', 'College Contact Information')
+        if content:
+            return content
+        
+        # Fallback to static content if no predefined info found
         return """📞 **COLLEGE CONTACT INFORMATION**
 
 🏢 **MAIN RECEPTION:**

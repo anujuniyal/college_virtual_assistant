@@ -53,8 +53,20 @@ class UserService:
     def authenticate_user(username, password):
         """Authenticate user against Faculty and Admin tables"""
         try:
-            # First check Faculty table for all users (admin, faculty, accounts)
-            faculty = Faculty.query.filter_by(email=username).first()
+            from app.models import Admin
+            
+            # First check Admin table for admin users
+            admin = Admin.query.filter_by(username=username).first()
+            if admin and admin.check_password(password):
+                current_app.logger.info(f"Authentication successful for {username} from Admin table")
+                return {
+                    'success': True,
+                    'message': 'Authentication successful',
+                    'user': admin
+                }
+            
+            # Then check Faculty table by username
+            faculty = Faculty.query.filter_by(name=username).first()
             if faculty and faculty.check_password(password):
                 current_app.logger.info(f"Authentication successful for {username} from Faculty table")
                 return {
@@ -63,15 +75,14 @@ class UserService:
                     'user': faculty
                 }
             
-            # Fallback: Check Admin table for backward compatibility
-            from app.models import Admin
-            admin = Admin.query.filter_by(email=username).first()
-            if admin and admin.check_password(password):
-                current_app.logger.info(f"Authentication successful for {username} from Admin table")
+            # Fallback: Check Faculty table by email
+            faculty = Faculty.query.filter_by(email=username).first()
+            if faculty and faculty.check_password(password):
+                current_app.logger.info(f"Authentication successful for {username} from Faculty table (by email)")
                 return {
                     'success': True,
                     'message': 'Authentication successful',
-                    'user': admin
+                    'user': faculty
                 }
             
             current_app.logger.warning(f"Authentication failed for {username}: User not found or invalid password")

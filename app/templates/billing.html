@@ -109,7 +109,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4 class="card-title">₹0</h4>
+                            <h4 class="card-title">Rs{{ "{:,.0f}".format(total_revenue or 0) }}</h4>
                             <p class="card-text">Total Revenue</p>
                         </div>
                         <div class="align-self-center">
@@ -124,11 +124,45 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4 class="card-title">0</h4>
+                            <h4 class="card-title">Rs{{ "{:,.0f}".format(total_pending or 0) }}</h4>
                             <p class="card-text">Pending Fees</p>
                         </div>
                         <div class="align-self-center">
                             <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Financial Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">Rs{{ "{:,.0f}".format(total_collected or 0) }}</h4>
+                            <p class="card-text">Total Collected</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-money-check-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ "{:.1f}".format(((total_collected or 0) / (total_revenue or 1)) * 100) }}%</h4>
+                            <p class="card-text">Collection Rate</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-percentage fa-2x"></i>
                         </div>
                     </div>
                 </div>

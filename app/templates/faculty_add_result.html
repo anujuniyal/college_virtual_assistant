@@ -19,7 +19,7 @@
             <i class="fas fa-plus"></i>
             <span class="submenu-text">Send Notification</span>
         </a>
-        <a href="{{ url_for('admin.view_notifications') }}" class="nav-link">
+        <a href="{{ url_for('faculty.manage_notifications') }}" class="nav-link">
             <i class="fas fa-list"></i>
             <span class="submenu-text">View All</span>
         </a>
@@ -231,6 +231,13 @@
 </div>
 
 <script>
+// Initialize grade dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    // Set grade dropdown to empty value initially
+    const gradeSelect = document.getElementById('grade');
+    gradeSelect.value = '';
+});
+
 // Auto-calculate grade based on marks
 document.getElementById('marks').addEventListener('input', function() {
     const marks = parseFloat(this.value);
@@ -248,10 +255,8 @@ document.getElementById('marks').addEventListener('input', function() {
         
         autoGradeDiv.innerHTML = `<span class="badge bg-${getGradeColor(grade)}">${grade}</span>`;
         
-        // Auto-fill grade field if it's empty
-        if (!gradeSelect.value) {
-            gradeSelect.value = grade;
-        }
+        // Always auto-fill grade field when marks change
+        gradeSelect.value = grade;
     } else {
         autoGradeDiv.innerHTML = '<span class="text-muted">Enter valid marks (0-100)</span>';
     }

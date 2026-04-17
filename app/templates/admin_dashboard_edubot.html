@@ -146,6 +146,13 @@ console.log('toggleBot function defined in head');
 </div>
 
 <div class="nav-item">
+    <a href="{{ url_for('admin.analytics') }}" class="nav-link {% if request.endpoint == 'admin.analytics' %}active{% endif %}">
+        <i class="fas fa-chart-line"></i>
+        <span>Analytics</span>
+    </a>
+</div>
+
+<div class="nav-item">
     <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if 'student' in request.endpoint %}active{% endif %}">
         <i class="fas fa-user-graduate"></i>
         <span>Students</span>
@@ -204,32 +211,14 @@ console.log('toggleBot function defined in head');
 </div>
 
 <div class="nav-item">
-    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link {% if 'accounts' in request.endpoint %}active{% endif %}">
+    <a href="{{ url_for('accounts.students_fees_simple') }}" class="nav-link {% if 'accounts' in request.endpoint %}active{% endif %}">
         <i class="fas fa-users-cog"></i>
         <span>Accounts</span>
     </a>
 </div>
 
-<div class="nav-item">
-    <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if 'students' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-user-plus"></i>
-        <span>Registrations</span>
-    </a>
-</div>
 
-<div class="nav-item">
-    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link {% if 'faculty' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-chalkboard-teacher"></i>
-        <span>Faculty Management</span>
-    </a>
-</div>
 
-<div class="nav-item">
-    <a href="{{ url_for('admin.get_analytics') }}" class="nav-link {% if 'analytics' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-chart-line"></i>
-        <span>Analytics</span>
-    </a>
-</div>
 
 <div class="nav-item">
     <a href="{{ url_for('auth.logout') }}" class="nav-link">

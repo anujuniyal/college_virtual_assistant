@@ -201,7 +201,7 @@ class Result(db.Model):
         default=lambda: datetime.utcnow() + timedelta(days=Config.RESULT_VISIBILITY_DAYS),
     )
     # "Issued by" info (faculty/admin who uploaded the result record)
-    created_by = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('faculty.id'), nullable=True)
     
     def is_visible(self):
         """Check if result is still visible (within visibility period)"""

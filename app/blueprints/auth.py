@@ -13,13 +13,14 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        remember = request.form.get('remember') == 'on'  # Get remember me checkbox value
         
         # Use UserService for faculty-only authentication
         auth_result = UserService.authenticate_user(username, password)
         
         if auth_result['success']:
             user = auth_result['user']
-            login_user(user)
+            login_user(user, remember=remember)  # Pass remember parameter
             flash('Login successful!', 'success')
             
             # Get user role from faculty table

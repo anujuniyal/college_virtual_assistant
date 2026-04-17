@@ -9,9 +9,9 @@ from app.models import (
     Admin, Student, Faculty, Notification, Result, 
     FeeRecord, Complaint, ChatbotQA, FAQRecord, PredefinedInfo, FAQ
 )
-from app.services.analytics_service import AnalyticsService
 from app.services.weekly_report_service import WeeklyReportService
 from app.services.email_service import EmailService
+from app.services.analytics_service import AnalyticsService
 from app.config import Config
 import os
 
@@ -44,19 +44,16 @@ def admin_dashboard():
         return redirect(url_for('auth.login'))
     
     try:
-        # Get analytics data
-        analytics = AnalyticsService.get_dashboard_analytics()
-        
-        # Add additional metrics for dashboard
-        analytics['total_students'] = Student.query.count() if Student else 0
-        analytics['total_faculty'] = Faculty.query.count() if Faculty else 0
-        analytics['active_notifications'] = Notification.query.count() if Notification else 0
-        analytics['pending_complaints'] = Complaint.query.filter_by(status='pending').count() if Complaint else 0
+        # Get dashboard metrics
+        total_students = Student.query.count() if Student else 0
+        total_faculty = Faculty.query.count() if Faculty else 0
+        active_notifications = Notification.query.count() if Notification else 0
+        pending_complaints = Complaint.query.filter_by(status='pending').count() if Complaint else 0
         
         return render_template('admin_dashboard_edubot.html', 
-                           total_students=analytics.get('total_students', 0),
-                           total_faculty=analytics.get('total_faculty', 0),
-                           total_notifications=analytics.get('active_notifications', 0),
+                           total_students=total_students,
+                           total_faculty=total_faculty,
+                           total_notifications=active_notifications,
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading admin dashboard: {str(e)}")
@@ -68,72 +65,57 @@ def admin_dashboard():
                            user=current_user)
 
 
-@admin_bp.route('/analytics')
+
+
+
+
+@admin_bp.route('/refresh-activity', methods=['POST'])
 @login_required
 @admin_required
-def analytics_dashboard():
-    """Analytics dashboard page"""
+def refresh_activity():
+    """Refresh real-time activity data"""
     try:
-        # Get analytics data
-        analytics = AnalyticsService.get_analytics()
+        # Get recent activities
+        activities = []
         
-        # Add additional metrics
-        analytics['total_students'] = Student.query.count() if Student else 0
-        analytics['total_faculty'] = Faculty.query.count() if Faculty else 0
-        analytics['total_notifications'] = Notification.query.count() if Notification else 0
-        
-        # Get recent notifications for activity feed
+        # Get recent notifications
         recent_notifications = Notification.query.order_by(
             Notification.created_at.desc()
-        ).limit(10).all() if Notification else []
+        ).limit(5).all() if Notification else []
         
-        # Get department statistics
-        department_stats = []
-        if Student:
-            from sqlalchemy import func
-            dept_counts = db.session.query(
-                Student.department, func.count(Student.id)
-            ).filter(
-                Student.department.isnot(None)
-            ).group_by(Student.department).all()
-            
-            department_stats = [{'department': dept, 'count': count} for dept, count in dept_counts]
+        # Convert notifications to activity format
+        for notification in recent_notifications:
+            activities.append({
+                'text': f"New notification: {notification.title}",
+                'time': format_time_ago(notification.created_at),
+                'icon': 'bullhorn',
+                'color': 'info'
+            })
         
-        return render_template('analytics.html', 
-                           analytics=analytics,
-                           total_students=analytics.get('total_students', 0),
-                           total_faculty=analytics.get('total_faculty', 0),
-                           total_notifications=analytics.get('total_notifications', 0),
-                           department_stats=department_stats,
-                           recent_notifications=recent_notifications,
-                           user=current_user)
-    except Exception as e:
-        current_app.logger.error(f"Error loading analytics dashboard: {str(e)}")
-        flash('Error loading analytics dashboard. Please try again.', 'error')
-        return redirect(url_for('admin.admin_dashboard'))
-
-
-@admin_bp.route('/analytics-data')
-@login_required
-@admin_required
-def get_analytics():
-    """Get analytics data for dashboard (JSON API)"""
-    try:
-        # Get time period from request
-        period = request.args.get('period', '7days')
+        # Get recent student registrations if any
+        recent_students = Student.query.order_by(
+            Student.created_at.desc()
+        ).limit(3).all() if Student else []
         
-        # Get analytics data
-        analytics = AnalyticsService.get_analytics(period)
+        for student in recent_students:
+            activities.append({
+                'text': f"New student registered: {student.name}",
+                'time': format_time_ago(student.created_at),
+                'icon': 'user-graduate',
+                'color': 'success'
+            })
         
         return jsonify({
             'success': True,
-            'data': analytics
+            'activities': activities[:10]  # Limit to 10 most recent
         })
+        
     except Exception as e:
-        current_app.logger.error(f"Error getting analytics: {str(e)}")
+        current_app.logger.error(f"Error refreshing activity: {str(e)}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'activities': []
         }), 500
 
 
@@ -198,9 +180,9 @@ def manage_fee_records():
 def manage_faculty():
     """Manage faculty"""
     try:
-        faculty = Faculty.query.all()
-        return render_template('admin/faculty.html', 
-                           faculty=faculty,
+        faculty_members = Faculty.query.all()
+        return render_template('manage_faculty.html', 
+                           faculty_members=faculty_members,
                            user=current_user,
                            can_create=True,
                            can_edit=False)
@@ -216,7 +198,227 @@ def manage_faculty():
 def create_faculty():
     """Create new faculty"""
     if request.method == 'GET':
-        return render_template('admin/create_faculty.html', user=current_user)
+        return render_template('add_faculty.html', user=current_user)
+    
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        department = request.form.get('department', '').strip()
+        phone = request.form.get('phone', '').strip()
+        consultation_time = request.form.get('consultation_time', '').strip()
+        password = request.form.get('password', '').strip()
+        send_credentials = request.form.get('send_credentials') == '1'
+        
+        # Validate
+        if not name or not email:
+            flash('Name and email are required.', 'error')
+            return render_template('add_faculty.html', user=current_user)
+        
+        # Generate password if not provided
+        if not password:
+            # Generate simple password based on name
+            first_name = name.split(' ')[0].lower()
+            password = f"{first_name}123"
+        
+        # Create faculty
+        faculty = Faculty(
+            name=name,
+            email=email,
+            department=department,
+            phone=phone,
+            consultation_time=consultation_time,
+            role='faculty'
+        )
+        
+        # Set password if provided
+        if password:
+            faculty.set_password(password)
+        
+        db.session.add(faculty)
+        db.session.commit()
+        
+        # Send credentials via email if requested
+        if send_credentials:
+            try:
+                from app.services.email_service import EmailService
+                
+                subject = "Your Faculty Login Credentials - EduBot"
+                body = f"""
+Dear {name},
+
+Your faculty account has been created successfully in the EduBot system.
+
+Login Details:
+- Email: {email}
+- Password: {password}
+- Login URL: {request.host_url}auth/login
+
+Please change your password after first login for security.
+
+Best regards,
+EduBot Administration Team
+"""
+                
+                html = f"""
+<html>
+<body>
+    <h2>Welcome to EduBot Faculty Portal</h2>
+    <p>Dear {name},</p>
+    <p>Your faculty account has been created successfully in the EduBot system.</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3>Login Details:</h3>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Password:</strong> <code>{password}</code></p>
+        <p><strong>Login URL:</strong> <a href="{request.host_url}auth/login">{request.host_url}auth/login</a></p>
+    </div>
+    
+    <p><strong>Important:</strong> Please change your password after first login for security.</p>
+    
+    <p>Best regards,<br>EduBot Administration Team</p>
+</body>
+</html>
+"""
+                
+                email_sent = EmailService.send_email(email, subject, body, html)
+                if email_sent:
+                    flash('Faculty created successfully. Login credentials sent via email.', 'success')
+                else:
+                    flash('Faculty created successfully, but failed to send email. Please check email configuration.', 'warning')
+            except Exception as e:
+                current_app.logger.error(f"Error sending faculty credentials email: {str(e)}")
+                flash('Faculty created successfully, but failed to send email. Please check email configuration.', 'warning')
+        else:
+            flash('Faculty created successfully.', 'success')
+        
+        return redirect(url_for('admin.manage_faculty'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating faculty: {str(e)}")
+        flash('Error creating faculty. Please try again.', 'error')
+        return render_template('add_faculty.html', user=current_user)
+
+
+@admin_bp.route('/add-faculty', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_faculty():
+    """Add new faculty using existing template"""
+    if request.method == 'GET':
+        return render_template('add_faculty.html', user=current_user)
+    
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        department = request.form.get('department', '').strip()
+        phone = request.form.get('phone', '').strip()
+        consultation_time = request.form.get('consultation_time', '').strip()
+        password = request.form.get('password', '').strip()
+        send_credentials = request.form.get('send_credentials') == '1'
+        
+        # Validate
+        if not name or not email:
+            flash('Name and email are required.', 'error')
+            return render_template('add_faculty.html', user=current_user)
+        
+        # Generate password if not provided
+        if not password:
+            # Generate simple password based on name
+            first_name = name.split(' ')[0].lower()
+            password = f"{first_name}123"
+        
+        # Create faculty
+        faculty = Faculty(
+            name=name,
+            email=email,
+            department=department,
+            phone=phone,
+            consultation_time=consultation_time,
+            role='faculty'
+        )
+        
+        # Set password if provided
+        if password:
+            faculty.set_password(password)
+        
+        db.session.add(faculty)
+        db.session.commit()
+        
+        # Send credentials via email if requested
+        if send_credentials:
+            try:
+                from app.services.email_service import EmailService
+                
+                subject = "Your Faculty Login Credentials - EduBot"
+                body = f"""
+Dear {name},
+
+Your faculty account has been created successfully in the EduBot system.
+
+Login Details:
+- Email: {email}
+- Password: {password}
+- Login URL: {request.host_url}auth/login
+
+Please change your password after first login for security.
+
+Best regards,
+EduBot Administration Team
+"""
+                
+                html = f"""
+<html>
+<body>
+    <h2>Welcome to EduBot Faculty Portal</h2>
+    <p>Dear {name},</p>
+    <p>Your faculty account has been created successfully in the EduBot system.</p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3>Login Details:</h3>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Password:</strong> <code>{password}</code></p>
+        <p><strong>Login URL:</strong> <a href="{request.host_url}auth/login">{request.host_url}auth/login</a></p>
+    </div>
+    
+    <p><strong>Important:</strong> Please change your password after first login for security.</p>
+    
+    <p>Best regards,<br>EduBot Administration Team</p>
+</body>
+</html>
+"""
+                
+                email_sent = EmailService.send_email(email, subject, body, html)
+                if email_sent:
+                    flash('Faculty created successfully. Login credentials sent via email.', 'success')
+                else:
+                    flash('Faculty created successfully, but failed to send email. Please check email configuration.', 'warning')
+            except Exception as e:
+                current_app.logger.error(f"Error sending faculty credentials email: {str(e)}")
+                flash('Faculty created successfully, but failed to send email. Please check email configuration.', 'warning')
+        else:
+            flash('Faculty created successfully.', 'success')
+        
+        return redirect(url_for('admin.manage_faculty'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating faculty: {str(e)}")
+        flash('Error creating faculty. Please try again.', 'error')
+        return render_template('add_faculty.html', user=current_user)
+
+
+@admin_bp.route('/edit-faculty/<int:faculty_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_faculty(faculty_id):
+    """Edit faculty"""
+    faculty = Faculty.query.get_or_404(faculty_id)
+    
+    if request.method == 'GET':
+        return render_template('edit_faculty.html', 
+                           faculty=faculty,
+                           user=current_user)
     
     try:
         # Get form data
@@ -229,28 +431,28 @@ def create_faculty():
         # Validate
         if not name or not email:
             flash('Name and email are required.', 'error')
-            return render_template('admin/create_faculty.html', user=current_user)
+            return render_template('edit_faculty.html', 
+                               faculty=faculty,
+                               user=current_user)
         
-        # Create faculty
-        faculty = Faculty(
-            name=name,
-            email=email,
-            department=department,
-            phone=phone,
-            consultation_time=consultation_time,
-            role='faculty'
-        )
+        # Update faculty
+        faculty.name = name
+        faculty.email = email
+        faculty.department = department
+        faculty.phone = phone
+        faculty.consultation_time = consultation_time
         
-        db.session.add(faculty)
         db.session.commit()
         
-        flash('Faculty created successfully.', 'success')
+        flash('Faculty updated successfully.', 'success')
         return redirect(url_for('admin.manage_faculty'))
         
     except Exception as e:
-        current_app.logger.error(f"Error creating faculty: {str(e)}")
-        flash('Error creating faculty. Please try again.', 'error')
-        return render_template('admin/create_faculty.html', user=current_user)
+        current_app.logger.error(f"Error updating faculty: {str(e)}")
+        flash('Error updating faculty. Please try again.', 'error')
+        return render_template('edit_faculty.html', 
+                           faculty=faculty,
+                           user=current_user)
 
 
 @admin_bp.route('/delete-faculty/<int:faculty_id>', methods=['POST'])
@@ -445,7 +647,7 @@ def create_notification():
         # Get form data
         title = request.form.get('title', '').strip()
         content = request.form.get('content', '').strip()
-        priority = request.form.get('priority', 'medium')
+        priority = request.form.get('priority', 'normal')
         expires_days = request.form.get('expires_days', 7, type=int)
         
         # Validate
@@ -556,6 +758,8 @@ def format_time_ago(timestamp):
 
 
 # Weekly Report Route
+
+
 @admin_bp.route('/send-weekly-report', methods=['POST'])
 @login_required
 @admin_required
@@ -605,12 +809,55 @@ def send_weekly_report():
 def manage_predefined_info():
     """Manage predefined information"""
     try:
-        predefined_info = PredefinedInfo.query.order_by(
+        # Get query parameters
+        search = request.args.get('search', '').strip()
+        selected_section = request.args.get('section', '').strip()
+        
+        # Build query
+        query = PredefinedInfo.query
+        
+        # Apply section filter
+        if selected_section:
+            query = query.filter(PredefinedInfo.section == selected_section)
+        
+        # Apply search filter
+        if search:
+            search_pattern = f'%{search}%'
+            query = query.filter(
+                db.or_(
+                    PredefinedInfo.title.ilike(search_pattern),
+                    PredefinedInfo.content.ilike(search_pattern),
+                    PredefinedInfo.category.ilike(search_pattern)
+                )
+            )
+        
+        # Order and execute
+        predefined_info = query.order_by(
             PredefinedInfo.section, PredefinedInfo.title
         ).all()
         
+        # Define available sections
+        sections = [
+            ('admission', 'Admission'),
+            ('fees', 'Fees'),
+            ('facilities', 'Facilities'),
+            ('courses', 'Courses'),
+            ('academic', 'Academic Calendar'),
+            ('contact', 'Contact Information'),
+            ('library', 'Library'),
+            ('hostel', 'Hostel'),
+            ('transport', 'Transport'),
+            ('sports', 'Sports'),
+            ('placement', 'Placement'),
+            ('general', 'General')
+        ]
+        
         return render_template('manage_predefined_info.html', 
+                           info_pagination=type('Pagination', (), {'items': predefined_info, 'total': len(predefined_info), 'pages': 1, 'page': 1, 'has_prev': False, 'has_next': False, 'prev_num': 1, 'next_num': 1})(),
                            predefined_info=predefined_info,
+                           sections=sections,
+                           selected_section=selected_section,
+                           search=search,
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading predefined info: {str(e)}")
@@ -743,6 +990,73 @@ def manage_faqs():
         current_app.logger.error(f"Error loading FAQs: {str(e)}")
         flash('Error loading FAQs. Please try again.', 'error')
         return redirect(url_for('admin.admin_dashboard'))
+
+
+# Analytics Routes
+@admin_bp.route('/analytics')
+@login_required
+def analytics():
+    """Analytics dashboard page"""
+    if current_user.role != 'admin':
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+    
+    try:
+        # Get analytics data
+        analytics_data = AnalyticsService.get_analytics()
+        weekly_data = AnalyticsService.get_weekly_report_data()
+        
+        return render_template('analytics.html', 
+                           analytics=analytics_data,
+                           weekly_data=weekly_data,
+                           admin_email=Config.ADMIN_EMAIL or 'uniyalanuj1@gmail.com',
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error loading analytics: {str(e)}")
+        flash('Error loading analytics. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/analytics-data')
+@login_required
+def analytics_data():
+    """API endpoint for analytics data"""
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Admin privileges required'}), 403
+    
+    try:
+        # Get analytics data
+        analytics_data = AnalyticsService.get_analytics()
+        
+        # Get weekly report data
+        weekly_data = AnalyticsService.get_weekly_report_data()
+        
+        # Generate mock weekly trend data (in real implementation, this would come from database)
+        import random
+        weekly_trend = {
+            'total': [random.randint(10, 50) for _ in range(7)],
+            'unknown': [random.randint(1, 10) for _ in range(7)]
+        }
+        
+        # Merge data
+        analytics_data.update({
+            'weekly_data': weekly_trend,
+            'success_rate': analytics_data.get('success_rate', 0)
+        })
+        analytics_data.update(weekly_data)
+        
+        return jsonify(analytics_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting analytics data: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'total_queries': 0,
+            'unknown_queries': 0,
+            'registered_students': 0,
+            'top_unknown': [],
+            'weekly_data': {'total': [], 'unknown': []}
+        }), 500
 
 
 @admin_bp.route('/add-faq', methods=['GET', 'POST'])
@@ -939,9 +1253,16 @@ def toggle_bot():
         
         if action == 'activate':
             # Set webhook to activate bot
-            webhook_url = current_app.config.get('PUBLIC_BASE_URL', 'http://localhost:5000')
+            webhook_url = current_app.config.get('PUBLIC_BASE_URL', 'https://localhost:5000')
             if not webhook_url.endswith('/telegram/webhook'):
                 webhook_url = webhook_url.rstrip('/') + '/telegram/webhook'
+            
+            # For local development, check if we're using HTTP and provide guidance
+            if webhook_url.startswith('http://localhost'):
+                return jsonify({
+                    'success': False,
+                    'message': 'Telegram requires HTTPS URLs for webhooks. For local development, use ngrok or another tunneling service to get an HTTPS URL, or set PUBLIC_BASE_URL environment variable to your HTTPS URL.'
+                }), 400
             
             current_app.logger.info(f"Attempting to activate bot with webhook: {webhook_url}")
             current_app.logger.info(f"Bot token configured: {'Yes' if bot_token else 'No'}")

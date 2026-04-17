@@ -448,7 +448,7 @@ def faculty_profile():
         flash('Error loading profile.', 'error')
         return redirect(url_for('faculty.faculty_dashboard'))
 
-@faculty_bp.route('/analytics')
+@faculty_bp.route('/faculty-analytics')
 @faculty_required
 def analytics():
     """View analytics with faculty privileges"""

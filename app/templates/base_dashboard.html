@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EduBot Admin Dashboard{% endblock %}</title>
+    <title>{% block title %}
+        {% if current_user.is_authenticated %}
+            {% if current_user.role == 'admin' %}
+                EduBot Admin Dashboard
+            {% elif current_user.role == 'faculty' %}
+                EduBot Faculty Dashboard
+            {% elif current_user.role == 'accounts' %}
+                EduBot Accounts Dashboard
+            {% elif current_user.__class__.__name__ == 'Student' %}
+                EduBot Student Dashboard
+            {% else %}
+                EduBot Management Dashboard
+            {% endif %}
+        {% else %}
+            EduBot Dashboard
+        {% endif %}
+    {% endblock %}</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -472,47 +488,121 @@
             <div class="sidebar-header">
                 <h3>
                     <i class="fas fa-graduation-cap graduation-cap"></i>
-                    <span>EduBot Admin</span>
+                    <span>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.role == 'admin' %}
+                                EduBot Admin
+                            {% elif current_user.role == 'faculty' %}
+                                EduBot Faculty
+                            {% elif current_user.role == 'accounts' %}
+                                EduBot Accounts
+                            {% elif current_user.__class__.__name__ == 'Student' %}
+                                EduBot Student
+                            {% else %}
+                                EduBot Management
+                            {% endif %}
+                        {% else %}
+                            EduBot
+                        {% endif %}
+                    </span>
                 </h3>
             </div>
             
             <div class="sidebar-menu">
                 {% block sidebar_nav %}
-                <!-- Admin Navigation -->
-                {% if current_user.is_authenticated and current_user.__class__.__name__ == 'Admin' %}
-                    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link active">
-                        <i class="bi bi-speedometer2"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
-                        <i class="bi bi-people"></i>
-                        <span>Manage Students</span>
-                    </a>
-                    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
-                        <i class="bi bi-person-badge"></i>
-                        <span>Manage Faculty</span>
-                    </a>
-                    <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
-                        <i class="bi bi-bell"></i>
-                        <span>Notifications</span>
-                    </a>
-                    <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Complaints</span>
-                    </a>
-                    <a href="{{ url_for('admin.manage_fee_records') }}" class="nav-link">
-                        <i class="bi bi-shield-lock"></i>
-                        <span>Fee Records</span>
-                    </a>
-                    <a href="{{ url_for('admin.get_analytics') }}" class="nav-link">
-                        <i class="bi bi-graph-up"></i>
-                        <span>Analytics</span>
-                    </a>
-                    <a href="{{ url_for('admin.send_weekly_report') }}" class="nav-link">
-                        <i class="bi bi-file-earmark-spreadsheet"></i>
-                        <span>Weekly Report</span>
-                    </a>
+                <!-- Role-based Navigation -->
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'admin' %}
+                        <!-- Admin Navigation -->
+                        <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link active">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_students') }}" class="nav-link">
+                            <i class="bi bi-people"></i>
+                            <span>Manage Students</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Manage Faculty</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span>Complaints</span>
+                        </a>
+                        <a href="{{ url_for('admin.manage_fee_records') }}" class="nav-link">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Fee Records</span>
+                        </a>
+                        <a href="{{ url_for('admin.send_weekly_report') }}" class="nav-link">
+                            <i class="bi bi-file-earmark-spreadsheet"></i>
+                            <span>Weekly Report</span>
+                        </a>
+                    {% elif current_user.role == 'faculty' %}
+                        <!-- Faculty Navigation -->
+                        <a href="{{ url_for('faculty.dashboard') }}" class="nav-link active">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('faculty.manage_students') }}" class="nav-link">
+                            <i class="bi bi-people"></i>
+                            <span>Students</span>
+                        </a>
+                        <a href="{{ url_for('faculty.notifications') }}" class="nav-link">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a href="{{ url_for('faculty.complaints') }}" class="nav-link">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span>Complaints</span>
+                        </a>
+                    {% elif current_user.role == 'accounts' %}
+                        <!-- Accounts Navigation -->
+                        <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link active">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('accounts.manage_notifications') }}" class="nav-link">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a href="{{ url_for('accounts.students_fees_simple') }}" class="nav-link">
+                            <i class="bi bi-people"></i>
+                            <span>Students & Fees</span>
+                        </a>
+                        <a href="{{ url_for('accounts.billing') }}" class="nav-link">
+                            <i class="bi bi-file-invoice-dollar"></i>
+                            <span>Billing</span>
+                        </a>
+                        <a href="{{ url_for('accounts.reports') }}" class="nav-link">
+                            <i class="bi bi-chart-bar"></i>
+                            <span>Reports</span>
+                        </a>
+                    {% elif current_user.__class__.__name__ == 'Student' %}
+                        <!-- Student Navigation -->
+                        <a href="{{ url_for('student.dashboard') }}" class="nav-link active">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('student.notifications') }}" class="nav-link">
+                            <i class="bi bi-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a href="{{ url_for('student.complaints') }}" class="nav-link">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span>Complaints</span>
+                        </a>
+                    {% endif %}
                 {% endif %}
+                <!-- Logout Link -->
+                <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
                 {% endblock %}
             </div>
         </nav>
@@ -624,22 +714,77 @@
                         <h2 class="section-title">Quick Actions</h2>
                     </div>
                     <div class="quick-actions">
-                        <a href="{{ url_for('admin.manage_students') }}" class="quick-action-btn">
-                            <i class="bi bi-person-plus"></i>
-                            <span>Manage Students</span>
-                        </a>
-                        <a href="{{ url_for('admin.manage_faculty') }}" class="quick-action-btn">
-                            <i class="bi bi-person-badge"></i>
-                            <span>Manage Faculty</span>
-                        </a>
-                        <a href="{{ url_for('admin.manage_notifications') }}" class="quick-action-btn">
-                            <i class="bi bi-bell"></i>
-                            <span>Notifications</span>
-                        </a>
-                        <a href="{{ url_for('admin.manage_complaints') }}" class="quick-action-btn">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <span>Complaints</span>
-                        </a>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.role == 'admin' %}
+                                <!-- Admin Quick Actions -->
+                                <a href="{{ url_for('admin.manage_students') }}" class="quick-action-btn">
+                                    <i class="bi bi-person-plus"></i>
+                                    <span>Manage Students</span>
+                                </a>
+                                <a href="{{ url_for('admin.manage_faculty') }}" class="quick-action-btn">
+                                    <i class="bi bi-person-badge"></i>
+                                    <span>Manage Faculty</span>
+                                </a>
+                                <a href="{{ url_for('admin.manage_notifications') }}" class="quick-action-btn">
+                                    <i class="bi bi-bell"></i>
+                                    <span>Notifications</span>
+                                </a>
+                                <a href="{{ url_for('admin.manage_complaints') }}" class="quick-action-btn">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <span>Complaints</span>
+                                </a>
+                            {% elif current_user.role == 'faculty' %}
+                                <!-- Faculty Quick Actions -->
+                                <a href="{{ url_for('faculty.manage_students') }}" class="quick-action-btn">
+                                    <i class="bi bi-people"></i>
+                                    <span>Students</span>
+                                </a>
+                                <a href="{{ url_for('faculty.notifications') }}" class="quick-action-btn">
+                                    <i class="bi bi-bell"></i>
+                                    <span>Notifications</span>
+                                </a>
+                                <a href="{{ url_for('faculty.complaints') }}" class="quick-action-btn">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <span>Complaints</span>
+                                </a>
+                                <a href="{{ url_for('faculty.dashboard') }}" class="quick-action-btn">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            {% elif current_user.role == 'accounts' %}
+                                <!-- Accounts Quick Actions -->
+                                <a href="{{ url_for('accounts.accounts_dashboard') }}" class="quick-action-btn">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a href="{{ url_for('accounts.manage_notifications') }}" class="quick-action-btn">
+                                    <i class="bi bi-bell"></i>
+                                    <span>Notifications</span>
+                                </a>
+                                <a href="{{ url_for('accounts.students_fees_simple') }}" class="quick-action-btn">
+                                    <i class="bi bi-people"></i>
+                                    <span>Students & Fees</span>
+                                </a>
+                                <a href="{{ url_for('accounts.billing') }}" class="quick-action-btn">
+                                    <i class="bi bi-file-invoice-dollar"></i>
+                                    <span>Billing</span>
+                                </a>
+                            {% elif current_user.__class__.__name__ == 'Student' %}
+                                <!-- Student Quick Actions -->
+                                <a href="{{ url_for('student.dashboard') }}" class="quick-action-btn">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a href="{{ url_for('student.notifications') }}" class="quick-action-btn">
+                                    <i class="bi bi-bell"></i>
+                                    <span>Notifications</span>
+                                </a>
+                                <a href="{{ url_for('student.complaints') }}" class="quick-action-btn">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <span>Complaints</span>
+                                </a>
+                            {% endif %}
+                        {% endif %}
                     </div>
                 </div>
 

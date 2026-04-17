@@ -58,12 +58,13 @@ def register_routes(app):
             # Handle POST data and process login directly
             username = request.form.get('username')
             password = request.form.get('password')
+            remember = request.form.get('remember') == 'on'  # Get remember me checkbox value
             
             # First check Admin table
             admin = Admin.query.filter_by(username=username).first()
             
             if admin and admin.check_password(password):
-                login_user(admin, remember=True)
+                login_user(admin, remember=remember)
                 session['user_role'] = admin.role
                 session['user_name'] = admin.username
                 
@@ -81,7 +82,7 @@ def register_routes(app):
             faculty = Faculty.query.filter_by(email=username).first()
             
             if faculty and faculty.check_password(password):
-                login_user(faculty, remember=True)
+                login_user(faculty, remember=remember)
                 session['user_role'] = faculty.role
                 session['user_name'] = faculty.name
                 
@@ -98,7 +99,7 @@ def register_routes(app):
             # Also check by name if email doesn't work
             faculty_by_name = Faculty.query.filter_by(name=username).first()
             if faculty_by_name and faculty_by_name.check_password(password):
-                login_user(faculty_by_name, remember=True)
+                login_user(faculty_by_name, remember=remember)
                 session['user_role'] = faculty_by_name.role
                 session['user_name'] = faculty_by_name.name
                 
@@ -125,12 +126,13 @@ def register_routes(app):
         if request.method == 'POST':
             username = request.form.get('username')
             password = request.form.get('password')
+            remember = request.form.get('remember') == 'on'  # Get remember me checkbox value
             
             # First check Admin table
             admin = Admin.query.filter_by(username=username).first()
             
             if admin and admin.check_password(password):
-                login_user(admin, remember=True)
+                login_user(admin, remember=remember)
                 session['user_role'] = admin.role
                 session['user_name'] = admin.username
                 
@@ -148,7 +150,7 @@ def register_routes(app):
             faculty = Faculty.query.filter_by(email=username).first()
             
             if faculty and faculty.check_password(password):
-                login_user(faculty, remember=True)
+                login_user(faculty, remember=remember)
                 session['user_role'] = faculty.role
                 session['user_name'] = faculty.name
                 
@@ -165,7 +167,7 @@ def register_routes(app):
             # Also check by name if email doesn't work
             faculty_by_name = Faculty.query.filter_by(name=username).first()
             if faculty_by_name and faculty_by_name.check_password(password):
-                login_user(faculty_by_name, remember=True)
+                login_user(faculty_by_name, remember=remember)
                 session['user_role'] = faculty_by_name.role
                 session['user_name'] = faculty_by_name.name
                 
@@ -240,7 +242,7 @@ def register_routes(app):
         faculty = Faculty.query.filter_by(email=email).first()
         
         if admin:
-            login_user(admin, remember=True)
+            login_user(admin, remember=False)
             session['user_role'] = admin.role
             session['user_name'] = admin.username
             
@@ -248,14 +250,14 @@ def register_routes(app):
             if admin.role == 'admin':
                 return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
             elif admin.role == 'faculty':
-                return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
+                return jsonify({'success': True, 'redirect': url_for('faculty.faculty_dashboard')})
             elif admin.role == 'accounts':
                 return jsonify({'success': True, 'redirect': url_for('accounts.accounts_dashboard')})
             else:
                 return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
         
         elif faculty:
-            login_user(faculty, remember=True)
+            login_user(faculty, remember=False)
             session['user_role'] = faculty.role
             session['user_name'] = faculty.name
             
@@ -263,11 +265,11 @@ def register_routes(app):
             if faculty.role == 'admin':
                 return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
             elif faculty.role == 'faculty':
-                return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
+                return jsonify({'success': True, 'redirect': url_for('faculty.faculty_dashboard')})
             elif faculty.role == 'accounts':
                 return jsonify({'success': True, 'redirect': url_for('accounts.accounts_dashboard')})
             else:
-                return jsonify({'success': True, 'redirect': url_for('faculty_dashboard')})
+                return jsonify({'success': True, 'redirect': url_for('faculty.faculty_dashboard')})
         
         else:
             return jsonify({'success': False, 'message': 'User not found'})
