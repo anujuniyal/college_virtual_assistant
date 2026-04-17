@@ -223,13 +223,36 @@ class DashboardManager {
 
     updateSummaryCards(data) {
         const cards = document.querySelectorAll('.card-count');
-        const keys = ['total_students', 'total_faculty', 'total_notifications', 'pending_complaints'];
+        const keys = ['total_students', 'total_faculty', 'total_notifications', 'total_complaints'];
         
         keys.forEach((key, index) => {
             if (cards[index] && data[key] !== undefined) {
                 this.animateNumber(cards[index], data[key]);
             }
         });
+        
+        // Update complaint-specific cards if they exist
+        this.updateComplaintCards(data);
+    }
+    
+    updateComplaintCards(data) {
+        // Update pending complaints card
+        const pendingCard = document.querySelector('[data-complaint-stat="pending"]');
+        if (pendingCard && data.pending_complaints !== undefined) {
+            this.animateNumber(pendingCard, data.pending_complaints);
+        }
+        
+        // Update investigating complaints card
+        const investigatingCard = document.querySelector('[data-complaint-stat="investigating"]');
+        if (investigatingCard && data.investigating_complaints !== undefined) {
+            this.animateNumber(investigatingCard, data.investigating_complaints);
+        }
+        
+        // Update resolved complaints card
+        const resolvedCard = document.querySelector('[data-complaint-stat="resolved"]');
+        if (resolvedCard && data.resolved_complaints !== undefined) {
+            this.animateNumber(resolvedCard, data.resolved_complaints);
+        }
     }
 
     animateNumber(element, targetNumber) {
@@ -454,3 +477,92 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+
+// Real-time complaint updates for admin dashboard
+function startComplaintRealTimeUpdates() {
+    // Update complaint stats every 30 seconds
+    setInterval(() => {
+        fetch('/admin/complaints-stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && window.dashboardManager) {
+                    window.dashboardManager.updateComplaintCards(data.stats);
+                }
+            })
+            .catch(error => console.log('Complaint stats update error:', error));
+    }, 30000);
+    
+    // Update recent activity every 30 seconds
+    setInterval(() => {
+        fetch('/admin/refresh-activity')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && window.dashboardManager) {
+                    window.dashboardManager.updateDashboardData(data);
+                }
+            })
+            .catch(error => console.log('Activity update error:', error));
+    }, 30000);
+}
+
+// Auto-refresh complaint management page
+function startComplaintPageAutoRefresh() {
+    if (window.location.pathname.includes('/complaints')) {
+        setInterval(() => {
+            // Refresh complaint statistics
+            fetch('/admin/complaints-stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update statistics cards
+                        updateComplaintStatsCards(data.stats);
+                    }
+                })
+                .catch(error => console.log('Error updating complaint stats:', error));
+        }, 30000);
+    }
+}
+
+function updateComplaintStatsCards(stats) {
+    // Update total complaints
+    const totalCard = document.querySelector('.card-body h4');
+    if (totalCard && stats.total_complaints !== undefined) {
+        animateValue(totalCard, parseInt(totalCard.textContent), stats.total_complaints, 1000);
+    }
+    
+    // Update status-specific cards
+    const statusCards = {
+        'pending': stats.pending_complaints,
+        'investigating': stats.investigating_complaints,
+        'resolved': stats.resolved_complaints
+    };
+    
+    Object.keys(statusCards).forEach(status => {
+        const card = document.querySelector(`.card:has(.badge:contains("${status}")) h4`);
+        if (card && statusCards[status] !== undefined) {
+            animateValue(card, parseInt(card.textContent), statusCards[status], 1000);
+        }
+    });
+}
+
+function animateValue(element, start, end, duration) {
+    const startTime = performance.now();
+    const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const current = Math.floor(start + (end - start) * progress);
+        element.textContent = current;
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    };
+    requestAnimationFrame(animate);
+}
+
+// Initialize real-time updates when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    startComplaintRealTimeUpdates();
+    startComplaintPageAutoRefresh();
+});

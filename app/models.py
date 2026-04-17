@@ -60,22 +60,26 @@ class Student(db.Model, UserMixin):
         from sqlalchemy.exc import IntegrityError
         
         try:
-            # Start transaction
+            # Use FOR UPDATE to lock the student record and prevent race conditions
+            student = Student.query.filter_by(id=self.id).with_for_update().first()
+            if not student:
+                return False, "Student record not found"
+            
             # Update student record first
-            self.telegram_user_id = telegram_user_id
-            self.telegram_verified = True
+            student.telegram_user_id = telegram_user_id
+            student.telegram_verified = True
             
             # Also update the TelegramUserMapping table
             # First try to find existing mapping by telegram_user_id (most reliable)
             existing_mapping = TelegramUserMapping.query.filter_by(
                 telegram_user_id=telegram_user_id
-            ).first()
+            ).with_for_update().first()
             
             if not existing_mapping:
                 # If no mapping exists by telegram_user_id, try by phone_number as fallback
                 existing_mapping = TelegramUserMapping.query.filter_by(
-                    phone_number=self.phone
-                ).first()
+                    phone_number=student.phone
+                ).with_for_update().first()
                 if existing_mapping:
                     # Update the existing mapping with correct telegram_user_id
                     existing_mapping.telegram_user_id = telegram_user_id
@@ -84,19 +88,18 @@ class Student(db.Model, UserMixin):
                 # Create new mapping if none exists
                 mapping = TelegramUserMapping(
                     telegram_user_id=telegram_user_id,
-                    student_id=self.id,
-                    phone_number=self.phone,
+                    student_id=student.id,
+                    phone_number=student.phone,
                     verified=True
                 )
                 db.session.add(mapping)
             else:
                 # Update existing mapping
-                existing_mapping.student_id = self.id
-                existing_mapping.phone_number = self.phone
+                existing_mapping.student_id = student.id
+                existing_mapping.phone_number = student.phone
                 existing_mapping.verified = True
             
-            # Commit transaction
-            db.session.commit()
+            # Don't commit here - let the caller handle the transaction
             return True, "Telegram account linked successfully"
             
         except IntegrityError as e:

@@ -382,6 +382,9 @@ def get_student_details(student_id):
                     'phone': student.phone,
                     'department': student.department,
                     'semester': student.semester,
+                    'telegram_user_id': student.telegram_user_id,
+                    'telegram_verified': student.telegram_verified,
+                    'telegram_info': student.get_telegram_info(),
                     'latest_fee': {
                         'total_amount': latest_fee.total_amount if latest_fee else 0,
                         'paid_amount': latest_fee.paid_amount if latest_fee else 0,

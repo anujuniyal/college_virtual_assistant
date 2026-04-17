@@ -157,7 +157,7 @@ class ChatbotService:
             roll_number = roll_match.group(0).upper()
             return self._verify_student_by_roll_and_phone(roll_number, phone_number)
         
-        return "Please provide your roll number in format: EDU25001"
+        return "Please provide your roll number in format: register EDU25001"
     
     def _get_or_create_view_count(self, student_id: int, service_type: str) -> DailyViewCount:
         """Get or create daily view count record"""

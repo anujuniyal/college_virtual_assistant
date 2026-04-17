@@ -48,12 +48,24 @@ def admin_dashboard():
         total_students = Student.query.count() if Student else 0
         total_faculty = Faculty.query.count() if Faculty else 0
         active_notifications = Notification.query.count() if Notification else 0
-        pending_complaints = Complaint.query.filter_by(status='pending').count() if Complaint else 0
+        
+        # Get complaint statistics
+        if Complaint:
+            total_complaints = Complaint.query.count()
+            pending_complaints = Complaint.query.filter_by(status='pending').count()
+            investigating_complaints = Complaint.query.filter_by(status='investigating').count()
+            resolved_complaints = Complaint.query.filter_by(status='resolved').count()
+        else:
+            total_complaints = pending_complaints = investigating_complaints = resolved_complaints = 0
         
         return render_template('admin_dashboard_edubot.html', 
                            total_students=total_students,
                            total_faculty=total_faculty,
                            total_notifications=active_notifications,
+                           total_complaints=total_complaints,
+                           pending_complaints=pending_complaints,
+                           investigating_complaints=investigating_complaints,
+                           resolved_complaints=resolved_complaints,
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading admin dashboard: {str(e)}")
@@ -62,6 +74,10 @@ def admin_dashboard():
                            total_students=0,
                            total_faculty=0,
                            total_notifications=0,
+                           total_complaints=0,
+                           pending_complaints=0,
+                           investigating_complaints=0,
+                           resolved_complaints=0,
                            user=current_user)
 
 
@@ -105,9 +121,26 @@ def refresh_activity():
                 'color': 'success'
             })
         
+        # Get recent complaints
+        recent_complaints = Complaint.query.order_by(
+            Complaint.created_at.desc()
+        ).limit(3).all() if Complaint else []
+        
+        for complaint in recent_complaints:
+            activities.append({
+                'text': f"New complaint filed: {complaint.category.title()} - {complaint.description[:50]}...",
+                'time': format_time_ago(complaint.created_at),
+                'icon': 'exclamation-triangle',
+                'color': 'warning'
+            })
+        
         return jsonify({
             'success': True,
-            'activities': activities[:10]  # Limit to 10 most recent
+            'activities': activities[:10],  # Limit to 10 most recent
+            'total_complaints': Complaint.query.count() if Complaint else 0,
+            'pending_complaints': Complaint.query.filter_by(status='pending').count() if Complaint else 0,
+            'investigating_complaints': Complaint.query.filter_by(status='investigating').count() if Complaint else 0,
+            'resolved_complaints': Complaint.query.filter_by(status='resolved').count() if Complaint else 0
         })
         
     except Exception as e:
@@ -640,17 +673,63 @@ def upload():
 def manage_notifications():
     """Manage notifications"""
     try:
-        notifications = Notification.query.order_by(
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = 15
+        search = request.args.get('search', '')
+        status_filter = request.args.get('status', '')
+        
+        # Build query
+        query = Notification.query
+        
+        # Apply search filter
+        if search:
+            query = query.filter(
+                Notification.title.ilike(f'%{search}%') |
+                Notification.content.ilike(f'%{search}%')
+            )
+        
+        # Apply status filter
+        if status_filter == 'active':
+            query = query.filter(Notification.expires_at > datetime.utcnow())
+        elif status_filter == 'expired':
+            query = query.filter(Notification.expires_at <= datetime.utcnow())
+        
+        # Get paginated results
+        notifications_pagination = query.order_by(
             Notification.created_at.desc()
-        ).all()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Get statistics
+        total_notifications = Notification.query.count()
+        active_notifications = Notification.query.filter(
+            Notification.expires_at > datetime.utcnow()
+        ).count()
+        expired_notifications = Notification.query.filter(
+            Notification.expires_at <= datetime.utcnow()
+        ).count()
         
         return render_template('manage_notifications.html', 
-                           notifications=notifications,
+                           notifications_pagination=notifications_pagination,
+                           total_notifications=total_notifications,
+                           active_notifications=active_notifications,
+                           expired_notifications=expired_notifications,
+                           search=search,
+                           status_filter=status_filter,
                            user=current_user)
+                           
     except Exception as e:
         current_app.logger.error(f"Error loading notifications: {str(e)}")
         flash('Error loading notifications. Please try again.', 'error')
-        return redirect(url_for('admin.admin_dashboard'))
+        # Return empty data instead of redirecting to avoid infinite loops
+        return render_template('manage_notifications.html', 
+                           notifications_pagination=None,
+                           total_notifications=0,
+                           active_notifications=0,
+                           expired_notifications=0,
+                           search='',
+                           status_filter='',
+                           user=current_user)
 
 
 @admin_bp.route('/create-notification', methods=['GET', 'POST'])
@@ -719,12 +798,39 @@ def delete_notification(notification_id):
 def manage_complaints():
     """Manage complaints"""
     try:
-        complaints = Complaint.query.order_by(
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        selected_status = request.args.get('status', '')
+        selected_category = request.args.get('category', '')
+        
+        # Build query with filters
+        query = Complaint.query
+        
+        if selected_status:
+            query = query.filter(Complaint.status == selected_status)
+        
+        if selected_category:
+            query = query.filter(Complaint.category == selected_category)
+        
+        # Get paginated results
+        complaints_pagination = query.order_by(
             Complaint.created_at.desc()
-        ).all()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Get statistics
+        total_complaints = Complaint.query.count()
+        pending_complaints = Complaint.query.filter_by(status='pending').count()
+        investigating_complaints = Complaint.query.filter_by(status='investigating').count()
+        resolved_complaints = Complaint.query.filter_by(status='resolved').count()
         
         return render_template('manage_complaints.html', 
-                           complaints=complaints,
+                           complaints_pagination=complaints_pagination,
+                           total_complaints=total_complaints,
+                           pending_complaints=pending_complaints,
+                           investigating_complaints=investigating_complaints,
+                           resolved_complaints=resolved_complaints,
+                           selected_status=selected_status,
+                           selected_category=selected_category,
                            user=current_user)
     except Exception as e:
         current_app.logger.error(f"Error loading complaints: {str(e)}")
@@ -1047,17 +1153,64 @@ def delete_predefined_info(info_id):
 def manage_faqs():
     """Manage frequently asked questions"""
     try:
-        faqs = FAQ.query.order_by(
+        # Get pagination and filter parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        search = request.args.get('search', '')
+        selected_category = request.args.get('category', '')
+        selected_priority = request.args.get('priority', '')
+        
+        # Build query
+        query = FAQ.query
+        
+        # Apply search filter
+        if search:
+            query = query.filter(
+                FAQ.question.ilike(f'%{search}%') |
+                FAQ.answer.ilike(f'%{search}%')
+            )
+        
+        # Apply category filter
+        if selected_category:
+            query = query.filter(FAQ.category == selected_category)
+        
+        # Apply priority filter
+        if selected_priority:
+            query = query.filter(FAQ.priority == int(selected_priority))
+        
+        # Get paginated results
+        faq_pagination = query.order_by(
             FAQ.priority.desc(), FAQ.created_at.desc()
-        ).all()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Get statistics
+        total_faqs = FAQ.query.count()
+        active_faqs = FAQ.query.filter_by(is_active=True).count()
+        total_views = db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0
         
         return render_template('manage_faqs.html', 
-                           faqs=faqs,
+                           faq_pagination=faq_pagination,
+                           total_faqs=total_faqs,
+                           active_faqs=active_faqs,
+                           total_views=total_views,
+                           search=search,
+                           selected_category=selected_category,
+                           selected_priority=selected_priority,
                            user=current_user)
+                           
     except Exception as e:
         current_app.logger.error(f"Error loading FAQs: {str(e)}")
         flash('Error loading FAQs. Please try again.', 'error')
-        return redirect(url_for('admin.admin_dashboard'))
+        # Return empty data instead of redirecting to avoid infinite loops
+        return render_template('manage_faqs.html', 
+                           faq_pagination=None,
+                           total_faqs=0,
+                           active_faqs=0,
+                           total_views=0,
+                           search='',
+                           selected_category='',
+                           selected_priority='',
+                           user=current_user)
 
 
 # Analytics Routes
@@ -1441,4 +1594,323 @@ def toggle_bot():
         return jsonify({
             'success': False,
             'message': f"Error toggling bot: {str(e)}"
+        }), 500
+
+
+@admin_bp.route('/view-complaint/<int:complaint_id>')
+@login_required
+@admin_required
+def view_complaint(complaint_id):
+    """View complaint details"""
+    try:
+        complaint = Complaint.query.get_or_404(complaint_id)
+        return render_template('view_complaint.html', 
+                           complaint=complaint,
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error viewing complaint: {str(e)}")
+        flash('Error loading complaint details. Please try again.', 'error')
+        return redirect(url_for('admin.manage_complaints'))
+
+
+@admin_bp.route('/delete-complaint/<int:complaint_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_complaint(complaint_id):
+    """Delete complaint"""
+    try:
+        complaint = Complaint.query.get_or_404(complaint_id)
+        db.session.delete(complaint)
+        db.session.commit()
+        
+        flash('Complaint deleted successfully.', 'success')
+        return redirect(url_for('admin.manage_complaints'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting complaint: {str(e)}")
+        flash('Error deleting complaint. Please try again.', 'error')
+        return redirect(url_for('admin.manage_complaints'))
+
+
+@admin_bp.route('/update-complaint-status/<int:complaint_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_complaint_status(complaint_id):
+    """Update complaint status"""
+    try:
+        complaint = Complaint.query.get_or_404(complaint_id)
+        new_status = request.json.get('status')
+        
+        if new_status in ['pending', 'investigating', 'resolved']:
+            complaint.status = new_status
+            if new_status == 'resolved':
+                complaint.resolved_at = datetime.utcnow()
+                complaint.resolved_by = current_user.id
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Complaint status updated to {new_status}'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid status'
+            })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating complaint status: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error updating complaint status'
+        }), 500
+
+
+@admin_bp.route('/complaints-stats', methods=['GET'])
+@login_required
+@admin_required
+def complaints_stats():
+    """Get real-time complaint statistics"""
+    try:
+        stats = {
+            'total_complaints': Complaint.query.count() if Complaint else 0,
+            'pending_complaints': Complaint.query.filter_by(status='pending').count() if Complaint else 0,
+            'investigating_complaints': Complaint.query.filter_by(status='investigating').count() if Complaint else 0,
+            'resolved_complaints': Complaint.query.filter_by(status='resolved').count() if Complaint else 0
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting complaint stats: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error loading statistics'
+        }), 500
+
+@admin_bp.route('/view-notifications')
+@login_required
+@admin_required
+def view_notifications():
+    """View all notifications - separate route for better organization"""
+    try:
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        search = request.args.get('search', '')
+        status_filter = request.args.get('status', '')
+        
+        # Build query
+        query = Notification.query
+        
+        # Apply search filter
+        if search:
+            query = query.filter(
+                Notification.title.ilike(f'%{search}%') |
+                Notification.content.ilike(f'%{search}%')
+            )
+        
+        # Apply status filter
+        if status_filter == 'active':
+            query = query.filter(Notification.expires_at > datetime.utcnow())
+        elif status_filter == 'expired':
+            query = query.filter(Notification.expires_at <= datetime.utcnow())
+        
+        # Get paginated results
+        notifications_pagination = query.order_by(
+            Notification.created_at.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Get statistics
+        total_notifications = Notification.query.count()
+        active_notifications = Notification.query.filter(
+            Notification.expires_at > datetime.utcnow()
+        ).count()
+        expired_notifications = Notification.query.filter(
+            Notification.expires_at <= datetime.utcnow()
+        ).count()
+        
+        return render_template('view_notifications.html', 
+                           notifications_pagination=notifications_pagination,
+                           total_notifications=total_notifications,
+                           active_notifications=active_notifications,
+                           expired_notifications=expired_notifications,
+                           search=search,
+                           status_filter=status_filter,
+                           user=current_user)
+                           
+    except Exception as e:
+        current_app.logger.error(f"Error loading view notifications: {str(e)}")
+        flash('Error loading notifications. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route('/notification/<int:notification_id>')
+@login_required
+@admin_required
+def view_notification_detail(notification_id):
+    """View individual notification details"""
+    try:
+        notification = Notification.query.get_or_404(notification_id)
+        return render_template('notification_detail.html', 
+                           notification=notification,
+                           user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error viewing notification detail: {str(e)}")
+        flash('Error loading notification details. Please try again.', 'error')
+        return redirect(url_for('admin.view_notifications'))
+
+
+@admin_bp.route('/notifications-stats', methods=['GET'])
+@login_required
+@admin_required
+def notifications_stats():
+    """Get real-time notification statistics"""
+    try:
+        stats = {
+            'total_notifications': Notification.query.count(),
+            'active_notifications': Notification.query.filter(
+                Notification.expires_at > datetime.utcnow()
+            ).count(),
+            'expired_notifications': Notification.query.filter(
+                Notification.expires_at <= datetime.utcnow()
+            ).count()
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting notification stats: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error loading statistics'
+        }), 500
+
+
+@admin_bp.route('/faqs-stats', methods=['GET'])
+@login_required
+@admin_required
+def faqs_stats():
+    """Get real-time FAQ statistics"""
+    try:
+        stats = {
+            'total_faqs': FAQ.query.count(),
+            'active_faqs': FAQ.query.filter_by(is_active=True).count(),
+            'inactive_faqs': FAQ.query.filter_by(is_active=False).count(),
+            'total_views': db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0,
+            'high_priority': FAQ.query.filter_by(priority=3).count(),
+            'medium_priority': FAQ.query.filter_by(priority=2).count(),
+            'low_priority': FAQ.query.filter_by(priority=1).count()
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting FAQ stats: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error loading statistics'
+        }), 500
+
+
+@admin_bp.route('/refresh-faqs', methods=['POST'])
+@login_required
+@admin_required
+def refresh_faqs():
+    """Refresh FAQ data with real-time updates"""
+    try:
+        # Get current parameters
+        page = request.json.get('page', 1)
+        search = request.json.get('search', '')
+        selected_category = request.json.get('category', '')
+        selected_priority = request.json.get('priority', '')
+        
+        # Build query
+        query = FAQ.query
+        
+        # Apply filters
+        if search:
+            query = query.filter(
+                FAQ.question.ilike(f'%{search}%') |
+                FAQ.answer.ilike(f'%{search}%')
+            )
+        
+        if selected_category:
+            query = query.filter(FAQ.category == selected_category)
+        
+        if selected_priority:
+            query = query.filter(FAQ.priority == int(selected_priority))
+        
+        # Get paginated results
+        faq_pagination = query.order_by(
+            FAQ.priority.desc(), FAQ.created_at.desc()
+        ).paginate(page=page, per_page=10, error_out=False)
+        
+        # Format FAQ data for JSON response
+        faqs_data = []
+        for faq in faq_pagination.items:
+            faqs_data.append({
+                'id': faq.id,
+                'question': faq.question,
+                'answer': faq.answer,
+                'category': faq.category,
+                'priority': faq.priority,
+                'view_count': faq.view_count,
+                'is_active': faq.is_active,
+                'updated_at': faq.updated_at.strftime('%d %b %Y') if faq.updated_at else '',
+                'priority_label': 'High' if faq.priority == 3 else 'Medium' if faq.priority == 2 else 'Low'
+            })
+        
+        return jsonify({
+            'success': True,
+            'faqs': faqs_data,
+            'pagination': {
+                'page': faq_pagination.page,
+                'pages': faq_pagination.pages,
+                'total': faq_pagination.total,
+                'has_prev': faq_pagination.has_prev,
+                'has_next': faq_pagination.has_next
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error refreshing FAQs: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error refreshing FAQ data'
+        }), 500
+
+
+@admin_bp.route('/toggle-faq-status/<int:faq_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_faq_status(faq_id):
+    """Toggle FAQ active/inactive status"""
+    try:
+        faq = FAQ.query.get_or_404(faq_id)
+        faq.is_active = not faq.is_active
+        faq.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'FAQ {"activated" if faq.is_active else "deactivated"} successfully',
+            'is_active': faq.is_active
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error toggling FAQ status: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error updating FAQ status'
         }), 500

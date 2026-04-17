@@ -5,36 +5,8 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar">
-            <div class="sidebar-content">
-                <div class="text-center mb-4">
-                    <div class="avatar">
-                        <i class="bi bi-person-circle" style="font-size: 3rem; color: var(--rd-primary);"></i>
-                    </div>
-                    <h6 class="text-white">{{ current_user.username }}</h6>
-                    <small class="text-white-50">Administrator</small>
-                </div>
-                
-                <nav class="nav flex-column">
-                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
-                    <a href="{{ url_for('manage_complaints') }}" class="nav-link">
-                        <i class="bi bi-exclamation-triangle"></i> Manage Complaints
-                    </a>
-                    <a href="{{ url_for('complaint_messages') }}" class="nav-link">
-                        <i class="bi bi-chat-dots"></i> Complaint Messages
-                    </a>
-                    <a href="{{ url_for('admin.manage_faqs') }}" class="nav-link">
-                        <i class="bi bi-question-circle"></i> Manage FAQs
-                    </a>
-                </nav>
-            </div>
-        </div>
-        
         <!-- Main Content -->
-        <div class="col-md-10">
+        <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="mb-1">Create FAQ from Complaint</h2>
