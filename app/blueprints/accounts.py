@@ -36,12 +36,12 @@ def accounts_required(write_access=False):
             
             user_role = get_user_role()
             
-            # Check accounts access - allow admin, faculty, and accounts roles
+            # Check accounts access - allow admin, faculty, and accounts roles for read-only
             if user_role not in ['admin', 'faculty', 'accounts']:
                 flash('Access denied. Accounts privileges required.', 'error')
                 return redirect(url_for('auth.login'))
             
-            # Check write access for fee operations
+            # Check write access for fee operations - only accounts role can write
             if write_access and user_role not in ['accounts']:
                 flash('Write access required for fee operations. Contact admin for accounts role.', 'error')
                 return redirect(url_for('auth.login'))
@@ -50,9 +50,28 @@ def accounts_required(write_access=False):
         return decorated_function
     return decorator
 
+def accounts_dashboard_required():
+    """Decorator to restrict access to accounts dashboard - only accounts role"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            
+            user_role = get_user_role()
+            
+            # Only allow accounts role for dashboard access
+            if user_role not in ['accounts']:
+                flash('Access denied. Accounts dashboard privileges required.', 'error')
+                return redirect(url_for('auth.login'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 @accounts_bp.route('/dashboard')
 @login_required
-@accounts_required()
+@accounts_dashboard_required()
 def accounts_dashboard():
     """Accounts dashboard with financial access"""
     try:

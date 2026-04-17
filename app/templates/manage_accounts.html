@@ -5,41 +5,44 @@
 {% block sidebar_nav %}
 <!-- Accounts Navigation -->
 <div class="nav-item">
-    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link {% if request.endpoint == 'accounts.accounts_dashboard' %}active{% endif %}">
-        <i class="fas fa-tachometer-alt"></i>
+    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link active">
+        <i class="bi bi-speedometer2"></i>
         <span>Dashboard</span>
     </a>
 </div>
-
 <div class="nav-item">
-    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
-        <i class="fas fa-users-cog"></i>
-        <span>Accounts</span>
-        <i class="fas fa-chevron-down ms-auto"></i>
+    <a href="{{ url_for('accounts.students_fees_dashboard') }}" class="nav-link">
+        <i class="bi bi-cash-coin"></i>
+        <span>Fee Records</span>
     </a>
-    <div class="submenu">
-        <a href="{{ url_for('accounts.students_fees_dashboard') }}" class="nav-link {% if request.endpoint and 'students-fees' in request.endpoint %}active{% endif %}">
-            <i class="fas fa-users"></i>
-            <span class="submenu-text">Student Fees</span>
-        </a>
-        <a href="{{ url_for('accounts.manage_accounts') }}" class="nav-link {% if request.endpoint == 'accounts.manage_accounts' %}active{% endif %}">
-            <i class="fas fa-cog"></i>
-            <span class="submenu-text">Manage Accounts</span>
-        </a>
-        <a href="{{ url_for('accounts.billing') }}" class="nav-link {% if request.endpoint == 'accounts.billing' %}active{% endif %}">
-            <i class="fas fa-file-invoice-dollar"></i>
-            <span class="submenu-text">Billing</span>
-        </a>
-        <a href="{{ url_for('accounts.reports') }}" class="nav-link {% if request.endpoint == 'accounts.reports' %}active{% endif %}">
-            <i class="fas fa-chart-line"></i>
-            <span class="submenu-text">Reports</span>
-        </a>
-    </div>
 </div>
-
+<div class="nav-item">
+    <a href="{{ url_for('accounts.manage_notifications') }}" class="nav-link">
+        <i class="bi bi-bell"></i>
+        <span>Notifications</span>
+    </a>
+</div>
+<div class="nav-item">
+    <a href="{{ url_for('accounts.billing') }}" class="nav-link">
+        <i class="bi bi-file-invoice-dollar"></i>
+        <span>Billing</span>
+    </a>
+</div>
+<div class="nav-item">
+    <a href="{{ url_for('accounts.reports') }}" class="nav-link">
+        <i class="bi bi-chart-bar"></i>
+        <span>Reports</span>
+    </a>
+</div>
+<div class="nav-item">
+    <a href="{{ url_for('accounts.edit_profile') }}" class="nav-link">
+        <i class="bi bi-person-gear"></i>
+        <span>Edit Profile</span>
+    </a>
+</div>
 <div class="nav-item">
     <a href="{{ url_for('auth.logout') }}" class="nav-link">
-        <i class="fas fa-sign-out-alt"></i>
+        <i class="bi bi-box-arrow-right"></i>
         <span>Logout</span>
     </a>
 </div>
