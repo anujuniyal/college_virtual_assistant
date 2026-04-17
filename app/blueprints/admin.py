@@ -803,12 +803,49 @@ def send_weekly_report():
 
 
 # Predefined Info Routes
+@admin_bp.route('/init-predefined-info')
+@login_required
+@admin_required
+def init_predefined_info():
+    """Initialize predefined info table"""
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        
+        if not inspector.has_table('predefined_info'):
+            # Create the table
+            db.create_all()
+            current_app.logger.info("Created predefined_info table")
+            flash('Predefined information table created successfully.', 'success')
+        else:
+            flash('Predefined information table already exists.', 'info')
+            
+        return redirect(url_for('admin.manage_predefined_info'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error initializing predefined info table: {str(e)}")
+        flash('Error creating predefined information table. Please try again.', 'error')
+        return redirect(url_for('admin.admin_dashboard'))
+
 @admin_bp.route('/predefined-info')
 @login_required
 @admin_required
 def manage_predefined_info():
     """Manage predefined information"""
     try:
+        # Check if table exists first
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if not inspector.has_table('predefined_info'):
+            current_app.logger.error("predefined_info table does not exist")
+            flash('Predefined information table not found. Please contact administrator.', 'error')
+            return render_template('manage_predefined_info.html', 
+                               info_pagination=None, 
+                               sections=[], 
+                               search='', 
+                               selected_section='',
+                               user=current_user)
+        
         # Get query parameters
         search = request.args.get('search', '').strip()
         selected_section = request.args.get('section', '').strip()
@@ -911,12 +948,25 @@ def add_predefined_info():
 @admin_required
 def edit_predefined_info(info_id):
     """Edit predefined information"""
-    predefined_info = PredefinedInfo.query.get_or_404(info_id)
-    
-    if request.method == 'GET':
-        return render_template('edit_predefined_info.html', 
-                           predefined_info=predefined_info,
-                           user=current_user)
+    try:
+        # Check if table exists first
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if not inspector.has_table('predefined_info'):
+            current_app.logger.error("predefined_info table does not exist")
+            flash('Predefined information table not found. Please contact administrator.', 'error')
+            return redirect(url_for('admin.manage_predefined_info'))
+        
+        predefined_info = PredefinedInfo.query.get_or_404(info_id)
+        
+        if request.method == 'GET':
+            return render_template('edit_predefined_info.html', 
+                               predefined_info=predefined_info,
+                               user=current_user)
+    except Exception as e:
+        current_app.logger.error(f"Error in edit_predefined_info: {str(e)}")
+        flash('Error loading predefined information. Please try again.', 'error')
+        return redirect(url_for('admin.manage_predefined_info'))
     
     try:
         # Get form data
