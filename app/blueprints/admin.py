@@ -1164,7 +1164,7 @@ def manage_faqs():
         selected_priority = request.args.get('priority', '')
         
         # Build query
-        query = FAQRecord.query
+        query = db.session.query(FAQRecord)
         
         # Apply search filter
         if search:
@@ -1187,8 +1187,8 @@ def manage_faqs():
         ).paginate(page=page, per_page=per_page, error_out=False)
         
         # Get statistics
-        total_faqs = FAQRecord.query.count()
-        active_faqs = FAQRecord.query.filter_by(is_active=True).count()
+        total_faqs = db.session.query(FAQRecord).count()
+        active_faqs = db.session.query(FAQRecord).filter_by(processed=True).count()
         total_views = db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0
         
         return render_template('manage_faqs.html', 
@@ -1329,7 +1329,7 @@ def add_faq():
 @admin_required
 def edit_faq(faq_id):
     """Edit FAQ"""
-    faq = FAQRecord.query.get_or_404(faq_id)
+    faq = db.session.query(FAQRecord).get_or_404(faq_id)
     
     if request.method == 'GET':
         return render_template('edit_faq.html', 
@@ -1841,7 +1841,7 @@ def refresh_faqs():
         selected_priority = request.json.get('priority', '')
         
         # Build query
-        query = FAQRecord.query
+        query = db.session.query(FAQRecord)
         
         # Apply filters
         if search:
