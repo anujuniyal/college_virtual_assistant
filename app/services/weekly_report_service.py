@@ -136,7 +136,7 @@ class WeeklyReportService:
             top_unknown = []
             if unknown_queries_count > 0:
                 # Get only the query texts, not full objects
-                query_texts = [q[0] for q in db.session.query(FAQRecord.query).filter(
+                query_texts = [q.query for q in db.session.query(FAQRecord).filter(
                     FAQRecord.created_at >= week_ago
                 ).all()]
                 top_unknown = [item[0] for item in Counter(query_texts).most_common(10)]
