@@ -1189,7 +1189,7 @@ def manage_faqs():
         # Get statistics
         total_faqs = db.session.query(FAQRecord).count()
         active_faqs = db.session.query(FAQRecord).filter_by(processed=True).count()
-        total_views = db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0
+        total_views = 0  # FAQRecord doesn't have view_count field
         
         return render_template('manage_faqs.html', 
                            faq_pagination=faq_pagination,
@@ -1866,14 +1866,14 @@ def refresh_faqs():
         for faq in faq_pagination.items:
             faqs_data.append({
                 'id': faq.id,
-                'question': faq.question,
-                'answer': faq.answer,
-                'category': faq.category,
-                'priority': faq.priority,
-                'view_count': faq.view_count,
-                'is_active': faq.is_active,
-                'updated_at': faq.updated_at.strftime('%d %b %Y') if faq.updated_at else '',
-                'priority_label': 'High' if faq.priority == 3 else 'Medium' if faq.priority == 2 else 'Low'
+                'question': faq.query,  # FAQRecord uses 'query' field
+                'answer': 'N/A',  # FAQRecord doesn't have answer field
+                'category': 'N/A',  # FAQRecord doesn't have category field
+                'priority': 'N/A',  # FAQRecord doesn't have priority field
+                'view_count': 0,  # FAQRecord doesn't have view_count field
+                'is_active': faq.processed,  # FAQRecord uses 'processed' field
+                'updated_at': faq.created_at.strftime('%d %b %Y') if faq.created_at else '',
+                'priority_label': 'Processed' if faq.processed else 'Pending'
             })
         
         return jsonify({
