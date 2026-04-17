@@ -207,6 +207,7 @@ def create_faculty():
         department = request.form.get('department', '').strip()
         phone = request.form.get('phone', '').strip()
         consultation_time = request.form.get('consultation_time', '').strip()
+        role = request.form.get('role', 'faculty').strip()
         password = request.form.get('password', '').strip()
         send_credentials = request.form.get('send_credentials') == '1'
         
@@ -315,6 +316,7 @@ def add_faculty():
         department = request.form.get('department', '').strip()
         phone = request.form.get('phone', '').strip()
         consultation_time = request.form.get('consultation_time', '').strip()
+        role = request.form.get('role', 'faculty').strip()
         password = request.form.get('password', '').strip()
         send_credentials = request.form.get('send_credentials') == '1'
         
@@ -427,6 +429,7 @@ def edit_faculty(faculty_id):
         department = request.form.get('department', '').strip()
         phone = request.form.get('phone', '').strip()
         consultation_time = request.form.get('consultation_time', '').strip()
+        role = request.form.get('role', 'faculty').strip()
         
         # Validate
         if not name or not email:
@@ -441,6 +444,7 @@ def edit_faculty(faculty_id):
         faculty.department = department
         faculty.phone = phone
         faculty.consultation_time = consultation_time
+        faculty.role = role
         
         db.session.commit()
         
