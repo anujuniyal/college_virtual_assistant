@@ -1302,7 +1302,7 @@ def register_routes(app):
         query = FAQRecord.query
         
         if search:
-            query = query.filter(FAQ.question.ilike(f'%{search}%'))
+            query = query.filter(FAQRecord.query.ilike(f'%{search}%'))
         
         if selected_category:
             query = query.filter(FAQ.category == selected_category)

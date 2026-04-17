@@ -148,46 +148,74 @@
     <script>
     // Real-time notifications data management
     let notificationsData = [];
-    let refreshInterval;
-    let isNotificationsPage = true;
+    let refreshInterval = null;
+    let isNotificationsPage = false;
+    let eventListenersAdded = false;
     
     // Initialize notifications page
     document.addEventListener('DOMContentLoaded', () => {
-        // Check if we're still on the notifications page
-        if (document.querySelector('.col-md-10')) {
+        // Check if we're actually on the notifications page
+        if (window.location.pathname.includes('/notifications') && document.querySelector('.col-md-10')) {
+            isNotificationsPage = true;
             startRealTimeUpdates();
             setupEventListeners();
         }
     });
     
     function setupEventListeners() {
+        if (eventListenersAdded) return;
+        eventListenersAdded = true;
+        
         // Listen for visibility changes to pause/resume updates
-        document.addEventListener('visibilitychange', () => {
-            if (!isNotificationsPage) return;
-            
-            if (document.hidden) {
-                stopRealTimeUpdates();
-            } else {
-                // Check if we're still on notifications page before resuming
-                if (document.querySelector('.col-md-10')) {
-                    startRealTimeUpdates();
-                }
-            }
-        });
+        document.addEventListener('visibilitychange', handleVisibilityChange);
         
         // Listen for page unload to clean up
-        window.addEventListener('beforeunload', () => {
-            stopRealTimeUpdates();
-            isNotificationsPage = false;
-        });
+        window.addEventListener('beforeunload', handlePageUnload);
         
         // Listen for navigation changes
-        window.addEventListener('popstate', () => {
-            if (!window.location.pathname.includes('/notifications')) {
-                stopRealTimeUpdates();
-                isNotificationsPage = false;
+        window.addEventListener('popstate', handleNavigationChange);
+        
+        // Listen for SPA navigation (if using any frontend framework)
+        window.addEventListener('hashchange', handleNavigationChange);
+    }
+    
+    function handleVisibilityChange() {
+        if (!isNotificationsPage) return;
+        
+        if (document.hidden) {
+            stopRealTimeUpdates();
+        } else {
+            // Check if we're still on notifications page before resuming
+            if (window.location.pathname.includes('/notifications') && document.querySelector('.col-md-10')) {
+                startRealTimeUpdates();
+            } else {
+                cleanupAndStop();
             }
-        });
+        }
+    }
+    
+    function handlePageUnload() {
+        cleanupAndStop();
+    }
+    
+    function handleNavigationChange() {
+        if (!window.location.pathname.includes('/notifications')) {
+            cleanupAndStop();
+        }
+    }
+    
+    function cleanupAndStop() {
+        stopRealTimeUpdates();
+        isNotificationsPage = false;
+        
+        // Remove event listeners to prevent memory leaks
+        if (eventListenersAdded) {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('beforeunload', handlePageUnload);
+            window.removeEventListener('popstate', handleNavigationChange);
+            window.removeEventListener('hashchange', handleNavigationChange);
+            eventListenersAdded = false;
+        }
     }
     
     function startRealTimeUpdates() {
@@ -195,12 +223,10 @@
         stopRealTimeUpdates();
         
         // Only proceed if we're on notifications page
-        if (!document.querySelector('.col-md-10')) {
-            isNotificationsPage = false;
+        if (!window.location.pathname.includes('/notifications') || !document.querySelector('.col-md-10')) {
+            cleanupAndStop();
             return;
         }
-        
-        isNotificationsPage = true;
         
         // Fetch initial data
         fetchNotifications();
@@ -208,10 +234,10 @@
         // Set up auto-refresh every 30 seconds
         refreshInterval = setInterval(() => {
             // Double-check we're still on notifications page before fetching
-            if (isNotificationsPage && document.querySelector('.col-md-10')) {
+            if (isNotificationsPage && window.location.pathname.includes('/notifications') && document.querySelector('.col-md-10')) {
                 fetchNotifications();
             } else {
-                stopRealTimeUpdates();
+                cleanupAndStop();
             }
         }, 30000);
     }
@@ -225,7 +251,7 @@
     
     function fetchNotifications() {
         // Only fetch if we're still on notifications page
-        if (!isNotificationsPage || !document.querySelector('.col-md-10')) {
+        if (!isNotificationsPage || !window.location.pathname.includes('/notifications') || !document.querySelector('.col-md-10')) {
             return;
         }
         
@@ -239,7 +265,7 @@
             })
             .then(data => {
                 // Final check before updating DOM
-                if (!isNotificationsPage || !document.querySelector('.col-md-10')) {
+                if (!isNotificationsPage || !window.location.pathname.includes('/notifications') || !document.querySelector('.col-md-10')) {
                     return;
                 }
                 
@@ -251,8 +277,8 @@
                 }
             })
             .catch(error => {
-                // Don't log errors when navigating away (expected behavior)
-                if (isNotificationsPage) {
+                // Only log errors if we're still on the notifications page
+                if (isNotificationsPage && window.location.pathname.includes('/notifications')) {
                     console.log('Error fetching notifications:', error);
                 }
             });
@@ -382,7 +408,7 @@
     
     function showUpdateIndicator() {
         // Only show indicator if we're still on notifications page
-        if (!isNotificationsPage || !document.querySelector('.col-md-10')) {
+        if (!isNotificationsPage || !window.location.pathname.includes('/notifications') || !document.querySelector('.col-md-10')) {
             return;
         }
         
@@ -406,8 +432,14 @@
         document.body.appendChild(indicator);
         
         setTimeout(() => {
-            indicator.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => indicator.remove(), 300);
+            if (indicator.parentNode) {
+                indicator.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.remove();
+                    }
+                }, 300);
+            }
         }, 3000);
     }
     

@@ -1802,12 +1802,12 @@ def faq_records_stats():
     try:
         stats = {
             'total_faqs': FAQRecord.query.count(),
-            'active_faqs': FAQRecord.query.filter_by(is_active=True).count(),
-            'inactive_faqs': FAQRecord.query.filter_by(is_active=False).count(),
-            'total_views': db.session.query(db.func.sum(FAQ.view_count)).scalar() or 0,
-            'high_priority': FAQRecord.query.filter_by(priority=3).count(),
-            'medium_priority': FAQRecord.query.filter_by(priority=2).count(),
-            'low_priority': FAQRecord.query.filter_by(priority=1).count()
+            'active_faqs': FAQRecord.query.filter_by(processed=True).count(),
+            'inactive_faqs': FAQRecord.query.filter_by(processed=False).count(),
+            'total_views': 0,  # FAQRecord doesn't have view_count field
+            'high_priority': 0,  # FAQRecord doesn't have priority field
+            'medium_priority': 0,  # FAQRecord doesn't have priority field
+            'low_priority': 0,  # FAQRecord doesn't have priority field
         }
         
         return jsonify({
