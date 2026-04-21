@@ -425,10 +425,17 @@ def add_result():
             flash('✅ Result added successfully!', 'success')
             return redirect(url_for('faculty.manage_results'))
         except Exception as e:
+            db.session.rollback()  # Rollback session to prevent PendingRollbackError
             current_app.logger.error(f"Error adding result: {str(e)}")
             flash(f'❌ Error adding result: {str(e)}', 'error')
     
-    students = Student.query.order_by(Student.name).all()
+    try:
+        students = Student.query.order_by(Student.name).all()
+    except Exception as e:
+        db.session.rollback()  # Rollback if student query fails
+        current_app.logger.error(f"Error loading students: {str(e)}")
+        students = []
+    
     return render_template('faculty_add_result.html', students=students)
 
 @faculty_bp.route('/faculty-profile', methods=['GET', 'POST'])

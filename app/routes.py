@@ -73,7 +73,7 @@ def register_routes(app):
                 if admin.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
                 elif admin.role == 'faculty':
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
                 elif admin.role == 'accounts':
                     return redirect(url_for('accounts.accounts_dashboard'))
                 else:
@@ -91,11 +91,11 @@ def register_routes(app):
                 if faculty.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
                 elif faculty.role == 'faculty':
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
                 elif faculty.role == 'accounts':
                     return redirect(url_for('accounts.accounts_dashboard'))
                 else:
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
             
             # Also check by name if email doesn't work
             faculty_by_name = Faculty.query.filter_by(name=username).first()
@@ -108,11 +108,11 @@ def register_routes(app):
                 if faculty_by_name.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
                 elif faculty_by_name.role == 'faculty':
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
                 elif faculty_by_name.role == 'accounts':
                     return redirect(url_for('accounts.accounts_dashboard'))
                 else:
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
             
             else:
                 flash('Invalid username/email or password', 'error')
@@ -141,7 +141,7 @@ def register_routes(app):
                 if admin.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
                 elif admin.role == 'faculty':
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
                 elif admin.role == 'accounts':
                     return redirect(url_for('accounts.accounts_dashboard'))
                 else:
@@ -159,11 +159,11 @@ def register_routes(app):
                 if faculty.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
                 elif faculty.role == 'faculty':
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
                 elif faculty.role == 'accounts':
                     return redirect(url_for('accounts.accounts_dashboard'))
                 else:
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
             
             # Also check by name if email doesn't work
             faculty_by_name = Faculty.query.filter_by(name=username).first()
@@ -176,11 +176,11 @@ def register_routes(app):
                 if faculty_by_name.role == 'admin':
                     return redirect(url_for('admin_dashboard'))
                 elif faculty_by_name.role == 'faculty':
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
                 elif faculty_by_name.role == 'accounts':
                     return redirect(url_for('accounts.accounts_dashboard'))
                 else:
-                    return redirect(url_for('faculty_dashboard'))
+                    return redirect(url_for('faculty.faculty_dashboard'))
             
             else:
                 flash('Invalid username/email or password', 'error')
