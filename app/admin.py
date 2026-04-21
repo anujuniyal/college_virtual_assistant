@@ -295,8 +295,13 @@ def init_admin(app):
             return redirect(url_for('admin_dashboard'))
         
         try:
-            csv_path = WeeklyReportService.generate_weekly_report()
-            flash(f'Weekly report generated successfully. CSV saved to: {csv_path}', 'success')
+            csv_path, visitor_csv_path = WeeklyReportService.generate_weekly_report()
+            if csv_path and visitor_csv_path:
+                flash(f'Weekly report generated successfully. CSVs saved to: {csv_path} and {visitor_csv_path}', 'success')
+            elif csv_path:
+                flash(f'Weekly report generated successfully. CSV saved to: {csv_path}', 'success')
+            else:
+                flash('Weekly report generated successfully (no data to export)', 'success')
         except Exception as e:
             flash(f'Error generating report: {str(e)}', 'error')
         
