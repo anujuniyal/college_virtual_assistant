@@ -240,6 +240,9 @@ class Config:
     # Session Configuration
 
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)
+    
+    # Remember Me Configuration
+    REMEMBER_COOKIE_DURATION = timedelta(days=30)  # 30 days remember me
 
     
 

@@ -20,6 +20,11 @@ def login():
         
         if auth_result['success']:
             user = auth_result['user']
+            
+            # Set session as permanent if remember me is checked
+            if remember:
+                session.permanent = True
+            
             login_user(user, remember=remember)  # Pass remember parameter
             flash('Login successful!', 'success')
             

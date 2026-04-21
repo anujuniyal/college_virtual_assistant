@@ -11,6 +11,11 @@ services:
     autoDeploy: true
     # Environment Variables
     envVars:
+      # Session Security for Remember Me
+      - key: SECRET_KEY
+        value: "edubot-render-secret-key-2024-secure-production"
+      - key: FLASK_ENV
+        value: production
       # Email Configuration - Resend API for Render compatibility
       - key: MAIL_SERVER
         value: smtp.gmail.com
