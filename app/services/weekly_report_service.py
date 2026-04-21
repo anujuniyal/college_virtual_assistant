@@ -37,16 +37,33 @@ class WeeklyReportService:
             
             # Prepare attachments list
             attachments = []
-            if csv_path and os.path.exists(csv_path):
-                if isinstance(csv_path, str):
+            logger.info(f"CSV path: {csv_path} (type: {type(csv_path)})")
+            logger.info(f"Visitor CSV path: {visitor_csv_path} (type: {type(visitor_csv_path)})")
+            
+            if csv_path:
+                if isinstance(csv_path, str) and os.path.exists(csv_path):
                     attachments.append(csv_path)
+                    logger.info(f"Added CSV attachment: {csv_path}")
                 else:
-                    logger.error(f"CSV path is not a string: {type(csv_path)} - {csv_path}")
-            if visitor_csv_path and os.path.exists(visitor_csv_path):
-                if isinstance(visitor_csv_path, str):
+                    logger.error(f"CSV path issue - type: {type(csv_path)}, exists: {os.path.exists(csv_path) if isinstance(csv_path, str) else 'N/A'}, value: {csv_path}")
+            
+            if visitor_csv_path:
+                if isinstance(visitor_csv_path, str) and os.path.exists(visitor_csv_path):
                     attachments.append(visitor_csv_path)
+                    logger.info(f"Added visitor CSV attachment: {visitor_csv_path}")
                 else:
-                    logger.error(f"Visitor CSV path is not a string: {type(visitor_csv_path)} - {visitor_csv_path}")
+                    logger.error(f"Visitor CSV path issue - type: {type(visitor_csv_path)}, exists: {os.path.exists(visitor_csv_path) if isinstance(visitor_csv_path, str) else 'N/A'}, value: {visitor_csv_path}")
+            
+            # Final validation of attachments list
+            logger.info(f"Final attachments list: {attachments}")
+            for i, att in enumerate(attachments):
+                if not isinstance(att, str):
+                    logger.error(f"Attachment {i} is not a string: {type(att)} - {att}")
+                    attachments[i] = str(att) if att else None
+            
+            # Remove any None values
+            attachments = [att for att in attachments if att is not None]
+            logger.info(f"Cleaned attachments list: {attachments}")
             
             # Send email to admin using background service with attachments
             WeeklyReportService._send_weekly_report_background(report_data, attachments)
@@ -97,7 +114,8 @@ class WeeklyReportService:
         """Export unknown queries to CSV with memory optimization"""
         try:
             # Ensure data directory exists
-            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+            app_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            data_dir = os.path.join(app_root, 'data')
             os.makedirs(data_dir, exist_ok=True)
             
             # Generate filename with timestamp
@@ -143,7 +161,8 @@ class WeeklyReportService:
         """Export visitor queries to CSV with memory optimization"""
         try:
             # Ensure data directory exists
-            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
+            app_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            data_dir = os.path.join(app_root, 'data')
             os.makedirs(data_dir, exist_ok=True)
             
             # Generate filename with timestamp
