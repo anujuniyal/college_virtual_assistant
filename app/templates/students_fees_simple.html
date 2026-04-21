@@ -3,6 +3,44 @@
 {% block title %}Fee Records - EduBot Admin{% endblock %}
 
 {% block sidebar_nav %}
+{% if current_user.role == 'admin' %}
+<!-- Admin Navigation -->
+<div class="nav-item">
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin.admin_dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if request.endpoint == 'admin.manage_students' %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Students</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.manage_fee_records') }}" class="nav-link {% if request.endpoint == 'admin.manage_fee_records' %}active{% endif %}">
+        <i class="fas fa-dollar-sign"></i>
+        <span>Fee Records</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link {% if request.endpoint == 'admin.manage_notifications' %}active{% endif %}">
+        <i class="fas fa-bell"></i>
+        <span>Notifications</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link {% if request.endpoint == 'admin.manage_complaints' %}active{% endif %}">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Complaints</span>
+    </a>
+</div>
+
+{% elif current_user.role == 'faculty' %}
 <!-- Faculty Navigation -->
 <div class="nav-item">
     <a href="{{ url_for('faculty.faculty_dashboard') }}" class="nav-link {% if request.endpoint == 'faculty.faculty_dashboard' %}active{% endif %}">
@@ -32,70 +70,31 @@
     </a>
 </div>
 
+{% elif current_user.role == 'accounts' %}
+<!-- Accounts Navigation -->
 <div class="nav-item">
-    <a href="{{ url_for('admin.manage_students') }}" class="nav-link {% if 'student' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-user-graduate"></i>
-        <span>Students</span>
+    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="nav-link {% if request.endpoint == 'accounts.accounts_dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
     </a>
 </div>
 
 <div class="nav-item">
-    <a href="{{ url_for('admin.manage_faculty') }}" class="nav-link {% if 'faculty' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-chalkboard-teacher"></i>
-        <span>Faculty</span>
-    </a>
-</div>
-
-<div class="nav-item">
-    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
-        <i class="fas fa-info-circle"></i>
-        <span>College Info</span>
-        <i class="fas fa-chevron-down ms-auto"></i>
-    </a>
-    <div class="submenu">
-        <a href="{{ url_for('admin.manage_predefined_info') }}" class="nav-link">
-            <i class="fas fa-edit"></i>
-            <span class="submenu-text">Predefined Info</span>
-        </a>
-        <a href="{{ url_for('admin.manage_faqs') }}" class="nav-link">
-            <i class="fas fa-question"></i>
-            <span class="submenu-text">FAQ Management</span>
-        </a>
-    </div>
-</div>
-
-<div class="nav-item">
-    <a href="#" class="nav-link" onclick="toggleSubmenu(this)">
+    <a href="{{ url_for('accounts.manage_notifications') }}" class="nav-link {% if request.endpoint == 'accounts.manage_notifications' %}active{% endif %}">
         <i class="fas fa-bell"></i>
         <span>Notifications</span>
-        <i class="fas fa-chevron-down ms-auto"></i>
-    </a>
-    <div class="submenu">
-        <a href="{{ url_for('admin.create_notification') }}" class="nav-link">
-            <i class="fas fa-plus"></i>
-            <span class="submenu-text">Add Notification</span>
-        </a>
-        <a href="{{ url_for('admin.manage_notifications') }}" class="nav-link">
-            <i class="fas fa-list"></i>
-            <span class="submenu-text">View All</span>
-        </a>
-    </div>
-</div>
-
-
-<div class="nav-item">
-    <a href="{{ url_for('admin.manage_complaints') }}" class="nav-link {% if 'complaint' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span>Complaints</span>
     </a>
 </div>
 
 <div class="nav-item">
-    <a href="{{ url_for('accounts.students_fees_simple') }}" class="nav-link {% if 'accounts' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-users-cog"></i>
-        <span>Accounts</span>
+    <a href="{{ url_for('accounts.students_fees_simple') }}" class="nav-link {% if request.endpoint == 'accounts.students_fees_simple' %}active{% endif %}">
+        <i class="fas fa-dollar-sign"></i>
+        <span>Fee Records</span>
     </a>
 </div>
+
+{% endif %}
+
 
 
 
@@ -116,9 +115,19 @@
         <h2 class="mb-1">Student Fee Records</h2>
         <small class="text-muted">View and manage student fee information</small>
     </div>
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> Return to Admin Dashboard
+    </a>
+{% elif current_user.role == 'faculty' %}
     <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-outline-primary">
         <i class="bi bi-arrow-left"></i> Return to Faculty Dashboard
     </a>
+{% elif current_user.role == 'accounts' %}
+    <a href="{{ url_for('accounts.accounts_dashboard') }}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> Return to Accounts Dashboard
+    </a>
+{% endif %}
 </div>
 
 <!-- Summary Cards -->
