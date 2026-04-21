@@ -38,9 +38,15 @@ class WeeklyReportService:
             # Prepare attachments list
             attachments = []
             if csv_path and os.path.exists(csv_path):
-                attachments.append(csv_path)
+                if isinstance(csv_path, str):
+                    attachments.append(csv_path)
+                else:
+                    logger.error(f"CSV path is not a string: {type(csv_path)} - {csv_path}")
             if visitor_csv_path and os.path.exists(visitor_csv_path):
-                attachments.append(visitor_csv_path)
+                if isinstance(visitor_csv_path, str):
+                    attachments.append(visitor_csv_path)
+                else:
+                    logger.error(f"Visitor CSV path is not a string: {type(visitor_csv_path)} - {visitor_csv_path}")
             
             # Send email to admin using background service with attachments
             WeeklyReportService._send_weekly_report_background(report_data, attachments)
@@ -407,6 +413,11 @@ class WeeklyReportService:
             
             # Send using background email service
             admin_email = Config.ADMIN_EMAIL or 'uniyalanuj1@gmail.com'
+            logger.info(f"Attempting to send weekly report with {len(attachments) if attachments else 0} attachments")
+            if attachments:
+                for i, attachment in enumerate(attachments):
+                    logger.info(f"Attachment {i+1}: {attachment} (type: {type(attachment)})")
+            
             success = send_email_background(admin_email, subject, body, html, attachments)
             
             if success:

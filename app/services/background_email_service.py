@@ -163,18 +163,28 @@ class BackgroundEmailService:
             # Add attachments if provided
             if attachments:
                 for file_path in attachments:
+                    # Check if file_path is a string, not a tuple
+                    if not isinstance(file_path, str):
+                        logger.error(f"Invalid attachment type: {type(file_path)} - {file_path}")
+                        continue
+                    
                     if os.path.exists(file_path):
-                        with open(file_path, "rb") as attachment:
-                            part = MIMEBase('application', 'octet-stream')
-                            part.set_payload(attachment.read())
-                        
-                        encoders.encode_base64(part)
-                        filename = os.path.basename(file_path)
-                        part.add_header(
-                            'Content-Disposition',
-                            f'attachment; filename= {filename}'
-                        )
-                        msg.attach(part)
+                        try:
+                            with open(file_path, "rb") as attachment:
+                                part = MIMEBase('application', 'octet-stream')
+                                part.set_payload(attachment.read())
+                            
+                            encoders.encode_base64(part)
+                            filename = os.path.basename(file_path)
+                            part.add_header(
+                                'Content-Disposition',
+                                f'attachment; filename= {filename}'
+                            )
+                            msg.attach(part)
+                        except Exception as e:
+                            logger.error(f"Error attaching file {file_path}: {str(e)}")
+                    else:
+                        logger.warning(f"Attachment file not found: {file_path}")
             
             # Send email with proper SMTP configuration
             server = smtplib.SMTP(self.mail_server, self.mail_port)
