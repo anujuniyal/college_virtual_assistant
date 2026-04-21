@@ -34,12 +34,18 @@ class BackgroundEmailService:
     def send_email(self, to: str, subject: str, body: str, html: Optional[str] = None, attachments: Optional[list] = None) -> bool:
         """
         Send email using available services in priority order:
-        1. Brevo API (if available)
-        2. Resend API (if available)  
-        3. SMTP (as fallback)
+        1. SMTP (if attachments present - APIs don't support attachments properly)
+        2. Brevo API (if available)
+        3. Resend API (if available)  
+        4. SMTP (as fallback)
         Returns: True if successful, False otherwise
         """
         try:
+            # If attachments are present, use SMTP directly since APIs don't support attachments properly
+            if attachments and len(attachments) > 0:
+                logger.info(f"Using SMTP for email with {len(attachments)} attachments")
+                return self._send_smtp_email(to, subject, body, html, attachments)
+            
             # Try Brevo API first (300 emails/day free)
             if self.brevo_api_key and self.brevo_api_key != 'your_brevo_api_key_here':
                 success = self._send_brevo_email(to, subject, body, html)
