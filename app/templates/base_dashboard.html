@@ -548,15 +548,15 @@
                             <i class="bi bi-speedometer2"></i>
                             <span>Dashboard</span>
                         </a>
-                        <a href="{{ url_for('faculty.manage_students') }}" class="nav-link">
+                        <a href="{{ url_for('faculty.faculty_manage_students') }}" class="nav-link">
                             <i class="bi bi-people"></i>
                             <span>Students</span>
                         </a>
-                        <a href="{{ url_for('faculty.notifications') }}" class="nav-link">
+                        <a href="{{ url_for('faculty.manage_notifications') }}" class="nav-link">
                             <i class="bi bi-bell"></i>
                             <span>Notifications</span>
                         </a>
-                        <a href="{{ url_for('faculty.complaints') }}" class="nav-link">
+                        <a href="{{ url_for('faculty.manage_complaints') }}" class="nav-link">
                             <i class="bi bi-exclamation-triangle"></i>
                             <span>Complaints</span>
                         </a>
@@ -735,15 +735,15 @@
                                 </a>
                             {% elif current_user.role == 'faculty' %}
                                 <!-- Faculty Quick Actions -->
-                                <a href="{{ url_for('faculty.manage_students') }}" class="quick-action-btn">
+                                <a href="{{ url_for('faculty.faculty_manage_students') }}" class="quick-action-btn">
                                     <i class="bi bi-people"></i>
                                     <span>Students</span>
                                 </a>
-                                <a href="{{ url_for('faculty.notifications') }}" class="quick-action-btn">
+                                <a href="{{ url_for('faculty.manage_notifications') }}" class="quick-action-btn">
                                     <i class="bi bi-bell"></i>
                                     <span>Notifications</span>
                                 </a>
-                                <a href="{{ url_for('faculty.complaints') }}" class="quick-action-btn">
+                                <a href="{{ url_for('faculty.manage_complaints') }}" class="quick-action-btn">
                                     <i class="bi bi-exclamation-triangle"></i>
                                     <span>Complaints</span>
                                 </a>
