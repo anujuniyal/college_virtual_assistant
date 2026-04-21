@@ -232,11 +232,7 @@
             <i class="fas fa-users-cog"></i>
             Fee Records
         </a>
-        <a href="#" class="quick-action-btn" onclick="showScheduleModal()">
-            <i class="fas fa-calendar"></i>
-            My Schedule
-        </a>
-    </div>
+            </div>
 </div>
 
 <!-- Department Statistics -->
@@ -267,27 +263,6 @@
     </div>
 </div>
 
-<!-- Schedule Modal (Hidden by default) -->
-<div class="modal fade" id="scheduleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">My Teaching Schedule</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center text-muted">
-                    <i class="fas fa-calendar-alt fa-3x mb-3"></i>
-                    <p>Schedule feature coming soon!</p>
-                    <small>You'll be able to manage your teaching schedule and consultation hours here.</small>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 <script>
@@ -380,10 +355,6 @@ function updateActivityList(activities, notifications) {
     activityList.innerHTML = html;
 }
 
-function showScheduleModal() {
-    const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
-    modal.show();
-}
 
 // Update faculty-specific dashboard data
 function refreshFacultyDashboard() {
