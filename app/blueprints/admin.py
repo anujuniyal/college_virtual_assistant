@@ -921,11 +921,14 @@ def send_weekly_report():
         import os
         
         # Generate weekly report
-        csv_path = WeeklyReportService.generate_weekly_report()
+        csv_path, visitor_csv_path = WeeklyReportService.generate_weekly_report()
         
-        if csv_path and os.path.exists(csv_path):
+        # Use the main CSV path for file operations
+        main_csv_path = csv_path if csv_path else visitor_csv_path
+        
+        if main_csv_path and os.path.exists(main_csv_path):
             # Get file info
-            file_name = os.path.basename(csv_path)
+            file_name = os.path.basename(main_csv_path)
             
             # Weekly report is already sent by the background service
             # No need to send again, just return
@@ -933,7 +936,7 @@ def send_weekly_report():
             return jsonify({
                 'success': True,
                 'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
-                'file_path': csv_path,
+                'file_path': main_csv_path,
                 'file_name': file_name
             })
             
