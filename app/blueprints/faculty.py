@@ -154,6 +154,32 @@ def send_notification():
                     flash(error_msg, 'error')
                     return render_template('faculty_send_notification.html')
             
+            # Get the correct admin ID for created_by field
+            admin_id = None
+            if hasattr(current_user, 'role') and current_user.role == 'admin':
+                # Current user is from Admin table
+                admin_id = current_user.id
+            elif hasattr(current_user, 'user_role') and current_user.user_role == 'admin':
+                # Current user is from Admin table (alternative check)
+                admin_id = current_user.id
+            else:
+                # Current user is faculty, find or create corresponding admin entry
+                from app.models import Admin
+                admin_entry = Admin.query.filter_by(email=current_user.email).first()
+                if admin_entry:
+                    admin_id = admin_entry.id
+                else:
+                    # Create admin entry for faculty user
+                    admin_entry = Admin(
+                        username=current_user.email.split('@')[0],
+                        email=current_user.email,
+                        role='faculty',
+                        password_hash=current_user.password_hash if hasattr(current_user, 'password_hash') else ''
+                    )
+                    db.session.add(admin_entry)
+                    db.session.commit()
+                    admin_id = admin_entry.id
+            
             notification = Notification(
                 title=title,
                 content=content,
@@ -162,7 +188,7 @@ def send_notification():
                 notification_type=request.form.get('notification_type', 'general'),
                 priority=request.form.get('priority', 'medium'),
                 expires_at=datetime.utcnow() + timedelta(days=expiry_days),
-                created_by=current_user.id
+                created_by=admin_id
             )
             
             db.session.add(notification)
@@ -197,8 +223,8 @@ def send_notification():
                 return redirect(url_for('faculty.faculty_dashboard'))
             
         except Exception as e:
-            current_app.logger.error(f"Error sending notification from faculty {current_user.id}: {str(e)}")
-            db.session.rollback()
+            db.session.rollback()  # Rollback session to prevent PendingRollbackError
+            current_app.logger.error(f"Error sending notification from faculty: {str(e)}")
             
             error_msg = f'❌ Error sending notification: {str(e)}'
             if is_ajax:
