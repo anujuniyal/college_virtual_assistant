@@ -1,0 +1,54 @@
+ID,Query Type,Query Text,Response Text,Phone Number,Telegram User ID,Created At
+35,hi,Hi,"🏫 **Welcome to College Virtual Assistant!**
+
+📋 **Visitor Service Mode**
+
+📌 **General Information:**
+1. Admission Process - Admission requirements and procedure
+2. Courses & Fees - Available courses and fee structure
+3. Faculty Details - Faculty directory and information
+4. Facilities - Campus facilities and infrastructure
+5. Contact Info - Reception and contact details
+6. Help - Show this menu
+
+📞 **Reception Contact:**
+📱 Phone: +91-12345-67890
+📧 Email: info@college.edu
+🕐 Office Hours: 9:00 AM - 5:00 PM
+
+🎓 **Students:** To access personalized services,
+Type: `EDU25001`
+or
+Share your phone number using the button below
+📱 [Share Phone Number]
+
+Simply type a number (1-6) or keyword to get started!",visitor_7229077719,,2026-04-17T04:24:52.448779
+36,hi,Hi,"🏫 **Welcome to College Virtual Assistant!**
+
+📋 **Visitor Service Mode**
+
+📌 **General Information:**
+1. Admission Process - Admission requirements and procedure
+2. Courses & Fees - Available courses and fee structure
+3. Faculty Details - Faculty directory and information
+4. Facilities - Campus facilities and infrastructure
+5. Contact Info - Reception and contact details
+6. Help - Show this menu
+
+📞 **Reception Contact:**
+📱 Phone: +91-12345-67890
+📧 Email: info@college.edu
+🕐 Office Hours: 9:00 AM - 5:00 PM
+
+🎓 **Students:** To access personalized services,
+Type: `EDU25001`
+or
+Share your phone number using the button below
+📱 [Share Phone Number]
+
+Simply type a number (1-6) or keyword to get started!",visitor_7229077719,,2026-04-17T05:21:41.070008
+37,admission,What is the admission process for engineering courses?,"The admission process includes application form submission, entrance exam, and counseling.",9876543210,,2026-04-21T13:24:55.744769
+38,course,What courses are available in computer science department?,"We offer B.Tech, M.Tech, and PhD programs in Computer Science.",9876543211,,2026-04-21T13:24:55.744772
+39,contact,How can I contact the admission office?,You can contact the admission office at admin@college.edu or call 123-456-7890.,9876543212,,2026-04-21T13:24:55.744774
+40,facilities,What facilities are available in the campus library?,"The library has study rooms, computer labs, and a large collection of books.",9876543213,,2026-04-21T13:24:55.744775
+41,faculty,Who is the head of the computer science department?,Dr. Smith is the head of the Computer Science department.,9876543214,,2026-04-21T13:24:55.744777

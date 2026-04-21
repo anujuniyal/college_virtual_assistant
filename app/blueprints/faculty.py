@@ -384,13 +384,40 @@ def add_result():
     if request.method == 'POST':
         try:
             semester = int(request.form.get('semester') or 1)
+            
+            # Get the correct admin ID for created_by field
+            admin_id = None
+            if hasattr(current_user, 'role') and current_user.role == 'admin':
+                # Current user is from Admin table
+                admin_id = current_user.id
+            elif hasattr(current_user, 'user_role') and current_user.user_role == 'admin':
+                # Current user is from Admin table (alternative check)
+                admin_id = current_user.id
+            else:
+                # Current user is faculty, find or create corresponding admin entry
+                from app.models import Admin
+                admin_entry = Admin.query.filter_by(email=current_user.email).first()
+                if admin_entry:
+                    admin_id = admin_entry.id
+                else:
+                    # Create admin entry for faculty user
+                    admin_entry = Admin(
+                        username=current_user.email.split('@')[0],
+                        email=current_user.email,
+                        role='faculty',
+                        password_hash=current_user.password_hash if hasattr(current_user, 'password_hash') else ''
+                    )
+                    db.session.add(admin_entry)
+                    db.session.commit()
+                    admin_id = admin_entry.id
+            
             result = Result(
                 student_id=int(request.form.get('student_id')),
                 subject=request.form.get('subject'),
                 marks=float(request.form.get('marks')),
                 grade=request.form.get('grade'),
                 semester=semester,
-                created_by=current_user.id,
+                created_by=admin_id,
                 declared_at=datetime.utcnow(),
             )
             db.session.add(result)
