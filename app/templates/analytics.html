@@ -158,6 +158,40 @@
                 <small class="text-muted">Detailed query logs with timestamps</small>
             </div>
         </div>
+        
+        <!-- Visitor Queries Analytics -->
+        <div class="summary-card">
+            <div class="card-icon" style="color: #9c27b0;">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">Visitor Queries</div>
+                <div class="card-count">{{ weekly_data.visitor_queries.total_queries or 0 }}</div>
+                <small class="text-muted">Anonymous visitors (excluding verified students)</small>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon" style="color: #2196f3;">
+                <i class="bi bi-person-check"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">Unique Visitors</div>
+                <div class="card-count">{{ weekly_data.visitor_queries.unique_visitors or 0 }}</div>
+                <small class="text-muted">Distinct anonymous visitors</small>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon" style="color: #4caf50;">
+                <i class="bi bi-bullseye"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">Target Queries</div>
+                <div class="card-count">{{ weekly_data.visitor_queries.targeting_insights.total_target_queries or 0 }}</div>
+                <small class="text-muted">Admission/course/contact inquiries</small>
+            </div>
+        </div>
     </div>
 
     <!-- Weekly Report Section -->
@@ -213,6 +247,69 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Visitor Queries Targeting Insights -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">Visitor Queries Analysis (For Targeting)</h2>
+            <p class="text-muted mb-0">Anonymous visitors excluding verified students with Telegram accounts</p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h4 class="text-primary">{{ weekly_data.visitor_queries.targeting_insights.admission_interest or 0 }}</h4>
+                        <p class="mb-0"><i class="bi bi-mortarboard"></i> Admission Interest</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h4 class="text-success">{{ weekly_data.visitor_queries.targeting_insights.course_inquiry or 0 }}</h4>
+                        <p class="mb-0"><i class="bi bi-book"></i> Course Inquiries</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h4 class="text-warning">{{ weekly_data.visitor_queries.targeting_insights.contact_requests or 0 }}</h4>
+                        <p class="mb-0"><i class="bi bi-telephone"></i> Contact Requests</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h4 class="text-info">{{ weekly_data.visitor_queries.targeting_insights.facilities_interest or 0 }}</h4>
+                        <p class="mb-0"><i class="bi bi-building"></i> Facilities Interest</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if weekly_data.visitor_queries.top_queries %}
+        <div class="dashboard-section">
+            <h4 class="mb-3">Top Visitor Queries</h4>
+            <div class="row">
+                <div class="col-md-12">
+                    <ol>
+                        {% for query in weekly_data.visitor_queries.top_queries %}
+                        <li class="mb-2">{{ query }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Note:</strong> This analysis excludes visitors with Telegram ID mappings (verified students) to focus on potential new admissions.
         </div>
     </div>
 
