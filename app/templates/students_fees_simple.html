@@ -3,18 +3,32 @@
 {% block title %}Fee Records - EduBot Admin{% endblock %}
 
 {% block sidebar_nav %}
-<!-- Admin Navigation -->
+<!-- Faculty Navigation -->
 <div class="nav-item">
-    <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin.admin_dashboard' %}active{% endif %}">
+    <a href="{{ url_for('faculty.faculty_dashboard') }}" class="nav-link {% if request.endpoint == 'faculty.faculty_dashboard' %}active{% endif %}">
         <i class="fas fa-tachometer-alt"></i>
         <span>Dashboard</span>
     </a>
 </div>
 
 <div class="nav-item">
-    <a href="{{ url_for('admin.analytics') }}" class="nav-link {% if request.endpoint == 'admin.analytics' %}active{% endif %}">
-        <i class="fas fa-chart-line"></i>
-        <span>Analytics</span>
+    <a href="{{ url_for('faculty.faculty_manage_students') }}" class="nav-link {% if request.endpoint == 'faculty.faculty_manage_students' %}active{% endif %}">
+        <i class="fas fa-users"></i>
+        <span>Students</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('faculty.manage_notifications') }}" class="nav-link {% if request.endpoint == 'faculty.manage_notifications' %}active{% endif %}">
+        <i class="fas fa-bell"></i>
+        <span>Notifications</span>
+    </a>
+</div>
+
+<div class="nav-item">
+    <a href="{{ url_for('faculty.manage_complaints') }}" class="nav-link {% if request.endpoint == 'faculty.manage_complaints' %}active{% endif %}">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Complaints</span>
     </a>
 </div>
 
@@ -102,8 +116,8 @@
         <h2 class="mb-1">Student Fee Records</h2>
         <small class="text-muted">View and manage student fee information</small>
     </div>
-    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-left"></i> Return to Admin Dashboard
+    <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> Return to Faculty Dashboard
     </a>
 </div>
 
@@ -180,28 +194,6 @@
     </div>
 </div>
 
-{% if role_title != 'Admin' %}
-<!-- Quick Actions -->
-<div class="dashboard-section">
-    <div class="section-header">
-        <h2 class="section-title"><i class="bi bi-lightning"></i> Quick Actions</h2>
-    </div>
-    <div class="quick-actions">
-        <a href="{{ url_for('accounts.billing') }}" class="quick-action-btn">
-            <i class="bi bi-file-invoice-dollar"></i>
-            <span>Billing</span>
-        </a>
-        <a href="{{ url_for('accounts.reports') }}" class="quick-action-btn">
-            <i class="bi bi-chart-bar"></i>
-            <span>Reports</span>
-        </a>
-        <a href="{{ url_for('admin.admin_dashboard') }}" class="quick-action-btn">
-            <i class="bi bi-arrow-left"></i>
-            <span>Return to Admin Dashboard</span>
-        </a>
-    </div>
-</div>
-{% endif %}
 
 <!-- Students Table -->
 <div class="dashboard-section">
