@@ -658,26 +658,307 @@ def edit_profile():
     
     return render_template('edit_profile.html')
 
+@accounts_bp.route('/reports/export/<format>')
+@login_required
+@accounts_required()
+def export_reports(format):
+    """Export reports in different formats"""
+    try:
+        # Get all fee records with student information
+        fee_records_data = safe_execute(lambda: db.session.query(
+            FeeRecord, Student
+        ).join(Student, FeeRecord.student_id == Student.id)
+        .order_by(FeeRecord.last_updated.desc())
+        .all()) or []
+        
+        if format == 'csv':
+            # Create CSV data
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow([
+                'Student ID', 'Roll Number', 'Name', 'Department', 'Semester',
+                'Total Amount', 'Paid Amount', 'Balance', 'Last Updated'
+            ])
+            
+            # Write data
+            for fee_record, student in fee_records_data:
+                writer.writerow([
+                    student.id,
+                    student.roll_number,
+                    student.name,
+                    student.department or 'N/A',
+                    fee_record.semester,
+                    fee_record.total_amount,
+                    fee_record.paid_amount,
+                    fee_record.balance,
+                    fee_record.last_updated.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+            
+            output.seek(0)
+            from flask import Response
+            response = Response(output.getvalue(), mimetype='text/csv')
+            response.headers['Content-Disposition'] = f'attachment; filename=fee_reports_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            return response
+            
+        elif format == 'excel':
+            # Create Excel data (CSV format for simplicity, can be enhanced with openpyxl)
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow([
+                'Student ID', 'Roll Number', 'Name', 'Department', 'Semester',
+                'Total Amount', 'Paid Amount', 'Balance', 'Last Updated', 'Status'
+            ])
+            
+            # Write data
+            for fee_record, student in fee_records_data:
+                status = 'Paid' if fee_record.balance <= 0 else (
+                    'Partial' if fee_record.paid_amount > 0 else 'Unpaid'
+                )
+                writer.writerow([
+                    student.id,
+                    student.roll_number,
+                    student.name,
+                    student.department or 'N/A',
+                    fee_record.semester,
+                    fee_record.total_amount,
+                    fee_record.paid_amount,
+                    fee_record.balance,
+                    fee_record.last_updated.strftime('%Y-%m-%d %H:%M:%S'),
+                    status
+                ])
+            
+            output.seek(0)
+            from flask import Response
+            response = Response(output.getvalue(), mimetype='text/csv')
+            response.headers['Content-Disposition'] = f'attachment; filename=fee_reports_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            return response
+            
+        elif format == 'pdf':
+            # For PDF, return JSON data that can be used to generate PDF on frontend
+            report_data = []
+            for fee_record, student in fee_records_data:
+                status = 'Paid' if fee_record.balance <= 0 else (
+                    'Partial' if fee_record.paid_amount > 0 else 'Unpaid'
+                )
+                report_data.append({
+                    'student_id': student.id,
+                    'roll_number': student.roll_number,
+                    'name': student.name,
+                    'department': student.department or 'N/A',
+                    'semester': fee_record.semester,
+                    'total_amount': fee_record.total_amount,
+                    'paid_amount': fee_record.paid_amount,
+                    'balance': fee_record.balance,
+                    'last_updated': fee_record.last_updated.strftime('%Y-%m-%d %H:%M:%S'),
+                    'status': status
+                })
+            
+            return jsonify({
+                'success': True,
+                'data': report_data,
+                'filename': f'fee_reports_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+            })
+        
+        else:
+            return jsonify({'success': False, 'message': 'Unsupported format'}), 400
+            
+    except Exception as e:
+        current_app.logger.error(f"Error exporting reports: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error exporting reports'}), 500
+
+@accounts_bp.route('/reports/generate/<report_type>')
+@login_required
+@accounts_required()
+def generate_reports(report_type):
+    """Generate different types of reports"""
+    try:
+        from datetime import timedelta, datetime
+        
+        if report_type == 'monthly':
+            # Monthly report (last 30 days)
+            start_date = datetime.utcnow() - timedelta(days=30)
+            fee_records = safe_execute(lambda: FeeRecord.query
+                                     .filter(FeeRecord.last_updated >= start_date)
+                                     .order_by(FeeRecord.last_updated.desc()).all()) or []
+            
+            # Calculate monthly statistics
+            monthly_collected = sum(record.paid_amount for record in fee_records)
+            monthly_pending = sum(record.balance for record in fee_records if record.balance > 0)
+            monthly_transactions = len(fee_records)
+            
+            return jsonify({
+                'success': True,
+                'report_type': 'monthly',
+                'period': f'Last 30 days ({start_date.strftime("%Y-%m-%d")} to {datetime.now().strftime("%Y-%m-%d")})',
+                'statistics': {
+                    'total_collected': monthly_collected,
+                    'total_pending': monthly_pending,
+                    'total_transactions': monthly_transactions,
+                    'average_transaction': monthly_collected / monthly_transactions if monthly_transactions > 0 else 0
+                },
+                'data': [{
+                    'student_id': record.student_id,
+                    'semester': record.semester,
+                    'total_amount': record.total_amount,
+                    'paid_amount': record.paid_amount,
+                    'balance': record.balance,
+                    'last_updated': record.last_updated.strftime('%Y-%m-%d %H:%M:%S')
+                } for record in fee_records]
+            })
+            
+        elif report_type == 'yearly':
+            # Yearly report (current year)
+            current_year = datetime.utcnow().year
+            start_date = datetime(current_year, 1, 1)
+            
+            fee_records = safe_execute(lambda: FeeRecord.query
+                                     .filter(FeeRecord.last_updated >= start_date)
+                                     .order_by(FeeRecord.last_updated.desc()).all()) or []
+            
+            # Calculate yearly statistics
+            yearly_collected = sum(record.paid_amount for record in fee_records)
+            yearly_pending = sum(record.balance for record in fee_records if record.balance > 0)
+            yearly_transactions = len(fee_records)
+            
+            # Monthly breakdown
+            monthly_breakdown = {}
+            for record in fee_records:
+                month = record.last_updated.strftime('%Y-%m')
+                if month not in monthly_breakdown:
+                    monthly_breakdown[month] = {'collected': 0, 'pending': 0, 'transactions': 0}
+                monthly_breakdown[month]['collected'] += record.paid_amount
+                monthly_breakdown[month]['pending'] += record.balance if record.balance > 0 else 0
+                monthly_breakdown[month]['transactions'] += 1
+            
+            return jsonify({
+                'success': True,
+                'report_type': 'yearly',
+                'period': f'Year {current_year}',
+                'statistics': {
+                    'total_collected': yearly_collected,
+                    'total_pending': yearly_pending,
+                    'total_transactions': yearly_transactions,
+                    'average_transaction': yearly_collected / yearly_transactions if yearly_transactions > 0 else 0
+                },
+                'monthly_breakdown': monthly_breakdown,
+                'data': [{
+                    'student_id': record.student_id,
+                    'semester': record.semester,
+                    'total_amount': record.total_amount,
+                    'paid_amount': record.paid_amount,
+                    'balance': record.balance,
+                    'last_updated': record.last_updated.strftime('%Y-%m-%d %H:%M:%S')
+                } for record in fee_records]
+            })
+            
+        elif report_type == 'custom':
+            # Custom range report (last 90 days by default)
+            start_date = datetime.utcnow() - timedelta(days=90)
+            
+            fee_records = safe_execute(lambda: FeeRecord.query
+                                     .filter(FeeRecord.last_updated >= start_date)
+                                     .order_by(FeeRecord.last_updated.desc()).all()) or []
+            
+            # Calculate custom range statistics
+            range_collected = sum(record.paid_amount for record in fee_records)
+            range_pending = sum(record.balance for record in fee_records if record.balance > 0)
+            range_transactions = len(fee_records)
+            
+            return jsonify({
+                'success': True,
+                'report_type': 'custom',
+                'period': f'Last 90 days ({start_date.strftime("%Y-%m-%d")} to {datetime.now().strftime("%Y-%m-%d")})',
+                'statistics': {
+                    'total_collected': range_collected,
+                    'total_pending': range_pending,
+                    'total_transactions': range_transactions,
+                    'average_transaction': range_collected / range_transactions if range_transactions > 0 else 0
+                },
+                'data': [{
+                    'student_id': record.student_id,
+                    'semester': record.semester,
+                    'total_amount': record.total_amount,
+                    'paid_amount': record.paid_amount,
+                    'balance': record.balance,
+                    'last_updated': record.last_updated.strftime('%Y-%m-%d %H:%M:%S')
+                } for record in fee_records]
+            })
+        
+        else:
+            return jsonify({'success': False, 'message': 'Unsupported report type'}), 400
+            
+    except Exception as e:
+        current_app.logger.error(f"Error generating reports: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error generating reports'}), 500
+
 @accounts_bp.route('/reports')
 @login_required
 @accounts_required()
 def reports():
     """Generate and export financial reports"""
     try:
-        # Get data for reports
+        # Get real-time data for reports
         total_students = safe_execute(lambda: Student.query.count()) or 0
         total_fee_records = safe_execute(lambda: FeeRecord.query.count()) or 0
+        total_faculty = safe_execute(lambda: Faculty.query.count()) or 0
+        total_notifications = safe_execute(lambda: Notification.query.count()) or 0
+        total_complaints = safe_execute(lambda: Complaint.query.count()) or 0
+        total_results = safe_execute(lambda: Result.query.count()) or 0
         
-        # Calculate financial summary
+        # Calculate financial summary from fee records
         fee_records = safe_execute(lambda: FeeRecord.query.all()) or []
         total_collected = sum(record.paid_amount for record in fee_records) if fee_records else 0
         total_pending = sum(record.balance for record in fee_records if record.balance > 0) if fee_records else 0
+        total_revenue = sum(record.total_amount for record in fee_records) if fee_records else 0
+        
+        # Calculate fee status counts
+        fully_paid = sum(1 for record in fee_records if record.balance <= 0) if fee_records else 0
+        partial_payment = sum(1 for record in fee_records if record.paid_amount > 0 and record.balance > 0) if fee_records else 0
+        unpaid = sum(1 for record in fee_records if record.paid_amount <= 0) if fee_records else 0
+        
+        # Get department-wise statistics
+        departments = safe_execute(lambda: db.session.query(Student.department, db.func.count(Student.id))
+                                 .filter(Student.department.isnot(None))
+                                 .group_by(Student.department).all()) or []
+        
+        # Get semester-wise statistics
+        semesters = safe_execute(lambda: db.session.query(Student.semester, db.func.count(Student.id))
+                                .filter(Student.semester.isnot(None))
+                                .group_by(Student.semester).order_by(Student.semester).all()) or []
+        
+        # Get recent fee records (last 30 days)
+        from datetime import timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_fee_records = safe_execute(lambda: FeeRecord.query
+                                         .filter(FeeRecord.last_updated >= thirty_days_ago)
+                                         .order_by(FeeRecord.last_updated.desc()).limit(50).all()) or []
         
         return render_template('reports.html',
                              total_students=total_students,
                              total_fee_records=total_fee_records,
+                             total_faculty=total_faculty,
+                             total_notifications=total_notifications,
+                             total_complaints=total_complaints,
+                             total_results=total_results,
                              total_collected=total_collected,
-                             total_pending=total_pending)
+                             total_pending=total_pending,
+                             total_revenue=total_revenue,
+                             fully_paid=fully_paid,
+                             partial_payment=partial_payment,
+                             unpaid=unpaid,
+                             departments=departments,
+                             semesters=semesters,
+                             recent_fee_records=recent_fee_records)
     except Exception as e:
         current_app.logger.error(f"Error loading reports: {str(e)}")
         flash('Error loading reports.', 'error')

@@ -2,6 +2,79 @@
 
 {% block title %}Financial Reports - EduBot{% endblock %}
 
+{% block extra_css %}
+<style>
+.stat-item {
+    text-align: center;
+    padding: 10px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #495057;
+}
+
+.department-stat, .semester-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.department-name, .semester-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.department-count, .semester-count {
+    background: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: bold;
+}
+
+.report-summary {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 5px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
 {% block sidebar_nav %}
 <!-- Accounts Navigation -->
 <div class="nav-item">
@@ -115,6 +188,99 @@
         </div>
     </div>
 
+    <!-- Additional Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Detailed Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="stat-item">
+                                <div class="stat-label">Faculty</div>
+                                <div class="stat-value">{{ total_faculty }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="stat-item">
+                                <div class="stat-label">Notifications</div>
+                                <div class="stat-value">{{ total_notifications }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="stat-item">
+                                <div class="stat-label">Complaints</div>
+                                <div class="stat-value">{{ total_complaints }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="stat-item">
+                                <div class="stat-label">Results</div>
+                                <div class="stat-value">{{ total_results }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="stat-item">
+                                <div class="stat-label">Fully Paid</div>
+                                <div class="stat-value">{{ fully_paid }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="stat-item">
+                                <div class="stat-label">Partial Payment</div>
+                                <div class="stat-value">{{ partial_payment }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department and Semester Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Department-wise Students</h5>
+                </div>
+                <div class="card-body">
+                    {% if departments %}
+                        {% for department, count in departments %}
+                            <div class="department-stat">
+                                <span class="department-name">{{ department }}</span>
+                                <span class="department-count">{{ count }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No department data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Semester-wise Students</h5>
+                </div>
+                <div class="card-body">
+                    {% if semesters %}
+                        {% for semester, count in semesters %}
+                            <div class="semester-stat">
+                                <span class="semester-name">Semester {{ semester }}</span>
+                                <span class="semester-count">{{ count }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No semester data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Export Options -->
     <div class="row">
         <div class="col-md-12">
@@ -169,28 +335,68 @@ function exportData(format) {
     btn.innerHTML = '<span class="loading"></span> Exporting...';
     btn.disabled = true;
     
-    // Simulate export process
-    setTimeout(() => {
-        // Create a sample CSV data
-        let csvContent = "Student ID,Name,Roll Number,Total Fee,Paid Amount,Balance\n";
-        csvContent += "1,John Doe,101,50000,45000,5000\n";
-        csvContent += "2,Jane Smith,102,50000,50000,0\n";
-        
-        // Create download link
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `fees_export_${new Date().toISOString().split('T')[0]}.${format}`;
-        a.click();
-        
-        // Reset button
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        
-        // Show success message
-        showNotification(`Fees data exported successfully as ${format.toUpperCase()}!`, 'success');
-    }, 2000);
+    // Fetch real data from server
+    fetch(`/accounts/reports/export/${format}`)
+        .then(response => {
+            if (format === 'pdf') {
+                return response.json();
+            } else {
+                // For CSV and Excel, download the file directly
+                return response.blob().then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `fee_reports_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'csv' : format}`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Reset button
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    
+                    // Show success message
+                    showNotification(`Fees data exported successfully as ${format.toUpperCase()}!`, 'success');
+                });
+            }
+        })
+        .then(data => {
+            if (format === 'pdf') {
+                if (data.success) {
+                    // For PDF, you could use a client-side PDF library or display the data
+                    // For now, we'll create a text file with the report data
+                    let reportContent = `Fee Report - ${new Date().toLocaleDateString()}\n\n`;
+                    reportContent += "Student ID,Roll Number,Name,Department,Semester,Total Amount,Paid Amount,Balance,Status,Last Updated\n";
+                    
+                    data.data.forEach(record => {
+                        reportContent += `${record.student_id},${record.roll_number},${record.name},${record.department},${record.semester},${record.total_amount},${record.paid_amount},${record.balance},${record.status},${record.last_updated}\n`;
+                    });
+                    
+                    const blob = new Blob([reportContent], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    showNotification('Error exporting PDF: ' + data.message, 'error');
+                }
+            }
+            
+            // Reset button
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            if (data.success) {
+                showNotification(`Report exported successfully as ${format.toUpperCase()}!`, 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showNotification('Error exporting data. Please try again.', 'error');
+        });
 }
 
 function generateReport(type) {
@@ -200,15 +406,105 @@ function generateReport(type) {
     btn.innerHTML = '<span class="loading"></span> Generating...';
     btn.disabled = true;
     
-    // Simulate report generation
-    setTimeout(() => {
-        // Reset button
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        
-        // Show success message
-        showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated successfully!`, 'success');
-    }, 2000);
+    // Fetch real report data from server
+    fetch(`/accounts/reports/generate/${type}`)
+        .then(response => response.json())
+        .then(data => {
+            // Reset button
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            if (data.success) {
+                // Display report in a modal or new section
+                displayReport(data);
+                showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated successfully!`, 'success');
+            } else {
+                showNotification('Error generating report: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Report generation error:', error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showNotification('Error generating report. Please try again.', 'error');
+        });
+}
+
+function displayReport(data) {
+    // Create or update a modal to display the report
+    let modal = document.getElementById('reportModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'reportModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Report Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="reportContent">
+                        <!-- Report content will be inserted here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // Generate report content
+    let content = `
+        <div class="report-summary">
+            <h6>Period: ${data.period}</h6>
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Total Collected:</strong> ₹${data.statistics.total_collected.toLocaleString()}
+                </div>
+                <div class="col-md-3">
+                    <strong>Total Pending:</strong> ₹${data.statistics.total_pending.toLocaleString()}
+                </div>
+                <div class="col-md-3">
+                    <strong>Transactions:</strong> ${data.statistics.total_transactions}
+                </div>
+                <div class="col-md-3">
+                    <strong>Average:</strong> ₹${data.statistics.average_transaction.toLocaleString()}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    if (data.monthly_breakdown) {
+        content += '<h6 class="mt-3">Monthly Breakdown</h6><table class="table table-sm">';
+        content += '<thead><tr><th>Month</th><th>Collected</th><th>Pending</th><th>Transactions</th></tr></thead><tbody>';
+        for (const [month, stats] of Object.entries(data.monthly_breakdown)) {
+            content += `<tr><td>${month}</td><td>₹${stats.collected.toLocaleString()}</td><td>₹${stats.pending.toLocaleString()}</td><td>${stats.transactions}</td></tr>`;
+        }
+        content += '</tbody></table>';
+    }
+    
+    content += '<h6 class="mt-3">Recent Transactions</h6><div class="table-responsive"><table class="table table-sm">';
+    content += '<thead><tr><th>Student ID</th><th>Semester</th><th>Total</th><th>Paid</th><th>Balance</th><th>Last Updated</th></tr></thead><tbody>';
+    data.data.slice(0, 10).forEach(record => {
+        content += `<tr>
+            <td>${record.student_id}</td>
+            <td>${record.semester}</td>
+            <td>₹${record.total_amount.toLocaleString()}</td>
+            <td>₹${record.paid_amount.toLocaleString()}</td>
+            <td>₹${record.balance.toLocaleString()}</td>
+            <td>${record.last_updated}</td>
+        </tr>`;
+    });
+    content += '</tbody></table></div>';
+    
+    document.getElementById('reportContent').innerHTML = content;
+    
+    // Show the modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
 }
 
 function showNotification(message, type) {
