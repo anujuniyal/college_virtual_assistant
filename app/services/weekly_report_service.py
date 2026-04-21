@@ -35,8 +35,15 @@ class WeeklyReportService:
             if report_data.get('visitor_queries', {}).get('total_queries', 0) > 0:
                 visitor_csv_path = WeeklyReportService._export_visitor_queries_csv_optimized()
             
-            # Send email to admin using background service
-            WeeklyReportService._send_weekly_report_background(report_data)
+            # Prepare attachments list
+            attachments = []
+            if csv_path and os.path.exists(csv_path):
+                attachments.append(csv_path)
+            if visitor_csv_path and os.path.exists(visitor_csv_path):
+                attachments.append(visitor_csv_path)
+            
+            # Send email to admin using background service with attachments
+            WeeklyReportService._send_weekly_report_background(report_data, attachments)
             
             # Mark queries as processed (batch update for memory efficiency)
             WeeklyReportService._mark_queries_processed_optimized()
@@ -299,7 +306,7 @@ class WeeklyReportService:
             }
     
     @staticmethod
-    def _send_weekly_report_background(report_data: dict):
+    def _send_weekly_report_background(report_data: dict, attachments: list = None):
         """Send weekly report email using background service"""
         try:
             # Create email content
@@ -400,7 +407,7 @@ class WeeklyReportService:
             
             # Send using background email service
             admin_email = Config.ADMIN_EMAIL or 'uniyalanuj1@gmail.com'
-            success = send_email_background(admin_email, subject, body, html)
+            success = send_email_background(admin_email, subject, body, html, attachments)
             
             if success:
                 logger.info(f"Weekly report email sent successfully to {admin_email}")
