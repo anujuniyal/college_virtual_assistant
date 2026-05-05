@@ -417,7 +417,7 @@ Type 'help' for commands."""
 🕐 Office Hours: 9:00 AM - 5:00 PM
 
 🎓 **Students:** To access personalized services,
-Type: `EDU25001`
+Type: `registerEDU25001`
 or
 Share your phone number using the button below
 📱 [Share Phone Number]
@@ -472,7 +472,7 @@ Email: info@college.edu
 Office Hours: 9:00 AM - 5:00 PM
 
 **Students:** To access personalized services,
-Type: `EDU25001`
+Type: `registerEDU25001`
 
 Simply type a number (1-6) or keyword to get started!"""
     
@@ -920,7 +920,7 @@ Issued by: College Administration"""
 Your session has been ended for security.
 
 To access services again:
-• Verify your roll number: EDU25001
+• Verify your roll number: registerEDU25001
 
 Thank you for using College Virtual Assistant!"""
     

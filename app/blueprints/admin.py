@@ -923,27 +923,36 @@ def send_weekly_report():
         # Generate weekly report
         csv_path, visitor_csv_path = WeeklyReportService.generate_weekly_report()
         
-        # Use the main CSV path for file operations
+        # Weekly report is already sent by the background service during generation
+        # The CSV files are optional - the email is the primary deliverable
+        
+        # Determine if we have any CSV files
+        has_csv_files = bool(csv_path or visitor_csv_path)
         main_csv_path = csv_path if csv_path else visitor_csv_path
         
-        if main_csv_path and os.path.exists(main_csv_path):
+        if has_csv_files and main_csv_path and os.path.exists(main_csv_path):
             # Get file info
             file_name = os.path.basename(main_csv_path)
-            
-            # Weekly report is already sent by the background service
-            # No need to send again, just return
             
             return jsonify({
                 'success': True,
                 'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
                 'file_path': main_csv_path,
-                'file_name': file_name
+                'file_name': file_name,
+                'has_attachments': True
             })
-            
-        else:
+        elif has_csv_files:
+            # CSV files were supposed to be generated but don't exist
             return jsonify({
                 'success': False,
-                'message': 'Failed to generate weekly report file'
+                'message': 'Weekly report email was sent but CSV files were not found'
+            })
+        else:
+            # No CSV files needed (no data to export), but email was sent
+            return jsonify({
+                'success': True,
+                'message': f'Weekly report sent to {Config.ADMIN_EMAIL} (no data to export)',
+                'has_attachments': False
             })
             
     except Exception as e:
