@@ -920,40 +920,18 @@ def send_weekly_report():
         from app.config import Config
         import os
         
-        # Generate weekly report
+        # Generate weekly report (optimized - no CSV files)
         csv_path, visitor_csv_path = WeeklyReportService.generate_weekly_report()
         
-        # Weekly report is already sent by the background service during generation
-        # The CSV files are optional - the email is the primary deliverable
+        # Weekly report is sent by the background service during generation
+        # CSV generation is disabled to prevent worker timeouts on Render
         
-        # Determine if we have any CSV files
-        has_csv_files = bool(csv_path or visitor_csv_path)
-        main_csv_path = csv_path if csv_path else visitor_csv_path
-        
-        if has_csv_files and main_csv_path and os.path.exists(main_csv_path):
-            # Get file info
-            file_name = os.path.basename(main_csv_path)
-            
-            return jsonify({
-                'success': True,
-                'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
-                'file_path': main_csv_path,
-                'file_name': file_name,
-                'has_attachments': True
-            })
-        elif has_csv_files:
-            # CSV files were supposed to be generated but don't exist
-            return jsonify({
-                'success': False,
-                'message': 'Weekly report email was sent but CSV files were not found'
-            })
-        else:
-            # No CSV files needed (no data to export), but email was sent
-            return jsonify({
-                'success': True,
-                'message': f'Weekly report sent to {Config.ADMIN_EMAIL} (no data to export)',
-                'has_attachments': False
-            })
+        return jsonify({
+            'success': True,
+            'message': f'Weekly report generated and sent to {Config.ADMIN_EMAIL}',
+            'note': 'CSV file generation disabled for Render stability',
+            'has_attachments': False
+        })
             
     except Exception as e:
         current_app.logger.error(f"Error in send_weekly_report: {str(e)}")

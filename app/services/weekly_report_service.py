@@ -20,59 +20,23 @@ class WeeklyReportService:
     
     @staticmethod
     def generate_weekly_report():
-        """Generate and export weekly report"""
+        """Generate weekly report (optimized for Render - no CSV generation)"""
         try:
             # Get report data with memory optimization
             report_data = WeeklyReportService._get_weekly_report_data_optimized()
             
-            # Export unknown queries to CSV (only if there are any)
-            csv_path = None
-            if report_data.get('unknown_queries', 0) > 0:
-                csv_path = WeeklyReportService._export_unknown_queries_csv_optimized()
+            # Skip CSV generation to prevent memory issues and worker timeouts
+            # CSV files were causing excessive I/O load on Render
+            logger.info("Skipping CSV file generation for Render stability")
             
-            # Export visitor queries to CSV (only if there are any)
-            visitor_csv_path = None
-            if report_data.get('visitor_queries', {}).get('total_queries', 0) > 0:
-                visitor_csv_path = WeeklyReportService._export_visitor_queries_csv_optimized()
-            
-            # Prepare attachments list
-            attachments = []
-            logger.info(f"CSV path: {csv_path} (type: {type(csv_path)})")
-            logger.info(f"Visitor CSV path: {visitor_csv_path} (type: {type(visitor_csv_path)})")
-            
-            if csv_path:
-                if isinstance(csv_path, str) and os.path.exists(csv_path):
-                    attachments.append(csv_path)
-                    logger.info(f"Added CSV attachment: {csv_path}")
-                else:
-                    logger.error(f"CSV path issue - type: {type(csv_path)}, exists: {os.path.exists(csv_path) if isinstance(csv_path, str) else 'N/A'}, value: {csv_path}")
-            
-            if visitor_csv_path:
-                if isinstance(visitor_csv_path, str) and os.path.exists(visitor_csv_path):
-                    attachments.append(visitor_csv_path)
-                    logger.info(f"Added visitor CSV attachment: {visitor_csv_path}")
-                else:
-                    logger.error(f"Visitor CSV path issue - type: {type(visitor_csv_path)}, exists: {os.path.exists(visitor_csv_path) if isinstance(visitor_csv_path, str) else 'N/A'}, value: {visitor_csv_path}")
-            
-            # Final validation of attachments list
-            logger.info(f"Final attachments list: {attachments}")
-            for i, att in enumerate(attachments):
-                if not isinstance(att, str):
-                    logger.error(f"Attachment {i} is not a string: {type(att)} - {att}")
-                    attachments[i] = str(att) if att else None
-            
-            # Remove any None values
-            attachments = [att for att in attachments if att is not None]
-            logger.info(f"Cleaned attachments list: {attachments}")
-            
-            # Send email to admin using background service with attachments
-            WeeklyReportService._send_weekly_report_background(report_data, attachments)
+            # Send email without attachments to reduce load
+            WeeklyReportService._send_weekly_report_background(report_data, attachments=None)
             
             # Mark queries as processed (batch update for memory efficiency)
             WeeklyReportService._mark_queries_processed_optimized()
             
             logger.info(f"Weekly report generated successfully. Unknown queries: {report_data.get('unknown_queries', 0)}, Visitor queries: {report_data.get('visitor_queries', {}).get('total_queries', 0)}")
-            return csv_path, visitor_csv_path
+            return None, None  # No CSV files generated
             
         except Exception as e:
             logger.error(f"Error generating weekly report: {str(e)}")
